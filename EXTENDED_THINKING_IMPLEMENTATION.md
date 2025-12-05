@@ -66,7 +66,7 @@ Enhanced with:
 
 ### 3. Enhanced 4-Layer HTML Architecture
 
-**File:** `watson-glaser-trainer/four_layer.html`
+**File:** `trainer/four_layer.html`
 
 Added extended thinking to browser-based system:
 
