@@ -372,3 +372,67 @@ class ExecutionProxy:
             "total_allowed": len(self._metrics["allowed"]),
             "total_timeout": len(self._metrics["timeout"]),
         }
+
+
+def create_execution_context(
+    constraint_loader: "ConstraintLoader",
+    persona_lock: "PersonaLock", 
+    plan_validator: "PlanValidator",
+    session_id: Optional[str] = None
+) -> ExecutionContext:
+    """
+    Create execution context from active governance components.
+    
+    Factory function that wires up the active constraint profile,
+    persona, and plan for Constitution §6.1 compliance.
+    
+    Args:
+        constraint_loader: Loader with active profile (has active_hash property)
+        persona_lock: Lock with active persona (has active_persona property)
+        plan_validator: Validator with active plan (has get_active_plan() method)
+        session_id: Optional session ID override
+    
+    Returns:
+        ExecutionContext with all bindings populated
+        
+    Raises:
+        ValueError: If any required component is not active
+        
+    Example:
+        loader = ConstraintLoader(Path("governance/"))
+        loader.load("coding_agent_profile")
+        
+        lock = PersonaLock(sandbox_root)
+        lock.lock_persona(persona)
+        
+        validator = PlanValidator()
+        validator.load_plan(plan)
+        
+        context = create_execution_context(loader, lock, validator)
+        proxy = ExecutionProxy(execution_context=context)
+    """
+    # Validate constraint loader
+    if not hasattr(constraint_loader, 'active_hash') or not constraint_loader.active_hash:
+        raise ValueError("No constraint profile loaded (constraint_loader.active_hash is None)")
+    
+    # Validate persona lock
+    if not hasattr(persona_lock, 'active_persona') or not persona_lock.active_persona:
+        raise ValueError("No persona active (persona_lock.active_persona is None)")
+    
+    # Validate plan validator
+    if not hasattr(plan_validator, 'get_active_plan'):
+        raise ValueError("PlanValidator missing get_active_plan() method")
+    
+    plan = plan_validator.get_active_plan()
+    if not plan:
+        raise ValueError("No plan active (plan_validator.get_active_plan() returned None)")
+    
+    if not hasattr(plan, 'plan_id') or not plan.plan_id:
+        raise ValueError("Active plan missing plan_id")
+    
+    return ExecutionContext(
+        constraint_hash=constraint_loader.active_hash,
+        plan_id=plan.plan_id,
+        persona_id=persona_lock.active_persona.agent_id,
+        session_id=session_id or str(uuid.uuid4())[:8]
+    )

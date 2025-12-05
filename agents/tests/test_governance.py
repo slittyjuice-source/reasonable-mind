@@ -5,7 +5,10 @@ from pathlib import Path
 
 from agents.governance.process_gate import ProcessGate, ProcessStage, StageResult
 from agents.governance.registry import ConstraintRegistry, ConstraintProfile
-from agents.governance.execution_proxy import ExecutionProxy, ExecutionMode, ExecutionResult
+from agents.governance.execution_proxy import (
+    ExecutionProxy, ExecutionMode, ExecutionResult,
+    ExecutionContext, create_execution_context
+)
 from agents.governance.plan_validator import PlanValidator, Plan, PlanStep, ViolationType
 
 
@@ -263,3 +266,129 @@ class TestPlanValidator:
         result = validator.amend_plan(PlanStep(id="step-2", goal="Added"))
         assert result.is_valid is True
         assert len(validator.get_active_plan().steps) == 2
+
+
+class TestExecutionContext:
+    """Tests for ExecutionContext (Constitution §6.1 compliance)."""
+    
+    def test_context_is_immutable(self):
+        """ExecutionContext fields cannot be modified after creation."""
+        ctx = ExecutionContext(
+            constraint_hash="abc123",
+            plan_id="plan-001",
+            persona_id="agent-001"
+        )
+        
+        with pytest.raises(Exception):  # FrozenInstanceError
+            ctx.constraint_hash = "modified"
+    
+    def test_context_validation(self):
+        """Validates all required fields are present."""
+        valid_ctx = ExecutionContext(
+            constraint_hash="abc123",
+            plan_id="plan-001",
+            persona_id="agent-001"
+        )
+        assert valid_ctx.validate() is True
+        
+        # Empty fields fail validation
+        invalid_ctx = ExecutionContext(
+            constraint_hash="",
+            plan_id="plan-001",
+            persona_id="agent-001"
+        )
+        assert invalid_ctx.validate() is False
+    
+    def test_context_auto_generates_session_id(self):
+        """Session ID is auto-generated if not provided."""
+        ctx = ExecutionContext(
+            constraint_hash="abc123",
+            plan_id="plan-001",
+            persona_id="agent-001"
+        )
+        assert ctx.session_id is not None
+        assert len(ctx.session_id) == 8
+    
+    def test_context_to_dict(self):
+        """Context serializes to dictionary."""
+        ctx = ExecutionContext(
+            constraint_hash="abc123",
+            plan_id="plan-001",
+            persona_id="agent-001",
+            session_id="sess-001"
+        )
+        d = ctx.to_dict()
+        assert d["constraint_hash"] == "abc123"
+        assert d["plan_id"] == "plan-001"
+        assert d["persona_id"] == "agent-001"
+        assert d["session_id"] == "sess-001"
+
+
+class TestAuditCompliance:
+    """Tests for audit record compliance (Constitution §7.3)."""
+    
+    def test_audit_includes_context_when_provided(self):
+        """Audit records include constraint_hash, plan_id, persona_id."""
+        ctx = ExecutionContext(
+            constraint_hash="hash-abc",
+            plan_id="plan-xyz",
+            persona_id="agent-007"
+        )
+        proxy = ExecutionProxy(mode=ExecutionMode.DRY_RUN, execution_context=ctx)
+        
+        result = proxy.execute("ls -la")
+        audit = result.to_audit_record()
+        
+        assert audit["constraint_hash"] == "hash-abc"
+        assert audit["plan_id"] == "plan-xyz"
+        assert audit["persona_id"] == "agent-007"
+        assert "timestamp" in audit
+    
+    def test_audit_allows_none_context_for_backward_compat(self):
+        """Audit records work without context for backward compatibility."""
+        proxy = ExecutionProxy(mode=ExecutionMode.DRY_RUN)
+        
+        result = proxy.execute("ls -la")
+        audit = result.to_audit_record()
+        
+        assert audit["constraint_hash"] is None
+        assert audit["plan_id"] is None
+        assert audit["persona_id"] is None
+    
+    def test_per_call_context_override(self):
+        """Per-call context overrides instance context."""
+        instance_ctx = ExecutionContext(
+            constraint_hash="instance-hash",
+            plan_id="instance-plan",
+            persona_id="instance-agent"
+        )
+        call_ctx = ExecutionContext(
+            constraint_hash="call-hash",
+            plan_id="call-plan",
+            persona_id="call-agent"
+        )
+        proxy = ExecutionProxy(mode=ExecutionMode.DRY_RUN, execution_context=instance_ctx)
+        
+        result = proxy.execute("echo test", execution_context=call_ctx)
+        audit = result.to_audit_record()
+        
+        assert audit["constraint_hash"] == "call-hash"
+        assert audit["plan_id"] == "call-plan"
+        assert audit["persona_id"] == "call-agent"
+    
+    def test_blocked_commands_include_context(self):
+        """Blocked commands also include full audit context."""
+        ctx = ExecutionContext(
+            constraint_hash="hash-blocked",
+            plan_id="plan-blocked",
+            persona_id="agent-blocked"
+        )
+        proxy = ExecutionProxy(mode=ExecutionMode.LIVE, execution_context=ctx)
+        
+        result = proxy.execute("rm -rf /")
+        assert result.blocked is True
+        
+        audit = result.to_audit_record()
+        assert audit["constraint_hash"] == "hash-blocked"
+        assert audit["plan_id"] == "plan-blocked"
+        assert audit["persona_id"] == "agent-blocked"
