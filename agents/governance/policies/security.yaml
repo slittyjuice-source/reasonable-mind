@@ -1,0 +1,43 @@
+metadata:
+  version: "1.0.0"
+  owner: "security-team"
+  last_reviewed: "2025-12-05"
+  requires_acknowledgment: true
+  acknowledgment_level: "operator"
+
+policy:
+  name: "execution-security"
+  description: "Constraints on command execution and resource access"
+  
+  constraints:
+    - id: "SEC-001"
+      type: "HARD"
+      priority: "CRITICAL"
+      description: "Block destructive filesystem operations"
+      condition:
+        type: "command_pattern"
+        deny_patterns:
+          - "rm -rf /"
+          - "rm -rf ~"
+          - "mkfs.*"
+      violation_action: "EMERGENCY_STOP"
+      
+    - id: "SEC-002"
+      type: "HARD"
+      priority: "HIGH"
+      description: "Block pipe-to-shell downloads"
+      condition:
+        type: "command_pattern"
+        deny_patterns:
+          - "curl.*|.*sh"
+          - "wget.*|.*sh"
+      violation_action: "BLOCK"
+      
+    - id: "SEC-003"
+      type: "SOFT"
+      priority: "MEDIUM"
+      description: "Log network access attempts"
+      condition:
+        type: "capability_check"
+        capability: "network_egress"
+      violation_action: "LOG_AND_ALLOW"
