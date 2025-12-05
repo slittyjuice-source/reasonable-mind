@@ -1,18 +1,27 @@
-"""
-Execution proxy - single point of control for shell/process access.
+"""Execution proxy - single point of control for shell/process access.
 
 Validates commands against allowlist/denylist, enforces resource limits,
 logs with correlation IDs, and supports dry-run/mock modes for testing.
+
+Constitution v1.2 Compliance:
+- §6.1: ExecutionContext binds constraint_hash, plan_id, persona_id
+- §7.3: Audit records include full context for traceability
 """
 
 import subprocess
 import time
 import re
 import uuid
+from datetime import datetime, timezone
 from typing import Optional, Dict, Set, List, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import Counter
+
+
+def _utc_now() -> datetime:
+    """Return timezone-aware UTC datetime."""
+    return datetime.now(timezone.utc)
 
 
 class ExecutionMode(Enum):
@@ -21,9 +30,47 @@ class ExecutionMode(Enum):
     MOCK = "mock"
 
 
+@dataclass(frozen=True)
+class ExecutionContext:
+    """
+    Immutable context binding for execution (Constitution §6.1).
+    
+    Every execution should reference the active constraint profile,
+    plan, and persona for complete audit traceability.
+    
+    Attributes:
+        constraint_hash: SHA-256 hash of active constraint profile
+        plan_id: ID of the currently executing plan
+        persona_id: Agent ID from PersonaContext
+        session_id: Unique session identifier (auto-generated if not provided)
+    """
+    constraint_hash: str
+    plan_id: str
+    persona_id: str
+    session_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
+    
+    def validate(self) -> bool:
+        """Ensure all required bindings are present and non-empty."""
+        return bool(self.constraint_hash and self.plan_id and self.persona_id)
+    
+    def to_dict(self) -> Dict[str, str]:
+        """Convert to dictionary for serialization."""
+        return {
+            "constraint_hash": self.constraint_hash,
+            "plan_id": self.plan_id,
+            "persona_id": self.persona_id,
+            "session_id": self.session_id
+        }
+
+
 @dataclass
 class ExecutionResult:
-    """Result of a proxied execution."""
+    """
+    Result of a proxied execution with full audit context.
+    
+    Constitution §7.3 requires: constraint_hash, plan_id, persona_id
+    for complete audit traceability.
+    """
     correlation_id: str
     command: str
     mode: ExecutionMode
@@ -33,8 +80,14 @@ class ExecutionResult:
     duration_ms: float
     blocked: bool = False
     block_reason: Optional[str] = None
+    # Constitution §7.3: Audit compliance fields
+    constraint_hash: Optional[str] = None
+    plan_id: Optional[str] = None
+    persona_id: Optional[str] = None
+    timestamp: datetime = field(default_factory=_utc_now)
     
     def to_audit_record(self) -> Dict:
+        """Convert to audit record with full context per Constitution §7.3."""
         return {
             "correlation_id": self.correlation_id,
             "command": self.command,
@@ -42,7 +95,12 @@ class ExecutionResult:
             "exit_code": self.exit_code,
             "blocked": self.blocked,
             "block_reason": self.block_reason,
-            "duration_ms": self.duration_ms
+            "duration_ms": self.duration_ms,
+            # Constitution §7.3: Required audit fields
+            "constraint_hash": self.constraint_hash,
+            "plan_id": self.plan_id,
+            "persona_id": self.persona_id,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None
         }
 
 
@@ -83,13 +141,26 @@ class ExecutionProxy:
         allowlist: Optional[Set[str]] = None,
         timeout_seconds: int = 300,
         max_output_bytes: int = 1_000_000,
-        audit_callback: Optional[Callable] = None
+        audit_callback: Optional[Callable] = None,
+        execution_context: Optional[ExecutionContext] = None
     ):
+        """
+        Initialize execution proxy.
+        
+        Args:
+            mode: Execution mode (LIVE, DRY_RUN, MOCK)
+            allowlist: Set of allowed base commands
+            timeout_seconds: Max execution time
+            max_output_bytes: Max stdout/stderr size
+            audit_callback: Callback for audit records
+            execution_context: Context binding for Constitution §6.1 compliance
+        """
         self.mode = mode
         self.allowlist = allowlist if allowlist is not None else self.DEFAULT_ALLOWLIST
         self.timeout_seconds = timeout_seconds
         self.max_output_bytes = max_output_bytes
         self.audit_callback = audit_callback
+        self.execution_context = execution_context
         self._mock_responses: Dict[str, ExecutionResult] = {}
         self._metrics: Dict[str, List[str]] = {"blocked": [], "allowed": [], "timeout": []}
     
@@ -136,11 +207,30 @@ class ExecutionProxy:
         command: str,
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
-        correlation_id: Optional[str] = None
+        correlation_id: Optional[str] = None,
+        execution_context: Optional[ExecutionContext] = None
     ) -> ExecutionResult:
-        """Execute a command through the proxy."""
+        """
+        Execute a command through the proxy.
+        
+        Args:
+            command: Shell command to execute
+            cwd: Working directory
+            env: Environment variables
+            correlation_id: Unique ID for this execution
+            execution_context: Override context (uses self.execution_context if None)
+        
+        Returns:
+            ExecutionResult with full audit context per Constitution §7.3
+        """
         correlation_id = correlation_id or str(uuid.uuid4())[:8]
         start_time = time.time()
+        
+        # Get context: per-call override > instance default > None
+        ctx = execution_context or self.execution_context
+        constraint_hash = ctx.constraint_hash if ctx else None
+        plan_id = ctx.plan_id if ctx else None
+        persona_id = ctx.persona_id if ctx else None
         
         # Validation
         is_valid, rejection_reason = self.validate(command)
@@ -155,7 +245,11 @@ class ExecutionProxy:
                 stderr=f"BLOCKED: {rejection_reason}",
                 duration_ms=0,
                 blocked=True,
-                block_reason=rejection_reason
+                block_reason=rejection_reason,
+                # Constitution §7.3: Include context even for blocked commands
+                constraint_hash=constraint_hash,
+                plan_id=plan_id,
+                persona_id=persona_id
             )
             self._audit(result)
             return result
@@ -173,19 +267,28 @@ class ExecutionProxy:
                 exit_code=0,
                 stdout=f"[DRY RUN] Would execute: {command}",
                 stderr="",
-                duration_ms=0
+                duration_ms=0,
+                constraint_hash=constraint_hash,
+                plan_id=plan_id,
+                persona_id=persona_id
             )
         else:
-            result = self._execute_live(command, cwd, env, correlation_id, start_time)
+            result = self._execute_live(
+                command, cwd, env, correlation_id, start_time,
+                constraint_hash, plan_id, persona_id
+            )
         
         self._audit(result)
         return result
     
     def _execute_live(
         self, command: str, cwd: Optional[str], env: Optional[Dict[str, str]],
-        correlation_id: str, start_time: float
+        correlation_id: str, start_time: float,
+        constraint_hash: Optional[str] = None,
+        plan_id: Optional[str] = None,
+        persona_id: Optional[str] = None
     ) -> ExecutionResult:
-        """Execute command in live mode."""
+        """Execute command in live mode with full context."""
         try:
             proc = subprocess.run(
                 command,
@@ -207,7 +310,10 @@ class ExecutionProxy:
                 exit_code=proc.returncode,
                 stdout=stdout,
                 stderr=stderr,
-                duration_ms=(time.time() - start_time) * 1000
+                duration_ms=(time.time() - start_time) * 1000,
+                constraint_hash=constraint_hash,
+                plan_id=plan_id,
+                persona_id=persona_id
             )
         except subprocess.TimeoutExpired:
             self._metrics["timeout"].append(self._extract_base_command(command))
@@ -220,7 +326,10 @@ class ExecutionProxy:
                 stderr=f"TIMEOUT: Exceeded {self.timeout_seconds}s",
                 duration_ms=self.timeout_seconds * 1000,
                 blocked=True,
-                block_reason="timeout"
+                block_reason="timeout",
+                constraint_hash=constraint_hash,
+                plan_id=plan_id,
+                persona_id=persona_id
             )
     
     def _execute_mock(self, command: str, correlation_id: str) -> ExecutionResult:
