@@ -14,7 +14,6 @@ ROUTING STRATEGY:
     - Categorical arguments → CategoricalEngine (syllogisms)
     - Propositional arguments → InferenceEngine (rule-based)
     - All arguments → FallacyDetector (pattern matching)
-    - Future: ProofEngine for step-by-step derivations
 
 INVARIANTS:
     1. DETERMINISTIC: No randomness, no network calls, no LLM invocations.
@@ -26,11 +25,11 @@ INTEGRATION POINTS:
     - agents/core/categorical_engine.py - Syllogistic reasoning
     - agents/core/inference_engine.py - Propositional/rule-based inference
     - agents/core/fallacy_detector.py - Fallacy pattern detection
-    - (Future) agents/core/proof_engine.py - Formal proof construction
 
-TODO: Integration with proof_engine.py for step-by-step derivations
-TODO: Integration with ReasonableMindEngine for LLM-augmented analysis
-TODO: Add caching layer for repeated queries
+ROADMAP (not in current scope):
+    - ProofEngine for step-by-step formal derivations
+    - Caching layer for repeated queries
+    - ReasonableMindEngine integration for LLM-augmented analysis
 """
 
 from dataclasses import dataclass, field
@@ -128,7 +127,7 @@ class LogicAnalysisResult:
     inference_pattern: Optional[str] = None
     fallacies: List[FallacyPattern] = field(default_factory=list)
     violations: List[str] = field(default_factory=list)
-    proof_steps: Optional[List[str]] = None  # TODO: Populate via proof_engine
+    proof_steps: Optional[List[str]] = None  # Roadmap: ProofEngine integration
     confidence: float = 0.0
     notes: List[str] = field(default_factory=list)
     raw_engine_results: Dict[str, Any] = field(default_factory=dict)
@@ -197,9 +196,10 @@ class LogicOrchestrator:
         >>> print(result.is_valid)  # True
         >>> print(result.syllogism_form)  # "Barbara (AAA-1)"
     
-    TODO: Add proof_engine integration for step-by-step derivations
-    TODO: Add ReasonableMindEngine integration for LLM-augmented analysis
-    TODO: Add performance metrics and logging hooks
+    Roadmap (not in current scope):
+        - ProofEngine integration for step-by-step derivations
+        - ReasonableMindEngine integration for LLM-augmented analysis
+        - Performance metrics and logging hooks
     """
     
     def __init__(self):
@@ -207,7 +207,7 @@ class LogicOrchestrator:
         self._categorical_engine = CategoricalEngine()
         self._inference_engine = InferenceEngine()
         self._fallacy_detector = FallacyDetector()
-        # TODO: self._proof_engine = ProofEngine()
+        # Roadmap: ProofEngine integration
     
     # =========================================================================
     # Public API
@@ -345,26 +345,27 @@ class LogicOrchestrator:
         - No A are B (Universal Negative)
         - Some A are B (Particular Affirmative)
         - Some A are not B (Particular Negative)
-        
-        TODO: Implement full parsing of natural language to CategoricalProposition
-        TODO: Support multi-premise syllogistic chains
         """
         result.engine_used = "categorical"
         result.notes.append("Routed to CategoricalEngine for syllogistic analysis")
         
-        # Stub: Attempt basic syllogism detection
-        # In full implementation, this would parse premises into CategoricalPropositions
         if len(argument.premises) == 2:
-            # Try to evaluate as a standard syllogism
-            # TODO: Parse natural language premises to CategoricalProposition objects
-            result.notes.append("TODO: Parse premises to categorical propositions")
-            result.notes.append(f"Premises received: {argument.premises}")
-            result.notes.append(f"Conclusion received: {argument.conclusion}")
+            # Standard syllogism with two premises
+            major_premise = argument.premises[0]
+            minor_premise = argument.premises[1]
+            conclusion = argument.conclusion
             
-            # Placeholder result
-            result.is_valid = None
-            result.syllogism_form = None
-            result.violations.append("CATEGORICAL_PARSING_NOT_IMPLEMENTED")
+            # Use CategoricalEngine to validate the syllogism
+            engine = CategoricalEngine()
+            syllogism_result = engine.validate_syllogism(major_premise, minor_premise, conclusion)
+            
+            result.is_valid = syllogism_result.valid
+            if syllogism_result.form:
+                result.syllogism_form = syllogism_result.form.value
+            result.confidence = syllogism_result.confidence
+            result.notes.append(syllogism_result.explanation)
+            result.notes.append(f"Premises: {argument.premises}")
+            result.notes.append(f"Conclusion: {argument.conclusion}")
         else:
             result.notes.append(
                 f"Expected 2 premises for standard syllogism, got {len(argument.premises)}"

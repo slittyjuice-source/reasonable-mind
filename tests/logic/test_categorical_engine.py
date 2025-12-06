@@ -276,11 +276,43 @@ class TestFigureIdentification:
         assert syl.figure == Figure.FIRST
 
     def test_second_figure(self):
-        """Test Figure 2: P-M, S-M"""
-        # Requires specific term arrangement
-        # Example: All animals are living, All dogs are living
-        # Actually this is tricky - need proper second figure example
-        pass  # TODO: Add proper figure 2-4 tests
+        """Test Figure 2: P-M, S-M (predicate of major = middle, predicate of minor = middle)"""
+        # Cesare (EAE): No P are M, All S are M ⊢ No S are P
+        # Example: No reptiles are mammals, All dogs are mammals ⊢ No dogs are reptiles
+        syl = parse_syllogism(
+            "No reptiles are mammals",   # P-M (middle as predicate)
+            "All dogs are mammals",       # S-M (middle as predicate)
+            "No dogs are reptiles"
+        )
+
+        assert syl is not None
+        assert syl.figure == Figure.SECOND
+
+    def test_third_figure(self):
+        """Test Figure 3: M-P, M-S (middle is subject in both premises)"""
+        # Datisi (AII): All M are P, Some M are S ⊢ Some S are P
+        # Example: All poets are artists, Some poets are philosophers ⊢ Some philosophers are artists
+        syl = parse_syllogism(
+            "All poets are artists",         # M-P (middle as subject)
+            "Some poets are philosophers",   # M-S (middle as subject)
+            "Some philosophers are artists"
+        )
+
+        assert syl is not None
+        assert syl.figure == Figure.THIRD
+
+    def test_fourth_figure(self):
+        """Test Figure 4: P-M, M-S (middle as predicate in major, subject in minor)"""
+        # Dimaris (IAI): Some P are M, All M are S ⊢ Some S are P
+        # Example: Some artists are musicians, All musicians are performers ⊢ Some performers are artists
+        syl = parse_syllogism(
+            "Some artists are musicians",      # P-M (middle as predicate)
+            "All musicians are performers",    # M-S (middle as subject)
+            "Some performers are artists"
+        )
+
+        assert syl is not None
+        assert syl.figure == Figure.FOURTH
 
 
 class TestRealWorldSyllogisms:
