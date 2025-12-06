@@ -354,6 +354,40 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
                 original_text=text
             )
 
+    # Fallback: allow simple verb phrases beyond "are"/"are not"
+    for quantifier, stmt_type in [
+        ("all", StatementType.UNIVERSAL_AFFIRMATIVE),
+        ("no", StatementType.UNIVERSAL_NEGATIVE),
+        ("some", StatementType.PARTICULAR_AFFIRMATIVE),
+    ]:
+        prefix = f"{quantifier} "
+        if text.startswith(prefix):
+            remainder = text[len(prefix):].strip()
+            tokens = remainder.split()
+
+            if len(tokens) >= 2:
+                subject = tokens[0].strip()
+
+                # Handle "not" appearing in free-form phrasing
+                if tokens[1] == "not" and len(tokens) >= 3:
+                    predicate_tokens = tokens[2:]
+                    stmt_type = StatementType.PARTICULAR_NEGATIVE if quantifier == "some" else StatementType.UNIVERSAL_NEGATIVE
+                    copula = "not"
+                else:
+                    predicate_tokens = tokens[1:]
+                    copula = tokens[1]
+
+                predicate = " ".join(predicate_tokens).strip()
+
+                return CategoricalStatement(
+                    type=stmt_type,
+                    subject=subject,
+                    predicate=predicate,
+                    quantifier=quantifier,
+                    copula=copula,
+                    original_text=text,
+                )
+
     return None  # Parse failed
 
 
@@ -389,17 +423,23 @@ def parse_syllogism(
     minor_term = con_stmt.subject
 
     # Find middle term
-    all_premise_terms = {
-        maj_stmt.subject, maj_stmt.predicate,
-        min_stmt.subject, min_stmt.predicate
-    }
+    premise_terms_major = {maj_stmt.subject, maj_stmt.predicate}
+    premise_terms_minor = {min_stmt.subject, min_stmt.predicate}
     conclusion_terms = {con_stmt.subject, con_stmt.predicate}
-    middle_terms = all_premise_terms - conclusion_terms
 
-    if len(middle_terms) != 1:
-        return None  # Should have exactly one middle term
+    shared_premise_terms = premise_terms_major.intersection(premise_terms_minor)
+    candidate_middle = [term for term in shared_premise_terms if term not in conclusion_terms]
 
-    middle_term = middle_terms.pop()
+    if len(candidate_middle) == 1:
+        middle_term = candidate_middle[0]
+    else:
+        all_premise_terms = premise_terms_major.union(premise_terms_minor)
+        middle_terms = all_premise_terms - conclusion_terms
+
+        if len(middle_terms) != 1:
+            return None  # Should have exactly one middle term
+
+        middle_term = middle_terms.pop()
 
     # Determine mood (e.g., AAA, EAE, AII)
     mood = (

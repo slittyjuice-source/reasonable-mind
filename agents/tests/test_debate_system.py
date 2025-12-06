@@ -7,7 +7,7 @@ consensus mechanisms, and quality scoring.
 
 import pytest
 from agents.core.debate_system import (
-    DebateSystem,
+    EnhancedDebateSystem,
     ArgumentBuilder,
     ArgumentQualityScorer,
     AdversarialGenerator,
@@ -388,16 +388,15 @@ class TestMultiPerspectiveDebate:
         for agent in agents:
             debate.add_agent(agent)
 
-        # Add positions
+        # Add positions using submit_position
         position_a = ArgumentBuilder("pos_a", "Position A").build()
         position_b = ArgumentBuilder("pos_b", "Position B").build()
 
-        debate.add_position("position_a", position_a)
-        debate.add_position("position_b", position_b)
+        debate.submit_position("position_a", position_a)
+        debate.submit_position("position_b", position_b)
 
-        # Conduct debate (if method exists)
-        # result = debate.conduct_debate()
-        # assert result is not None
+        # Verify positions are tracked (using private attribute)
+        assert len(debate._positions) >= 2
 
 
 class TestConsensusMethod:

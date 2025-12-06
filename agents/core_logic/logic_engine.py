@@ -167,10 +167,43 @@ class LogicEngine:
         """
         warnings = []
 
+        if not argument.premises:
+            warnings.append("No premises provided; evaluation is heuristic")
+            return ValidationResult(
+                is_valid=False,
+                form_identified=None,
+                truth_table_valid=None,
+                counterexample=None,
+                confidence=0.5,
+                method="heuristic",
+                explanation="Cannot evaluate argument without premises; conclusion unsupported",
+                warnings=warnings,
+            )
+
         # Method 1: Pattern matching (fast, deterministic)
         pattern_result = self._pattern_match(argument)
         if pattern_result:
             return pattern_result
+
+        # Quick check: conclusion should not introduce new terms beyond premises
+        premise_terms = set()
+        for prem in argument.premises:
+            premise_terms.update(self._extract_terms(prem))
+
+        conclusion_terms = set(self._extract_terms(argument.conclusion))
+
+        if not conclusion_terms.issubset(premise_terms):
+            extra_terms = conclusion_terms - premise_terms
+            return ValidationResult(
+                is_valid=False,
+                form_identified=None,
+                truth_table_valid=None,
+                counterexample=None,
+                confidence=0.8,
+                method="heuristic",
+                explanation=f"Conclusion introduces new terms not in premises: {extra_terms}",
+                warnings=warnings,
+            )
 
         # Method 2: Truth table evaluation (slow but complete)
         if len(argument.propositions) <= 5:
@@ -298,26 +331,8 @@ class LogicEngine:
 
         Returns list of tokens (variables, operators, parens).
         """
-        tokens = []
-        i = 0
-        while i < len(expression):
-            ch = expression[i]
-
-            if ch in ["→", "∧", "∨", "¬", "↔", "(", ")"]:
-                tokens.append(ch)
-                i += 1
-            elif ch.isalnum():
-                # Multi-character variable (e.g., "P1", "Rain")
-                var = ch
-                i += 1
-                while i < len(expression) and (expression[i].isalnum() or expression[i] == "_"):
-                    var += expression[i]
-                    i += 1
-                tokens.append(var)
-            else:
-                i += 1  # Skip whitespace, etc.
-
-        return tokens
+        token_pattern = r"(→|∧|∨|¬|↔|\(|\)|[A-Za-z][A-Za-z0-9_]*(?:\([^()]*\))?)"
+        return [match.group(0) for match in re.finditer(token_pattern, expression)]
 
     def _truth_table_validate(self, argument: LogicalArgument) -> Optional[ValidationResult]:
         """
