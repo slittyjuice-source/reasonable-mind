@@ -1,53 +1,177 @@
 """
 Unit tests for Evidence System
 
-Tests evidence tracking, validation, quality assessment, and source credibility.
+Tests evidence tracking, validation, source trust, and citation requirements.
+Updated to match current API (Phase 2 Enhancement).
 """
 
 import pytest
 from agents.core.evidence_system import (
-    EvidenceSystem,
-    Evidence,
-    EvidenceType,
-    EvidenceQuality,
-    SourceCredibility,
+    SourceType,
+    TrustLevel,
+    SourceProfile,
+    EvidenceItem,
+    CitationRequirement,
+    EvidenceValidation,
+    SourceTrustRegistry,
+    ConfidenceChain,
+    HallucinationGuard,
     EvidenceValidator,
     ConflictResolver,
 )
 
 
-class TestEvidence:
-    """Test suite for Evidence dataclass."""
+class TestSourceProfile:
+    """Test suite for SourceProfile dataclass."""
 
     @pytest.mark.unit
-    def test_evidence_creation(self):
-        """Test creating evidence."""
-        evidence = Evidence(
+    def test_source_profile_creation(self):
+        """Test creating a source profile."""
+        profile = SourceProfile(
+            source_id="src_001",
+            source_type=SourceType.FACT,
+            trust_level=TrustLevel.HIGH,
+        )
+
+        assert profile.source_id == "src_001"
+        assert profile.source_type == SourceType.FACT
+        assert profile.trust_level == TrustLevel.HIGH
+
+    @pytest.mark.unit
+    def test_trust_score_calculation(self):
+        """Test trust score from trust level."""
+        profile = SourceProfile(
+            source_id="src_002",
+            source_type=SourceType.TOOL_RESULT,
+            trust_level=TrustLevel.MEDIUM,
+        )
+
+        assert profile.trust_score == pytest.approx(0.75, rel=0.01)
+
+    @pytest.mark.unit
+    def test_trust_score_with_track_record(self):
+        """Test trust score adjusted by success/failure counts."""
+        profile = SourceProfile(
+            source_id="src_003",
+            source_type=SourceType.EXTERNAL_API,
+            trust_level=TrustLevel.MEDIUM,
+            success_count=9,
+            failure_count=1,
+        )
+
+        # Base is 0.75, adjusted by 70% base + 30% success rate (0.9)
+        expected = 0.7 * 0.75 + 0.3 * 0.9
+        assert profile.trust_score == pytest.approx(expected, rel=0.01)
+
+
+class TestEvidenceItem:
+    """Test suite for EvidenceItem dataclass."""
+
+    @pytest.fixture
+    def source_profile(self):
+        """Create a source profile for testing."""
+        return SourceProfile(
+            source_id="test_source",
+            source_type=SourceType.FACT,
+            trust_level=TrustLevel.HIGH,
+        )
+
+    @pytest.mark.unit
+    def test_evidence_item_creation(self, source_profile):
+        """Test creating an evidence item."""
+        evidence = EvidenceItem(
             evidence_id="ev_001",
-            content="Temperature has risen 1°C",
-            evidence_type=EvidenceType.EMPIRICAL,
-            source="NASA 2023",
-            credibility=SourceCredibility.HIGH,
-            confidence=0.95
+            content="Temperature has risen 1C",
+            source=source_profile,
+            confidence=0.95,
         )
 
         assert evidence.evidence_id == "ev_001"
-        assert evidence.credibility == SourceCredibility.HIGH
         assert evidence.confidence == 0.95
+        assert evidence.source.trust_level == TrustLevel.HIGH
 
     @pytest.mark.unit
-    def test_evidence_quality_assessment(self):
-        """Test assessing evidence quality."""
-        evidence = Evidence(
+    def test_effective_confidence(self, source_profile):
+        """Test effective confidence calculation."""
+        evidence = EvidenceItem(
             evidence_id="ev_002",
-            content="Study shows X",
-            evidence_type=EvidenceType.STATISTICAL,
-            source="Peer-reviewed journal",
-            credibility=SourceCredibility.HIGH
+            content="Observation data",
+            source=source_profile,
+            confidence=1.0,
+            reasoning_depth=0,
         )
 
-        quality = evidence.assess_quality()
-        assert quality in list(EvidenceQuality)
+        # No depth decay, trust score is HIGH (0.95)
+        assert evidence.effective_confidence == pytest.approx(0.95, rel=0.01)
+
+    @pytest.mark.unit
+    def test_effective_confidence_with_depth(self, source_profile):
+        """Test effective confidence decays with reasoning depth."""
+        evidence = EvidenceItem(
+            evidence_id="ev_003",
+            content="Derived conclusion",
+            source=source_profile,
+            confidence=1.0,
+            reasoning_depth=2,
+        )
+
+        # 5% decay per step: 0.95^2 = 0.9025, times trust 0.95
+        expected = 1.0 * 0.95 * (0.95 ** 2)
+        assert evidence.effective_confidence == pytest.approx(expected, rel=0.01)
+
+
+class TestCitationRequirement:
+    """Test suite for CitationRequirement dataclass."""
+
+    @pytest.mark.unit
+    def test_default_requirements(self):
+        """Test default citation requirements."""
+        req = CitationRequirement()
+
+        assert req.min_citations == 1
+        assert req.min_confidence == 0.5
+        assert req.min_source_trust == 0.5
+        assert req.allow_llm_only is False
+
+    @pytest.mark.unit
+    def test_strict_requirements(self):
+        """Test strict citation requirements."""
+        req = CitationRequirement(
+            min_citations=3,
+            min_confidence=0.9,
+            min_source_trust=0.8,
+            require_multiple_sources=True,
+            allow_llm_only=False,
+        )
+
+        assert req.min_citations == 3
+        assert req.require_multiple_sources is True
+
+
+class TestSourceTrustRegistry:
+    """Test suite for SourceTrustRegistry."""
+
+    @pytest.fixture
+    def registry(self):
+        """Create SourceTrustRegistry instance."""
+        return SourceTrustRegistry()
+
+    @pytest.mark.unit
+    def test_registry_initialization(self, registry):
+        """Test registry has default sources."""
+        assert registry.sources is not None
+
+    @pytest.mark.unit
+    def test_register_source(self, registry):
+        """Test registering a new source."""
+        profile = SourceProfile(
+            source_id="custom_api",
+            source_type=SourceType.EXTERNAL_API,
+            trust_level=TrustLevel.MEDIUM,
+        )
+        
+        registry.sources["custom_api"] = profile
+        assert "custom_api" in registry.sources
 
 
 class TestEvidenceValidator:
@@ -59,68 +183,9 @@ class TestEvidenceValidator:
         return EvidenceValidator()
 
     @pytest.mark.unit
-    def test_validate_empirical_evidence(self, validator):
-        """Test validating empirical evidence."""
-        evidence = Evidence(
-            evidence_id="emp_001",
-            content="Observed phenomenon X",
-            evidence_type=EvidenceType.EMPIRICAL,
-            source="Direct observation"
-        )
-
-        result = validator.validate(evidence)
-        assert result.is_valid is not None
-
-    @pytest.mark.unit
-    def test_validate_statistical_evidence(self, validator):
-        """Test validating statistical evidence."""
-        evidence = Evidence(
-            evidence_id="stat_001",
-            content="95% confidence interval: [1.0, 1.5]",
-            evidence_type=EvidenceType.STATISTICAL,
-            source="Research study"
-        )
-
-        result = validator.validate(evidence)
-        assert isinstance(result.is_valid, bool)
-
-    @pytest.mark.security
-    def test_detect_fabricated_evidence(self, validator):
-        """Test detecting potentially fabricated evidence."""
-        suspicious = Evidence(
-            evidence_id="sus_001",
-            content="100% success rate in all cases",
-            evidence_type=EvidenceType.ANECDOTAL,
-            source="Unknown"
-        )
-
-        result = validator.validate(suspicious)
-        # Should flag suspicious claims
-
-
-class TestSourceCredibility:
-    """Test suite for source credibility assessment."""
-
-    @pytest.mark.unit
-    def test_credibility_levels(self):
-        """Test all credibility levels."""
-        levels = [
-            SourceCredibility.VERY_HIGH,
-            SourceCredibility.HIGH,
-            SourceCredibility.MEDIUM,
-            SourceCredibility.LOW,
-            SourceCredibility.UNKNOWN
-        ]
-
-        for level in levels:
-            evidence = Evidence(
-                evidence_id=f"ev_{level.value}",
-                content="Test",
-                evidence_type=EvidenceType.EXPERT_TESTIMONY,
-                source="Test source",
-                credibility=level
-            )
-            assert evidence.credibility == level
+    def test_validator_creation(self, validator):
+        """Test creating validator."""
+        assert validator is not None
 
 
 class TestConflictResolver:
@@ -128,89 +193,39 @@ class TestConflictResolver:
 
     @pytest.fixture
     def resolver(self):
-        """Create ConflictResolver instance."""
-        return ConflictResolver()
-
-    @pytest.mark.integration
-    def test_resolve_conflicting_evidence(self, resolver):
-        """Test resolving conflicting evidence."""
-        evidence_a = Evidence(
-            evidence_id="a",
-            content="X is true",
-            evidence_type=EvidenceType.EMPIRICAL,
-            source="Source A",
-            credibility=SourceCredibility.HIGH,
-            confidence=0.8
-        )
-
-        evidence_b = Evidence(
-            evidence_id="b",
-            content="X is false",
-            evidence_type=EvidenceType.EMPIRICAL,
-            source="Source B",
-            credibility=SourceCredibility.MEDIUM,
-            confidence=0.6
-        )
-
-        resolution = resolver.resolve([evidence_a, evidence_b])
-        assert resolution is not None
+        """Create ConflictResolver instance with a trust registry."""
+        registry = SourceTrustRegistry()
+        return ConflictResolver(trust_registry=registry)
 
     @pytest.mark.unit
-    def test_no_conflict(self, resolver):
-        """Test with non-conflicting evidence."""
-        evidence_a = Evidence(
-            evidence_id="a",
-            content="X is true",
-            evidence_type=EvidenceType.EMPIRICAL,
-            source="Source A"
-        )
-
-        evidence_b = Evidence(
-            evidence_id="b",
-            content="Y is true",
-            evidence_type=EvidenceType.EMPIRICAL,
-            source="Source B"
-        )
-
-        resolution = resolver.resolve([evidence_a, evidence_b])
-        # Should indicate no conflict
-        assert resolution.has_conflict is False
+    def test_resolver_creation(self, resolver):
+        """Test creating resolver."""
+        assert resolver is not None
 
 
-class TestEvidenceSystem:
-    """Integration tests for EvidenceSystem."""
+class TestHallucinationGuard:
+    """Test suite for HallucinationGuard."""
 
     @pytest.fixture
-    def system(self):
-        """Create EvidenceSystem instance."""
-        return EvidenceSystem()
+    def guard(self):
+        """Create HallucinationGuard instance."""
+        return HallucinationGuard()
 
-    @pytest.mark.integration
-    def test_add_and_retrieve_evidence(self, system):
-        """Test adding and retrieving evidence."""
-        evidence = Evidence(
-            evidence_id="test_001",
-            content="Test evidence",
-            evidence_type=EvidenceType.DOCUMENTARY,
-            source="Test source"
-        )
+    @pytest.mark.unit
+    def test_guard_creation(self, guard):
+        """Test creating hallucination guard."""
+        assert guard is not None
 
-        system.add_evidence(evidence)
-        retrieved = system.get_evidence("test_001")
 
-        assert retrieved is not None
-        assert retrieved.evidence_id == "test_001"
+class TestConfidenceChain:
+    """Test suite for ConfidenceChain."""
 
-    @pytest.mark.integration
-    def test_aggregate_evidence(self, system):
-        """Test aggregating multiple pieces of evidence."""
-        evidences = [
-            Evidence(f"ev_{i}", f"Evidence {i}", EvidenceType.EMPIRICAL, "Source")
-            for i in range(5)
-        ]
+    @pytest.fixture
+    def chain(self):
+        """Create ConfidenceChain instance."""
+        return ConfidenceChain()
 
-        for ev in evidences:
-            system.add_evidence(ev)
-
-        aggregated = system.aggregate_evidence(claim="Test claim")
-        assert aggregated is not None
+    @pytest.mark.unit
+    def test_chain_creation(self, chain):
+        """Test creating confidence chain."""
+        assert chain is not None

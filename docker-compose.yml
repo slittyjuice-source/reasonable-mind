@@ -1,0 +1,58 @@
+# Docker Compose for Reasonable Mind
+# Multi-container setup for reasoning agent development
+
+services:
+  # Main reasoning agent Python service
+  reasoning-agent:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    container_name: reasonable-mind-agent
+    volumes:
+      - .:/workspaces/reasonable-mind
+      - agent-cache:/root/.cache
+    environment:
+      - PYTHONPATH=/workspaces/reasonable-mind
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8000:8000"
+    working_dir: /workspaces/reasonable-mind
+    command: sleep infinity
+    networks:
+      - reasonable-mind-network
+
+  # Trainer UI (Node.js static server)
+  trainer:
+    build:
+      context: ./trainer
+      dockerfile: Dockerfile
+    container_name: reasonable-mind-trainer
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - reasonable-mind-network
+    depends_on:
+      - reasoning-agent
+
+  # Optional: Redis for caching/session management
+  redis:
+    image: redis:7-alpine
+    container_name: reasonable-mind-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - reasonable-mind-network
+    profiles:
+      - with-cache
+
+networks:
+  reasonable-mind-network:
+    driver: bridge
+
+volumes:
+  agent-cache:
+  redis-data:

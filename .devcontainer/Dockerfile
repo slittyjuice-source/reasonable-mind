@@ -29,7 +29,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
 # Set working directory
-WORKDIR /workspaces/claude-quickstarts
+WORKDIR /workspaces/reasonable-mind
 
 # Install Python development tools
 RUN pip install --no-cache-dir \
