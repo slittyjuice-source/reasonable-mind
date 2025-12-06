@@ -72,6 +72,11 @@ def test_parse_categorical_statement_edge_cases():
     assert parse_categorical_statement("No robots are humans").predicate == "humans"
     assert parse_categorical_statement("Some robots are not humans").copula == "are not"
     assert parse_categorical_statement("All X") is None
+    assert parse_categorical_statement("No X") is None
+    assert parse_categorical_statement("Some X") is None
+    parsed_partial = parse_categorical_statement("Some X are not")
+    assert parsed_partial is not None and parsed_partial.predicate == "not"
+    assert parse_categorical_statement("Some x are not y are not z") is None
     assert parse_categorical_statement("unparsable statement") is None
 
 
@@ -118,6 +123,8 @@ def test_logic_engine_tokenize_predicate_like():
     assert tokens == ["Human(Socrates)"]
     nested = engine._tokenize("Func(a(b)c)")
     assert nested == ["Func(a(b)c)"]
+    simple = engine._tokenize("ABC_123")
+    assert simple == ["ABC_123"]
 
 
 def test_logic_engine_convert_implications_and_eval():
@@ -150,6 +157,8 @@ def test_logic_engine_biconditional_and_unknown_eval(tmp_path):
     # Parentheses and failure paths
     assert engine._evaluate_expression("(P)", {"P": True}) is True
     assert engine._evaluate_expression("invalid(", {}) is False
+    assert engine._evaluate_expression("P → Q", {"P": False, "Q": False}) is True
+    assert engine._evaluate_expression("(", {}) is False
 
 
 def test_logic_engine_patterns_match_conclusion_mismatch():
@@ -237,6 +246,9 @@ def test_execution_proxy_mock_and_live_branches():
     proxy.register_mock(r"hello.*", mock)
     result = proxy.execute("hello world")
     assert result.stdout == "mocked"
+    # Mock list iterates without match
+    miss = proxy.execute("different command")
+    assert miss.blocked is True and "allowlist" in (miss.block_reason or "")
     # Live allowlisted command goes through non-mock branch
     live = ExecutionProxy(mode=ExecutionMode.LIVE)
     live_result = live.execute("echo hi | grep hi")
@@ -249,3 +261,6 @@ def test_execution_proxy_mock_and_live_branches():
     mock_mode = ExecutionProxy(mode=ExecutionMode.MOCK)
     mock_live = mock_mode.execute("echo dry")
     assert mock_live.stdout.startswith("[MOCK]")
+    # Tokenization handles empty pipeline segments
+    tokens = mock_mode._tokenize_pipeline("echo hi | ")
+    assert tokens == ["echo"]

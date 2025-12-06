@@ -205,7 +205,7 @@ class LogicEngine:
             )
 
         # Method 2: Truth table evaluation (slow but complete)
-        if len(argument.propositions) <= 5:  # pragma: no branch
+        if len(argument.propositions) <= 5:
             return self._truth_table_validate(argument)
 
         warnings.append(
@@ -273,7 +273,7 @@ class LogicEngine:
 
         Uses variable mapping (P, Q, R can be any propositions as long as consistent).
         """
-        if len(premises) != len(pattern):  # pragma: no branch
+        if len(premises) != len(pattern):
             return False
 
         # Build variable mapping
@@ -304,7 +304,7 @@ class LogicEngine:
         stmt_parts = self._tokenize(stmt)
         patt_parts = self._tokenize(patt)
 
-        if len(stmt_parts) != len(patt_parts):  # pragma: no branch
+        if len(stmt_parts) != len(patt_parts):
             return False
 
         for sp, pp in zip(stmt_parts, patt_parts):
@@ -358,7 +358,7 @@ class LogicEngine:
                                 break
                         i += 1
                 else:
-                    while i < len(expression) and (expression[i].isalnum() or expression[i] == "_"):  # pragma: no cover
+                    while i < len(expression) and (expression[i].isalnum() or expression[i] == "_"):
                         var += expression[i]
                         i += 1
 
@@ -462,7 +462,7 @@ class LogicEngine:
 
         try:
             return eval(eval_expr)
-        except:  # pragma: no cover
+        except:
             # Parse error - return False (safe default)
             return False
 
@@ -471,23 +471,13 @@ class LogicEngine:
         # P _implies_ Q  =>  (not P or Q)
         while "_implies_" in expr:
             # Find the operands (simplified - assumes no nested implications)
-            parts = expr.split("_implies_", 1)
-            if len(parts) == 2:
-                left = parts[0].strip()
-                right = parts[1].strip()
-                expr = f"(not {left} or {right})"
-            else:
-                break  # pragma: no cover
+            left, right = expr.split("_implies_", 1)
+            expr = f"(not {left.strip()} or {right.strip()})"
 
         # P _iff_ Q  =>  ((not P or Q) and (not Q or P))
         while "_iff_" in expr:
-            parts = expr.split("_iff_", 1)
-            if len(parts) == 2:
-                left = parts[0].strip()
-                right = parts[1].strip()
-                expr = f"((not {left} or {right}) and (not {right} or {left}))"
-            else:
-                break  # pragma: no cover
+            left, right = expr.split("_iff_", 1)
+            expr = f"((not {left.strip()} or {right.strip()}) and (not {right.strip()} or {left.strip()}))"
 
         return expr
 

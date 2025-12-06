@@ -314,9 +314,9 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
     # Pattern: "all/no/some <subject> are [not] <predicate>"
 
     # Type A: All S are P
-    if text.startswith("all "):  # pragma: no branch
+    if text.startswith("all "):
         parts = text[4:].split(" are ")
-        if len(parts) == 2:  # pragma: no branch
+        if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.UNIVERSAL_AFFIRMATIVE,
                 subject=_normalize_term(parts[0]),
@@ -341,9 +341,9 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
                 )
 
     # Type E: No S are P
-    if text.startswith("no "):  # pragma: no branch
+    if text.startswith("no "):
         parts = text[3:].split(" are ")
-        if len(parts) == 2:  # pragma: no branch
+        if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.UNIVERSAL_NEGATIVE,
                 subject=_normalize_term(parts[0]),
@@ -354,9 +354,9 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
             )
 
     # Type I: Some S are P
-    if text.startswith("some ") and " are not " not in text:  # pragma: no branch
+    if text.startswith("some ") and " are not " not in text:
         parts = text[5:].split(" are ")
-        if len(parts) == 2:  # pragma: no branch
+        if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.PARTICULAR_AFFIRMATIVE,
                 subject=_normalize_term(parts[0]),
@@ -367,9 +367,9 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
             )
 
     # Type O: Some S are not P
-    if text.startswith("some ") and " are not " in text:  # pragma: no branch
+    if text.startswith("some ") and " are not " in text:
         parts = text[5:].split(" are not ")
-        if len(parts) == 2:  # pragma: no branch
+        if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.PARTICULAR_NEGATIVE,
                 subject=_normalize_term(parts[0]),

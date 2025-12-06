@@ -171,9 +171,9 @@ class ExecutionProxy:
         # Split on |, ;, &&, ||
         segments = re.split(r"\|\||&&|;|\|", command)
         tokens: List[str] = []
-        for segment in segments:  # pragma: no branch
+        for segment in segments:
             token = self._primary_token(segment)
-            if token:  # pragma: no branch
+            if token:
                 tokens.append(token)
         return tokens
 
@@ -218,7 +218,7 @@ class ExecutionProxy:
         ctx = execution_context or self.execution_context
 
         # Handle registered mocks first
-        for pattern, result in self._mocks:  # pragma: no cover
+        for pattern, result in self._mocks:
             if pattern.match(command):
                 return ExecutionResult(
                     correlation_id=result.correlation_id,
