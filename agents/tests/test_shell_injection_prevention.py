@@ -26,12 +26,12 @@ class TestShellInjectionPrevention:
         reason_contains: str | None = None,
     ) -> ExecutionResult:
         """Assert that a command is blocked by the proxy.
-        
+
         Args:
             proxy: ExecutionProxy instance
             command: Command to execute
             reason_contains: Optional substring to check in block_reason
-            
+
         Returns:
             The ExecutionResult for further inspection if needed
         """
@@ -51,7 +51,7 @@ class TestShellInjectionPrevention:
         reason_contains: str | None = None,
     ) -> None:
         """Assert that multiple commands are all blocked.
-        
+
         Args:
             proxy: ExecutionProxy instance
             commands: List of commands to test
@@ -66,11 +66,11 @@ class TestShellInjectionPrevention:
         command: str,
     ) -> ExecutionResult:
         """Assert that a command is allowed (not blocked) by the proxy.
-        
+
         Args:
             proxy: ExecutionProxy instance
             command: Command to execute
-            
+
         Returns:
             The ExecutionResult for further inspection if needed
         """
@@ -84,7 +84,7 @@ class TestShellInjectionPrevention:
         commands: list[str],
     ) -> None:
         """Assert that multiple commands are all allowed.
-        
+
         Args:
             proxy: ExecutionProxy instance
             commands: List of commands to test

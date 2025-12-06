@@ -177,7 +177,7 @@ class TestRuleEngine:
     @pytest.mark.integration
     def test_backward_chain_simple(self, engine):
         """Test simple backward chaining proof.
-        
+
         Note: Variables are identified by starting with uppercase, so we use
         lowercase 'socrates' for the constant to distinguish from variable 'X'.
         """
@@ -196,7 +196,7 @@ class TestRuleEngine:
     @pytest.mark.integration
     def test_backward_chain_multi_step(self, engine):
         """Test multi-step backward proof.
-        
+
         Note: Using lowercase constants to distinguish from uppercase variables.
         """
         engine.add_fact(Predicate("human", ["socrates"]))

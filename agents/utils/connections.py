@@ -123,7 +123,7 @@ async def setup_mcp_connections(
 ) -> list["MCPTool"]:
     """Set up MCP server connections and create tool interfaces."""
     from ..tools.mcp_tool import MCPTool  # Local import to avoid circular dependency
-    
+
     if not mcp_servers:
         return []
 

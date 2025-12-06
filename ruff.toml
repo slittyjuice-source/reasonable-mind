@@ -1,0 +1,24 @@
+# Ruff configuration for reasonable-mind
+# https://docs.astral.sh/ruff/configuration/
+
+[lint]
+select = ["E", "F", "W"]
+ignore = [
+    "E501", # Line too long - handled by formatter
+    "E741", # Ambiguous variable name - false positives on list comprehension vars
+]
+
+[lint.per-file-ignores]
+# Notebooks have cell-based execution with different import patterns
+"*.ipynb" = ["E402", "F401", "F541", "F821"]
+
+# Demo files are illustrative, not production code
+"*_demo.py" = ["F401", "F541", "F841"]
+"**/examples/*.py" = ["F401", "F541", "F841"]
+
+# Test files often import for availability/fixture setup, not direct use
+"**/tests/test_*.py" = ["F401", "F841"]
+"**/tests/*.py" = ["F401", "F841"]
+
+# Integration notebooks
+"*_integration.ipynb" = ["E402", "F401", "F541", "F821"]

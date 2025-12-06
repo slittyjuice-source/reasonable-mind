@@ -38,7 +38,7 @@ class TestCriticSystem:
         """Test basic review of reasoning."""
         reasoning = "All men are mortal. Socrates is a man."
         conclusion = "Therefore, Socrates is mortal."
-        
+
         result = critic.review(reasoning, conclusion)
 
         assert isinstance(result, CritiqueResult)
@@ -52,7 +52,7 @@ class TestCriticSystem:
         # Hasty generalization
         reasoning = "One bird couldn't fly. All birds never fly based on one example."
         conclusion = "Birds cannot fly."
-        
+
         result = critic.review(reasoning, conclusion)
 
         # Should flag logical fallacy
@@ -71,22 +71,22 @@ class TestCriticSystem:
         Premise 3: The water has been heated to 100°C.
         """
         conclusion = "Therefore, the water is boiling."
-        
+
         result = critic.review(reasoning, conclusion)
 
-        critical_issues = [c for c in result.critiques 
+        critical_issues = [c for c in result.critiques
                           if c.severity == CritiqueSeverity.CRITICAL]
         assert len(critical_issues) == 0
 
-    @pytest.mark.unit  
+    @pytest.mark.unit
     def test_revised_confidence_decreases_with_issues(self, critic):
         """Test that confidence decreases when issues are found."""
         # Fallacious reasoning
         reasoning = "Expert says X, must be true because expert says so."
         conclusion = "X is definitely true."
-        
+
         result = critic.review(reasoning, conclusion, original_confidence=0.9)
-        
+
         # Should have lower confidence due to issues
         assert result.revised_confidence <= 0.9
 
@@ -96,9 +96,9 @@ class TestCriticSystem:
         # Reasoning with contradiction
         reasoning = "X is true. X is false. Therefore conclusion."
         conclusion = "Something is proven."
-        
+
         result = critic.review(reasoning, conclusion)
-        
+
         # If critical/major issues found, should_revise should be True
         if result.has_critical or result.has_major:
             assert result.should_revise
@@ -114,10 +114,10 @@ class TestCriticSystem:
                     description="Custom check",
                     target="test"
                 )]
-        
+
         initial_count = len(critic.critics)
         critic.add_critic(CustomCritic())
-        
+
         assert len(critic.critics) == initial_count + 1
 
 
@@ -132,9 +132,9 @@ class TestSelfConsistencyCheck:
     def test_single_response_is_consistent(self, critic):
         """Test that single response is always consistent."""
         responses = ["The answer is 42."]
-        
+
         is_consistent, score, summary = critic.self_consistency_check(responses)
-        
+
         assert is_consistent is True
         assert score == 1.0
 
@@ -146,9 +146,9 @@ class TestSelfConsistencyCheck:
             "After analysis, the conclusion is definitely X",
             "After analysis, the conclusion is definitely X"
         ]
-        
+
         is_consistent, score, summary = critic.self_consistency_check(responses)
-        
+
         assert is_consistent is True
         assert score >= 0.7
 
@@ -160,9 +160,9 @@ class TestSelfConsistencyCheck:
             "The answer is absolutely no.",
             "The answer is maybe perhaps."
         ]
-        
+
         is_consistent, score, summary = critic.self_consistency_check(responses)
-        
+
         # Very different conclusions should have lower agreement
         assert score < 1.0
 
@@ -173,12 +173,12 @@ class TestSelfConsistencyCheck:
             "Result is approximately X.",
             "Result is roughly X.",
         ]
-        
+
         # High threshold
         is_consistent_high, _, _ = critic.self_consistency_check(responses, threshold=0.9)
         # Low threshold
         is_consistent_low, _, _ = critic.self_consistency_check(responses, threshold=0.3)
-        
+
         # Low threshold should be more permissive
         assert is_consistent_low or not is_consistent_high  # At least one passes
 
@@ -195,10 +195,10 @@ class TestLogicCritic:
         """Test detection of ad hominem fallacy."""
         reasoning = "The person making this claim has bad character. We can't trust anything they say. Therefore they're wrong."
         conclusion = "Their argument is invalid."
-        
+
         critiques = logic_critic.critique(reasoning, conclusion)
-        
-        fallacy_critiques = [c for c in critiques 
+
+        fallacy_critiques = [c for c in critiques
                            if "ad hominem" in c.description.lower()]
         assert len(fallacy_critiques) > 0
 
@@ -207,10 +207,10 @@ class TestLogicCritic:
         """Test detection of appeal to authority fallacy."""
         reasoning = "A famous expert says this must be true. An authority claims it, so it must be."
         conclusion = "It is definitely true."
-        
+
         critiques = logic_critic.critique(reasoning, conclusion)
-        
-        fallacy_critiques = [c for c in critiques 
+
+        fallacy_critiques = [c for c in critiques
                            if "authority" in c.description.lower()]
         assert len(fallacy_critiques) > 0
 
@@ -222,11 +222,11 @@ class TestLogicCritic:
         P is true.
         """
         conclusion = "Therefore Q is true."
-        
+
         critiques = logic_critic.critique(reasoning, conclusion)
-        
+
         # Valid modus ponens should not have major fallacy issues
-        major_fallacies = [c for c in critiques 
+        major_fallacies = [c for c in critiques
                          if c.severity in (CritiqueSeverity.CRITICAL, CritiqueSeverity.MAJOR)]
         # Should have few or no major issues
         assert len(major_fallacies) <= 1
@@ -244,9 +244,9 @@ class TestBiasCritic:
         """Test detection of absolute language as potential bias."""
         reasoning = "Everyone always knows that this is never wrong. Nobody disagrees."
         conclusion = "It is universally accepted."
-        
+
         critiques = bias_critic.critique(reasoning, conclusion)
-        
+
         # Absolute language may or may not be flagged depending on implementation
         assert isinstance(critiques, list)
 
@@ -255,10 +255,10 @@ class TestBiasCritic:
         """Test that balanced language has fewer bias flags."""
         reasoning = "Some evidence suggests this might be the case. However, there are alternative views."
         conclusion = "This is one possible interpretation."
-        
+
         critiques = bias_critic.critique(reasoning, conclusion)
-        
+
         # Balanced language should have fewer/no bias critiques
-        major_bias = [c for c in critiques 
+        major_bias = [c for c in critiques
                      if c.severity in (CritiqueSeverity.CRITICAL, CritiqueSeverity.MAJOR)]
         assert len(major_bias) == 0

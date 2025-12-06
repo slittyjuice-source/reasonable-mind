@@ -9,7 +9,7 @@ Provides formal validation of propositional logic arguments using:
 This is the FOUNDATION layer - always runs before AI enhancement.
 """
 
-from typing import List, Dict, Set, Tuple, Optional
+from typing import List, Dict, Set, Optional
 from dataclasses import dataclass
 from enum import Enum
 import json
@@ -428,7 +428,7 @@ class LogicEngine:
 
         try:
             return eval(eval_expr)
-        except:
+        except Exception:
             # Parse error - return False (safe default)
             return False
 
@@ -463,9 +463,6 @@ class LogicEngine:
 
         This is NOT deterministic - lower confidence.
         """
-        # Simple heuristics
-        confidence = 0.5
-
         # Heuristic 1: Check if conclusion mentions terms not in premises
         premise_terms = set()
         for prem in argument.premises:

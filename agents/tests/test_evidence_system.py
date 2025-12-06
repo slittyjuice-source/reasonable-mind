@@ -169,7 +169,7 @@ class TestSourceTrustRegistry:
             source_type=SourceType.EXTERNAL_API,
             trust_level=TrustLevel.MEDIUM,
         )
-        
+
         registry.sources["custom_api"] = profile
         assert "custom_api" in registry.sources
 

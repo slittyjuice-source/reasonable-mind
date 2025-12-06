@@ -164,7 +164,7 @@ class TestConfidenceCalibrator:
 
         # Explicitly fit calibration after adding data
         calibrator._fit_calibration()
-        
+
         # Calibration should not change much for well-calibrated data
         calibrated = calibrator.calibrate(0.5)
         # Relaxed bounds due to Platt scaling behavior
@@ -274,7 +274,7 @@ class TestAbstentionPolicy:
             value=0.3,
             source=ConfidenceSource.MODEL_LOGPROBS
         )
-        
+
         decision = policy.should_abstain(estimate, query="What does 'it' mean?")
 
         # Low confidence query should abstain
@@ -326,7 +326,7 @@ class TestAbstentionPolicy:
             value=0.3,
             source=ConfidenceSource.MODEL_LOGPROBS
         )
-        
+
         decision = policy.should_abstain(estimate, query="Tell me about X")
 
         if decision.should_abstain:
@@ -412,7 +412,7 @@ class TestIntegrationUncertainty:
 
         # Fit calibration
         calibrator._fit_calibration()
-        
+
         # Get calibrated confidence
         raw_confidence = 0.7
         calibrated_confidence = calibrator.calibrate(raw_confidence)

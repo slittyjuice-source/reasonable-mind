@@ -76,7 +76,7 @@ class TestLogicLayerSkeleton:
     @pytest.mark.unit
     def test_logic_separates_validity_from_soundness(self, logic_engine):
         """Logic determines validity, not truth or soundness.
-        
+
         Uses modus ponens structure which the engine supports.
         The premise 'If eating ice cream causes weight loss, then diet companies would sell ice cream'
         is factually false, but the argument structure is still valid.
@@ -94,7 +94,7 @@ class TestLogicLayerSkeleton:
         assert result.valid is True
         assert result.form == ArgumentForm.MODUS_PONENS
 
-        # Logic should not have "is_true" or "is_sound" field  
+        # Logic should not have "is_true" or "is_sound" field
         assert not hasattr(result, 'is_true')
         assert not hasattr(result, 'is_sound')
 
@@ -224,7 +224,7 @@ class TestUserLayerHeart:
         """User preferences must override AI suggestions."""
         # Use the actual Constraint API
         from agents.core.constraint_system import Constraint, ConstraintType, ConstraintPriority
-        
+
         user_constraint = Constraint(
             constraint_id="user_override_1",
             name="Do not suggest X",
@@ -245,10 +245,10 @@ class TestUserLayerHeart:
 
         # Use the actual API: needs_clarification returns bool
         needs = clarification_system.needs_clarification(ambiguous_query)
-        
+
         # The system should support the concept of checking for clarification
         assert isinstance(needs, bool)
-        
+
         # Also test the analyze method which gives more details
         ambiguities, questions = clarification_system.analyze(ambiguous_query)
         # Whether or not clarification is needed, the method should work
@@ -277,7 +277,7 @@ class TestReasonLayerSynthesis:
     def test_synthesis_incorporates_all_layers(self, decision_model):
         """Synthesis must combine logic + AI + user layers."""
         from agents.core.decision_model import DecisionOption, ScoredInput
-        
+
         options = [
             DecisionOption(
                 option_id="opt_a",
@@ -311,19 +311,19 @@ class TestReasonLayerSynthesis:
     def test_synthesis_degrades_gracefully(self, decision_model):
         """Synthesis must handle conflicts between layers gracefully."""
         from agents.core.decision_model import DecisionOption, ScoredInput
-        
+
         # Two options with equal support - conflict scenario
         options = [
             DecisionOption(
                 option_id="opt_a",
-                name="Option A", 
+                name="Option A",
                 description="First option",
                 inputs={"support": ScoredInput(name="support", value=0.8)}
             ),
             DecisionOption(
                 option_id="opt_b",
                 name="Option B",
-                description="Second option", 
+                description="Second option",
                 inputs={"support": ScoredInput(name="support", value=0.8)}
             )
         ]
@@ -335,7 +335,7 @@ class TestReasonLayerSynthesis:
     def test_synthesis_provides_explanation(self, decision_model):
         """Synthesis must explain how it reached conclusion."""
         from agents.core.decision_model import DecisionOption, ScoredInput
-        
+
         options = [
             DecisionOption(
                 option_id="opt_a",
@@ -477,7 +477,7 @@ class TestAntiPatterns:
     def test_no_bypass_user_confirmation(self, decision_model):
         """System must not execute high-stakes decisions without user approval."""
         from agents.core.decision_model import DecisionOption, ScoredInput, RiskLevel
-        
+
         options = [
             DecisionOption(
                 option_id="critical_action",
@@ -509,7 +509,7 @@ class TestProvenanceTracing:
     def test_provenance_includes_logic(self, decision_model):
         """Decision provenance must trace to logical validation."""
         from agents.core.decision_model import DecisionOption, ScoredInput
-        
+
         options = [
             DecisionOption(
                 option_id="opt_a",
@@ -529,7 +529,7 @@ class TestProvenanceTracing:
     def test_provenance_includes_ai(self, decision_model):
         """Decision provenance must trace to AI perspectives."""
         from agents.core.decision_model import DecisionOption, ScoredInput
-        
+
         options = [
             DecisionOption(
                 option_id="opt_a",
@@ -549,7 +549,7 @@ class TestProvenanceTracing:
     def test_provenance_includes_user(self, decision_model):
         """Decision provenance must trace to user preferences."""
         from agents.core.decision_model import DecisionOption, ScoredInput
-        
+
         options = [
             DecisionOption(
                 option_id="opt_a",

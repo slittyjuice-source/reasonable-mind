@@ -299,7 +299,7 @@ def validate_layer_compliance(obj: object) -> bool:
         return True
 
     layer_type = obj.__arch_layer__
-    metadata = LAYER_METADATA[layer_type]
+    LAYER_METADATA[layer_type]
 
     # Check type-specific constraints
     if layer_type == ArchLayer.LOGIC:
@@ -387,7 +387,7 @@ def print_layer_hierarchy():
             print(f"{layer.value.upper()} Layer")
             print(f"  Purpose: {meta.purpose}")
             print(f"  Dependencies: {[l.value for l in meta.allowed_dependencies] or 'None'}")
-            print(f"  Constraints:")
+            print("  Constraints:")
             for constraint in meta.constraints:
                 print(f"    - {constraint}")
             print()
