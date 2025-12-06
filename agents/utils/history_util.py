@@ -101,26 +101,33 @@ class MessageHistory:
             ],
         }
 
-        def remove_message_pair():
-            self.messages.pop(0)
-            self.messages.pop(0)
+        removed_tokens = 0
 
-            if len(self.message_token_usage) >= 2:
-                removed = self.message_token_usage.pop(0) + self.message_token_usage.pop(0)
-                self.total_tokens -= removed
+        def remove_oldest_message() -> None:
+            nonlocal removed_tokens
+            if not (self.messages and self.message_token_usage):
+                return
+
+            self.messages.pop(0)
+            token_usage = self.message_token_usage.pop(0)
+            removed_tokens += token_usage
+            self.total_tokens -= token_usage
+
+        while self.messages and self.total_tokens > self.context_window_tokens:
+            remove_oldest_message()
+
+        if removed_tokens == 0:
+            return
 
         while (
-            len(self.message_token_usage) >= 1
-            and len(self.messages) >= 2
-            and self.total_tokens > self.context_window_tokens
+            self.messages
+            and self.total_tokens + TRUNCATION_NOTICE_TOKENS > self.context_window_tokens
         ):
-            remove_message_pair()
+            remove_oldest_message()
 
-            if self.messages and self.message_token_usage:
-                self.messages[0] = TRUNCATION_MESSAGE
-                original_tokens = self.message_token_usage[0]
-                self.message_token_usage[0] = TRUNCATION_NOTICE_TOKENS
-                self.total_tokens += TRUNCATION_NOTICE_TOKENS - original_tokens
+        self.messages.insert(0, TRUNCATION_MESSAGE)
+        self.message_token_usage.insert(0, TRUNCATION_NOTICE_TOKENS)
+        self.total_tokens += TRUNCATION_NOTICE_TOKENS
 
     def format_for_api(self) -> list[dict[str, Any]]:
         """Format messages for Claude API with optional caching."""
