@@ -165,12 +165,44 @@ class LogicEngine:
         Returns:
             ValidationResult with validity determination
         """
+        if not argument.premises:
+            return ValidationResult(
+                is_valid=False,
+                form_identified=None,
+                truth_table_valid=None,
+                counterexample=None,
+                confidence=0.5,
+                method="heuristic",
+                explanation="No premises provided; cannot infer conclusion deterministically",
+                warnings=["Heuristic evaluation because premises list is empty"],
+            )
+
         warnings = []
 
         # Method 1: Pattern matching (fast, deterministic)
         pattern_result = self._pattern_match(argument)
         if pattern_result:
             return pattern_result
+
+        # Quick heuristic: guard against conclusions introducing new terms
+        premise_terms = set()
+        for prem in argument.premises:
+            premise_terms.update(self._extract_terms(prem))
+
+        conclusion_terms = set(self._extract_terms(argument.conclusion))
+
+        if not conclusion_terms.issubset(premise_terms):
+            extra_terms = conclusion_terms - premise_terms
+            return ValidationResult(
+                is_valid=False,
+                form_identified=None,
+                truth_table_valid=None,
+                counterexample=None,
+                confidence=0.8,
+                method="heuristic",
+                explanation=f"Conclusion introduces new terms not in premises: {extra_terms}",
+                warnings=warnings,
+            )
 
         # Method 2: Truth table evaluation (slow but complete)
         if len(argument.propositions) <= 5:
@@ -306,13 +338,32 @@ class LogicEngine:
             if ch in ["→", "∧", "∨", "¬", "↔", "(", ")"]:
                 tokens.append(ch)
                 i += 1
-            elif ch.isalnum():
-                # Multi-character variable (e.g., "P1", "Rain")
+            elif ch.isalpha():
+                # Capture predicate symbols including function-like terms e.g., Human(Socrates)
                 var = ch
                 i += 1
-                while i < len(expression) and (expression[i].isalnum() or expression[i] == "_"):
+                while i < len(expression) and expression[i].isalpha():
                     var += expression[i]
                     i += 1
+
+                # If followed by parenthesis, capture until matching close
+                if i < len(expression) and expression[i] == "(":
+                    depth = 0
+                    while i < len(expression):
+                        var += expression[i]
+                        if expression[i] == "(":
+                            depth += 1
+                        elif expression[i] == ")":
+                            depth -= 1
+                            if depth == 0:
+                                i += 1
+                                break
+                        i += 1
+                else:
+                    while i < len(expression) and (expression[i].isalnum() or expression[i] == "_"):
+                        var += expression[i]
+                        i += 1
+
                 tokens.append(var)
             else:
                 i += 1  # Skip whitespace, etc.

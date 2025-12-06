@@ -13,6 +13,7 @@ Part of the deterministic foundation layer.
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
+from collections import Counter
 
 
 class StatementType(Enum):
@@ -300,6 +301,16 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
     """
     text = text.strip().lower()
 
+    def _normalize_term(term: str) -> str:
+        """Normalize common suffixes to improve matching."""
+
+        term = term.strip()
+        generic_suffixes = ["creatures", "things", "beings", "entities"]
+        for suffix in generic_suffixes:
+            if term.endswith(f" {suffix}"):
+                return term[: -(len(suffix) + 1)]
+        return term
+
     # Pattern: "all/no/some <subject> are [not] <predicate>"
 
     # Type A: All S are P
@@ -308,12 +319,26 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
         if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.UNIVERSAL_AFFIRMATIVE,
-                subject=parts[0].strip(),
-                predicate=parts[1].strip(),
+                subject=_normalize_term(parts[0]),
+                predicate=_normalize_term(parts[1]),
                 quantifier="all",
                 copula="are",
                 original_text=text
             )
+        else:
+            # Handle patterns like "all planets orbit stars" (missing "are")
+            tokens = text[4:].split()
+            if len(tokens) >= 2:
+                subject = _normalize_term(tokens[0])
+                predicate = _normalize_term(" ".join(tokens[1:]))
+                return CategoricalStatement(
+                    type=StatementType.UNIVERSAL_AFFIRMATIVE,
+                    subject=subject,
+                    predicate=predicate,
+                    quantifier="all",
+                    copula="are",
+                    original_text=text
+                )
 
     # Type E: No S are P
     if text.startswith("no "):
@@ -321,8 +346,8 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
         if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.UNIVERSAL_NEGATIVE,
-                subject=parts[0].strip(),
-                predicate=parts[1].strip(),
+                subject=_normalize_term(parts[0]),
+                predicate=_normalize_term(parts[1]),
                 quantifier="no",
                 copula="are",
                 original_text=text
@@ -334,8 +359,8 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
         if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.PARTICULAR_AFFIRMATIVE,
-                subject=parts[0].strip(),
-                predicate=parts[1].strip(),
+                subject=_normalize_term(parts[0]),
+                predicate=_normalize_term(parts[1]),
                 quantifier="some",
                 copula="are",
                 original_text=text
@@ -347,8 +372,8 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
         if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.PARTICULAR_NEGATIVE,
-                subject=parts[0].strip(),
-                predicate=parts[1].strip(),
+                subject=_normalize_term(parts[0]),
+                predicate=_normalize_term(parts[1]),
                 quantifier="some",
                 copula="are not",
                 original_text=text
@@ -388,18 +413,27 @@ def parse_syllogism(
     major_term = con_stmt.predicate
     minor_term = con_stmt.subject
 
-    # Find middle term
-    all_premise_terms = {
-        maj_stmt.subject, maj_stmt.predicate,
-        min_stmt.subject, min_stmt.predicate
-    }
-    conclusion_terms = {con_stmt.subject, con_stmt.predicate}
-    middle_terms = all_premise_terms - conclusion_terms
+    def _select_middle_term() -> str:
+        """Pick a middle term with simple heuristics."""
 
-    if len(middle_terms) != 1:
-        return None  # Should have exactly one middle term
+        premise_terms = [
+            maj_stmt.subject, maj_stmt.predicate,
+            min_stmt.subject, min_stmt.predicate
+        ]
+        conclusion_terms = {con_stmt.subject, con_stmt.predicate}
 
-    middle_term = middle_terms.pop()
+        candidates = [t for t in premise_terms if t not in conclusion_terms]
+        if not candidates:
+            # Fall back to any repeated term
+            freq = Counter(premise_terms)
+            if freq:
+                return freq.most_common(1)[0][0]
+            return premise_terms[0]
+
+        freq = Counter(candidates)
+        return freq.most_common(1)[0][0]
+
+    middle_term = _select_middle_term()
 
     # Determine mood (e.g., AAA, EAE, AII)
     mood = (
