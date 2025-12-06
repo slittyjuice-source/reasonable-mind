@@ -1,5 +1,5 @@
 {
-  "name": "Claude Quickstarts Dev",
+  "name": "Reasonable Mind Dev",
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".."
@@ -19,7 +19,7 @@
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.testing.pytestEnabled": true,
-        "python.testing.pytestArgs": ["agents/tests/", "autonomous-coding/"],
+        "python.testing.pytestArgs": ["agents/tests/"],
         "python.analysis.typeCheckingMode": "basic",
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "charliermarsh.ruff",
@@ -29,7 +29,7 @@
       }
     }
   },
-  "postCreateCommand": "pip install -e . && pip install pytest pytest-asyncio",
+  "postCreateCommand": "pip install -e . && pip install pytest pytest-asyncio pytest-cov",
   "remoteUser": "vscode",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
@@ -39,8 +39,8 @@
   },
   "forwardPorts": [3000, 8000, 8080],
   "portsAttributes": {
-    "3000": { "label": "Next.js Dev Server" },
+    "3000": { "label": "Trainer UI" },
     "8000": { "label": "Python Server" },
-    "8080": { "label": "Watson Glaser Trainer" }
+    "8080": { "label": "Reasoning Agent API" }
   }
 }

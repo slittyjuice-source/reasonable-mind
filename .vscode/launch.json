@@ -1,14 +1,43 @@
 {
+    "version": "0.2.0",
     "configurations": [
         {
-            "name": "Containers: Node.js Launch",
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Python: Run Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": ["agents/tests/", "-v"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Python: Agent Demo",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/agents/agent.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Docker: Trainer Debug",
             "type": "docker",
             "request": "launch",
             "preLaunchTask": "docker-run: debug",
             "platform": "node",
             "node": {
-                "package": "${workspaceFolder}/watson-glaser-trainer/package.json",
-                "localRoot": "${workspaceFolder}/watson-glaser-trainer"
+                "package": "${workspaceFolder}/trainer/package.json",
+                "localRoot": "${workspaceFolder}/trainer"
             }
         }
     ]
