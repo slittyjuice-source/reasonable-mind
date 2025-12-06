@@ -9,9 +9,8 @@ Provides fuzzy logic and probabilistic reasoning:
 - Probabilistic inference chains
 """
 
-from typing import List, Dict, Any, Optional, Tuple, Callable, Union
+from typing import List, Dict, Any, Optional, Tuple, Callable
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from abc import ABC, abstractmethod
 import math
@@ -41,30 +40,30 @@ class ConfidenceInterval:
     point: float  # Point estimate
     upper: float
     confidence_level: float = 0.95  # e.g., 95% CI
-    
+
     def __post_init__(self):
         self.lower = max(0.0, min(1.0, self.lower))
         self.upper = max(0.0, min(1.0, self.upper))
         self.point = max(self.lower, min(self.upper, self.point))
-    
+
     @property
     def width(self) -> float:
         """Width of the interval (uncertainty)."""
         return self.upper - self.lower
-    
+
     @property
     def uncertainty(self) -> float:
         """Normalized uncertainty score."""
         return self.width
-    
+
     def contains(self, value: float) -> bool:
         """Check if value is within interval."""
         return self.lower <= value <= self.upper
-    
+
     def overlaps(self, other: "ConfidenceInterval") -> bool:
         """Check if intervals overlap."""
         return self.lower <= other.upper and other.lower <= self.upper
-    
+
     def combine_with(self, other: "ConfidenceInterval") -> "ConfidenceInterval":
         """Combine two intervals (intersection if overlapping, else union)."""
         if self.overlaps(other):
@@ -89,21 +88,21 @@ class ConfidenceInterval:
 class LogOdds:
     """Log-odds representation for Bayesian updates."""
     log_odds: float  # log(p / (1-p))
-    
+
     @classmethod
     def from_probability(cls, p: float) -> "LogOdds":
         """Convert probability to log-odds."""
         p = max(1e-10, min(1 - 1e-10, p))
         return cls(log_odds=math.log(p / (1 - p)))
-    
+
     def to_probability(self) -> float:
         """Convert back to probability."""
         return 1 / (1 + math.exp(-self.log_odds))
-    
+
     def update(self, evidence_log_odds: float) -> "LogOdds":
         """Bayesian update with evidence log-odds."""
         return LogOdds(log_odds=self.log_odds + evidence_log_odds)
-    
+
     def update_with_likelihood_ratio(self, lr: float) -> "LogOdds":
         """Update with likelihood ratio P(evidence|H1)/P(evidence|H0)."""
         lr = max(1e-10, lr)
@@ -116,19 +115,19 @@ class FuzzyValue:
     value: Any
     membership: float  # [0, 1] membership degree
     label: str = ""
-    
+
     def __post_init__(self):
         self.membership = max(0.0, min(1.0, self.membership))
 
 
 class FuzzyMembershipFunction(ABC):
     """Abstract base for fuzzy membership functions."""
-    
+
     @abstractmethod
     def evaluate(self, x: float) -> float:
         """Evaluate membership degree for value x."""
         pass
-    
+
     @abstractmethod
     def centroid(self) -> float:
         """Return the centroid of this membership function."""
@@ -137,12 +136,12 @@ class FuzzyMembershipFunction(ABC):
 
 class TriangularMembership(FuzzyMembershipFunction):
     """Triangular fuzzy membership function."""
-    
+
     def __init__(self, left: float, center: float, right: float):
         self.left = left
         self.center = center
         self.right = right
-    
+
     def evaluate(self, x: float) -> float:
         if x <= self.left or x >= self.right:
             return 0.0
@@ -150,20 +149,20 @@ class TriangularMembership(FuzzyMembershipFunction):
             return (x - self.left) / (self.center - self.left)
         else:
             return (self.right - x) / (self.right - self.center)
-    
+
     def centroid(self) -> float:
         return self.center
 
 
 class TrapezoidalMembership(FuzzyMembershipFunction):
     """Trapezoidal fuzzy membership function."""
-    
+
     def __init__(self, a: float, b: float, c: float, d: float):
         self.a = a  # Left foot
         self.b = b  # Left shoulder
         self.c = c  # Right shoulder
         self.d = d  # Right foot
-    
+
     def evaluate(self, x: float) -> float:
         if x <= self.a or x >= self.d:
             return 0.0
@@ -173,35 +172,35 @@ class TrapezoidalMembership(FuzzyMembershipFunction):
             return 1.0
         else:
             return (self.d - x) / (self.d - self.c) if self.d > self.c else 1.0
-    
+
     def centroid(self) -> float:
         return (self.b + self.c) / 2
 
 
 class GaussianMembership(FuzzyMembershipFunction):
     """Gaussian fuzzy membership function."""
-    
+
     def __init__(self, mean: float, std: float):
         self.mean = mean
         self.std = max(0.001, std)
-    
+
     def evaluate(self, x: float) -> float:
         return math.exp(-0.5 * ((x - self.mean) / self.std) ** 2)
-    
+
     def centroid(self) -> float:
         return self.mean
 
 
 class SigmoidMembership(FuzzyMembershipFunction):
     """Sigmoid fuzzy membership function."""
-    
+
     def __init__(self, center: float, slope: float):
         self.center = center
         self.slope = slope
-    
+
     def evaluate(self, x: float) -> float:
         return 1 / (1 + math.exp(-self.slope * (x - self.center)))
-    
+
     def centroid(self) -> float:
         return self.center
 
@@ -212,18 +211,18 @@ class FuzzyVariable:
     name: str
     universe: Tuple[float, float]  # Min, max range
     terms: Dict[str, FuzzyMembershipFunction] = field(default_factory=dict)
-    
+
     def add_term(self, label: str, mf: FuzzyMembershipFunction) -> None:
         """Add a linguistic term."""
         self.terms[label] = mf
-    
+
     def fuzzify(self, value: float) -> Dict[str, float]:
         """Fuzzify a crisp value into membership degrees."""
         return {
             label: mf.evaluate(value)
             for label, mf in self.terms.items()
         }
-    
+
     def defuzzify_centroid(self, memberships: Dict[str, float]) -> float:
         """Defuzzify using centroid method."""
         num = 0.0
@@ -233,7 +232,7 @@ class FuzzyVariable:
                 centroid = self.terms[label].centroid()
                 num += centroid * membership
                 denom += membership
-        
+
         return num / denom if denom > 0 else (self.universe[0] + self.universe[1]) / 2
 
 
@@ -245,7 +244,7 @@ class FuzzyRule:
     consequent_var: str
     consequent_term: str
     weight: float = 1.0
-    
+
     def evaluate_antecedent(
         self,
         fuzzy_inputs: Dict[str, Dict[str, float]]
@@ -258,38 +257,38 @@ class FuzzyRule:
                 strengths.append(fuzzy_inputs[var_name][term])
             else:
                 strengths.append(0.0)
-        
+
         if not strengths:
             return 0.0
-        
+
         return min(strengths) * self.weight
 
 
 class FuzzyInferenceEngine:
     """Mamdani-style fuzzy inference engine."""
-    
+
     def __init__(self):
         self.variables: Dict[str, FuzzyVariable] = {}
         self.rules: List[FuzzyRule] = []
-    
+
     def add_variable(self, variable: FuzzyVariable) -> None:
         """Add a fuzzy variable."""
         self.variables[variable.name] = variable
-    
+
     def add_rule(self, rule: FuzzyRule) -> None:
         """Add a fuzzy rule."""
         self.rules.append(rule)
-    
+
     def infer(
         self,
         inputs: Dict[str, float]
     ) -> Dict[str, float]:
         """
         Perform fuzzy inference.
-        
+
         Args:
             inputs: Crisp input values {variable_name: value}
-        
+
         Returns:
             Defuzzified output values
         """
@@ -298,17 +297,17 @@ class FuzzyInferenceEngine:
         for var_name, value in inputs.items():
             if var_name in self.variables:
                 fuzzy_inputs[var_name] = self.variables[var_name].fuzzify(value)
-        
+
         # Step 2: Evaluate rules
         consequent_activations: Dict[str, Dict[str, float]] = {}
-        
+
         for rule in self.rules:
             firing_strength = rule.evaluate_antecedent(fuzzy_inputs)
-            
+
             if firing_strength > 0:
                 if rule.consequent_var not in consequent_activations:
                     consequent_activations[rule.consequent_var] = {}
-                
+
                 current = consequent_activations[rule.consequent_var].get(
                     rule.consequent_term, 0.0
                 )
@@ -316,13 +315,13 @@ class FuzzyInferenceEngine:
                 consequent_activations[rule.consequent_var][rule.consequent_term] = max(
                     current, firing_strength
                 )
-        
+
         # Step 3: Defuzzify outputs
         outputs = {}
         for var_name, activations in consequent_activations.items():
             if var_name in self.variables:
                 outputs[var_name] = self.variables[var_name].defuzzify_centroid(activations)
-        
+
         return outputs
 
 
@@ -334,13 +333,13 @@ class ProbabilisticStatement:
     posterior: Optional[LogOdds] = None
     evidence: List[str] = field(default_factory=list)
     confidence_interval: Optional[ConfidenceInterval] = None
-    
+
     @property
     def probability(self) -> float:
         """Current probability (posterior if available)."""
         odds = self.posterior or self.prior
         return odds.to_probability()
-    
+
     def update_with_evidence(
         self,
         evidence_desc: str,
@@ -349,7 +348,7 @@ class ProbabilisticStatement:
         """Update belief with new evidence."""
         current = self.posterior or self.prior
         new_posterior = current.update_with_likelihood_ratio(likelihood_ratio)
-        
+
         return ProbabilisticStatement(
             statement=self.statement,
             prior=self.prior,
@@ -357,7 +356,7 @@ class ProbabilisticStatement:
             evidence=self.evidence + [evidence_desc],
             confidence_interval=self._compute_interval(new_posterior)
         )
-    
+
     def _compute_interval(self, odds: LogOdds) -> ConfidenceInterval:
         """Compute confidence interval around point estimate."""
         p = odds.to_probability()
@@ -365,7 +364,7 @@ class ProbabilisticStatement:
         # Width decreases with more evidence
         n = len(self.evidence) + 1
         half_width = 1.96 / math.sqrt(n + 1) * 0.5  # Simplified
-        
+
         return ConfidenceInterval(
             lower=max(0, p - half_width),
             point=p,
@@ -385,11 +384,11 @@ class SoftConstraintResult:
 
 class SoftConstraintEvaluator:
     """Evaluates constraints with fuzzy/soft satisfaction."""
-    
+
     def __init__(self):
         self._constraints: Dict[str, Callable[[Dict[str, Any]], float]] = {}
         self._weights: Dict[str, float] = {}
-    
+
     def add_constraint(
         self,
         constraint_id: str,
@@ -398,35 +397,35 @@ class SoftConstraintEvaluator:
     ) -> None:
         """
         Add a soft constraint.
-        
+
         evaluator should return satisfaction degree in [0, 1]
         """
         self._constraints[constraint_id] = evaluator
         self._weights[constraint_id] = weight
-    
+
     def evaluate(
         self,
         context: Dict[str, Any]
     ) -> Tuple[float, List[SoftConstraintResult]]:
         """
         Evaluate all constraints softly.
-        
+
         Returns overall satisfaction and individual results.
         """
         results = []
         total_weight = sum(self._weights.values())
         weighted_satisfaction = 0.0
-        
+
         for cid, evaluator in self._constraints.items():
             try:
                 satisfaction = evaluator(context)
                 satisfaction = max(0.0, min(1.0, satisfaction))
             except Exception:
                 satisfaction = 0.0
-            
+
             weight = self._weights[cid]
             penalty = (1.0 - satisfaction) * weight
-            
+
             # Estimate confidence based on satisfaction
             half_width = 0.1 * (1.0 - satisfaction + 0.1)
             confidence = ConfidenceInterval(
@@ -434,7 +433,7 @@ class SoftConstraintEvaluator:
                 point=satisfaction,
                 upper=min(1, satisfaction + half_width)
             )
-            
+
             results.append(SoftConstraintResult(
                 constraint_id=cid,
                 satisfaction_degree=satisfaction,
@@ -442,21 +441,21 @@ class SoftConstraintEvaluator:
                 confidence=confidence,
                 details=f"Satisfaction: {satisfaction:.2%}"
             ))
-            
+
             weighted_satisfaction += satisfaction * weight
-        
+
         overall = weighted_satisfaction / total_weight if total_weight > 0 else 1.0
-        
+
         return overall, results
 
 
 class BayesianBeliefTracker:
     """Tracks beliefs using Bayesian updates."""
-    
+
     def __init__(self, default_prior: float = 0.5):
         self._beliefs: Dict[str, ProbabilisticStatement] = {}
         self._default_prior = default_prior
-    
+
     def initialize_belief(
         self,
         statement: str,
@@ -470,7 +469,7 @@ class BayesianBeliefTracker:
         )
         self._beliefs[statement] = belief
         return belief
-    
+
     def update_belief(
         self,
         statement: str,
@@ -480,7 +479,7 @@ class BayesianBeliefTracker:
     ) -> ProbabilisticStatement:
         """
         Update belief with evidence.
-        
+
         Args:
             statement: The belief statement
             evidence: Description of evidence
@@ -489,21 +488,21 @@ class BayesianBeliefTracker:
         """
         if statement not in self._beliefs:
             self.initialize_belief(statement)
-        
+
         belief = self._beliefs[statement]
-        
+
         # Compute likelihood ratio
         lr = strength if supports else 1.0 / strength
-        
+
         updated = belief.update_with_evidence(evidence, lr)
         self._beliefs[statement] = updated
-        
+
         return updated
-    
+
     def get_belief(self, statement: str) -> Optional[ProbabilisticStatement]:
         """Get current belief state."""
         return self._beliefs.get(statement)
-    
+
     def get_all_beliefs(self) -> Dict[str, float]:
         """Get all beliefs as probabilities."""
         return {
@@ -520,12 +519,12 @@ class UncertaintyBand:
     upper_bound: float
     uncertainty_type: str  # "epistemic", "aleatoric", "combined"
     sources: List[str] = field(default_factory=list)
-    
+
     @property
     def spread(self) -> float:
         """Spread/width of uncertainty."""
         return self.upper_bound - self.lower_bound
-    
+
     def is_confident(self, threshold: float = 0.2) -> bool:
         """Check if uncertainty is below threshold."""
         return self.spread < threshold
@@ -534,13 +533,13 @@ class UncertaintyBand:
 class StructuredUncertaintyTracker:
     """
     Tracks structured uncertainty through inference chains.
-    
+
     Propagates uncertainty bands through computations.
     """
-    
+
     def __init__(self):
         self._values: Dict[str, UncertaintyBand] = {}
-    
+
     def set_value(
         self,
         key: str,
@@ -559,7 +558,7 @@ class StructuredUncertaintyTracker:
         )
         self._values[key] = band
         return band
-    
+
     def propagate_sum(
         self,
         result_key: str,
@@ -570,7 +569,7 @@ class StructuredUncertaintyTracker:
         lower = 0.0
         upper = 0.0
         sources = []
-        
+
         for key in operand_keys:
             if key in self._values:
                 band = self._values[key]
@@ -579,7 +578,7 @@ class StructuredUncertaintyTracker:
                 lower += band.lower_bound
                 upper += band.upper_bound
                 sources.extend(band.sources)
-        
+
         result = UncertaintyBand(
             value=sum(values),
             lower_bound=lower,
@@ -589,7 +588,7 @@ class StructuredUncertaintyTracker:
         )
         self._values[result_key] = result
         return result
-    
+
     def propagate_product(
         self,
         result_key: str,
@@ -599,7 +598,7 @@ class StructuredUncertaintyTracker:
         value = 1.0
         relative_uncertainties = []
         sources = []
-        
+
         for key in operand_keys:
             if key in self._values:
                 band = self._values[key]
@@ -608,11 +607,11 @@ class StructuredUncertaintyTracker:
                     rel_unc = band.spread / (2 * abs(band.value))
                     relative_uncertainties.append(rel_unc)
                 sources.extend(band.sources)
-        
+
         # Combine relative uncertainties in quadrature
         combined_rel = math.sqrt(sum(r**2 for r in relative_uncertainties))
         abs_unc = abs(value) * combined_rel
-        
+
         result = UncertaintyBand(
             value=value,
             lower_bound=value - abs_unc,
@@ -622,11 +621,11 @@ class StructuredUncertaintyTracker:
         )
         self._values[result_key] = result
         return result
-    
+
     def get_value(self, key: str) -> Optional[UncertaintyBand]:
         """Get a value with its uncertainty."""
         return self._values.get(key)
-    
+
     def is_confident(self, key: str, threshold: float = 0.2) -> bool:
         """Check if a value's uncertainty is below threshold."""
         band = self._values.get(key)
@@ -670,9 +669,9 @@ def combine_intervals(
     """Combine multiple confidence intervals."""
     if not intervals:
         return ConfidenceInterval(lower=0.5, point=0.5, upper=0.5)
-    
+
     result = intervals[0]
     for interval in intervals[1:]:
         result = result.combine_with(interval)
-    
+
     return result

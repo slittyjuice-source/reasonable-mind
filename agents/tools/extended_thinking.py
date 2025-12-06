@@ -12,7 +12,7 @@ from typing import Dict, List, Any, Optional, Callable
 class ExtendedThinkingTool:
     """
     Tool that implements extended chain-of-thought reasoning with multi-layer analysis.
-    
+
     Mimics the TIS extended thinking process:
     1. Question Analysis
     2. Key Concept Identification
@@ -21,7 +21,7 @@ class ExtendedThinkingTool:
     5. Consensus Synthesis
     6. Confidence Assessment
     """
-    
+
     def __init__(
         self,
         layers: int = 8,
@@ -34,11 +34,11 @@ class ExtendedThinkingTool:
         self.verbose = verbose
         self.logic_weight = logic_weight  # Prioritize logic over consensus
         self.thinking_history = []
-        
+
         # Dynamic layer specializations based on architecture
         self.layer_specs = self._init_layer_specs(layers)
         self.logic_layer_indices = self._identify_logic_layers()
-        
+
         # Reasoning strategies with weights
         self.strategies = {
             "analytical": {"weight": 0.8, "description": "Break down into components"},
@@ -56,7 +56,7 @@ class ExtendedThinkingTool:
 
         for module_name in modules or []:
             self.enable_module(module_name)
-    
+
     def _init_layer_specs(self, layers: int) -> Dict[int, Dict[str, str]]:
         """Initialize layer specifications based on architecture size."""
         if layers == 4:
@@ -118,7 +118,7 @@ class ExtendedThinkingTool:
         else:
             # Default: expand 4-layer pattern
             return {i: {"name": f"Layer-{i}", "focus": "general", "type": "general"} for i in range(1, layers + 1)}
-    
+
     def _identify_logic_layers(self) -> List[int]:
         """Identify which layers are logic/reasoning layers for prioritization."""
         return [i for i, spec in self.layer_specs.items() if spec.get("type") == "logic"]
@@ -142,12 +142,12 @@ class ExtendedThinkingTool:
         module = self.available_modules.get(module_name)
         if not module or module_name in self.module_state:
             return self.module_state.get(module_name)
-        
+
         state_initializer: Callable[[], Dict[str, Any]] = module["initializer"]
         self.module_state[module_name] = state_initializer()
         self.enabled_modules.append(module_name)
         return self.module_state[module_name]
-    
+
     def get_schema(self) -> Dict[str, Any]:
         """Return the tool schema for the agent."""
         return {
@@ -182,7 +182,7 @@ class ExtendedThinkingTool:
                 "required": ["query"]
             }
         }
-    
+
     def execute(
         self,
         query: str,
@@ -192,19 +192,19 @@ class ExtendedThinkingTool:
     ) -> Dict[str, Any]:
         """
         Execute extended thinking process.
-        
+
         Args:
             query: The question or problem to analyze
             context: Additional context information
             options: Possible answers/solutions to evaluate
             depth: How deep to think (1-5)
-        
+
         Returns:
             Dict containing thinking chain, analysis, and confidence scores
         """
         thinking_chain = []
         step_number = 1
-        
+
         # Step 1: Question Analysis
         analysis = self._analyze_question(query, context)
         thinking_chain.append({
@@ -214,7 +214,7 @@ class ExtendedThinkingTool:
             "details": analysis
         })
         step_number += 1
-        
+
         # Step 2: Key Concepts
         concepts = self._identify_key_concepts(query, context)
         thinking_chain.append({
@@ -224,7 +224,7 @@ class ExtendedThinkingTool:
             "details": {"concepts": concepts}
         })
         step_number += 1
-        
+
         # Step 3: Multi-Layer Analysis
         layer_analyses = self._multi_layer_analysis(query, context, depth)
         thinking_chain.append({
@@ -234,7 +234,7 @@ class ExtendedThinkingTool:
             "details": layer_analyses
         })
         step_number += 1
-        
+
         # Step 4: Strategy Selection
         strategies = self._select_strategies(query, concepts)
         thinking_chain.append({
@@ -260,7 +260,7 @@ class ExtendedThinkingTool:
                 "details": module_outputs
             })
             step_number += 1
-        
+
         # Step 5: Option Evaluation (if options provided)
         if options:
             evaluations = self._evaluate_options(options, query, context, strategies)
@@ -271,7 +271,7 @@ class ExtendedThinkingTool:
                 "details": evaluations
             })
             step_number += 1
-        
+
         # Step 6: Consensus Synthesis
         consensus = self._synthesize_consensus(
             layer_analyses,
@@ -284,7 +284,7 @@ class ExtendedThinkingTool:
             "content": consensus["summary"],
             "details": consensus
         })
-        
+
         # Build final result
         result = {
             "thinking_chain": thinking_chain,
@@ -295,23 +295,23 @@ class ExtendedThinkingTool:
             "meta_analysis": self._meta_analysis(thinking_chain),
             "modules": module_outputs
         }
-        
+
         # Store in history
         self.thinking_history.append({
             "query": query,
             "result": result,
             "timestamp": self._timestamp()
         })
-        
+
         if self.verbose:
             self._print_thinking_process(result)
-        
+
         return result
-    
+
     def _analyze_question(self, query: str, context: Optional[str]) -> Dict[str, Any]:
         """Analyze the question structure and type."""
         text = f"{context or ''} {query}".lower()
-        
+
         question_type = "general"
         if "assume" in text or "assumption" in text:
             question_type = "assumptions"
@@ -323,9 +323,9 @@ class ExtendedThinkingTool:
             question_type = "interpretations"
         elif "evaluate" in text or "evidence" in text:
             question_type = "evaluations"
-        
+
         complexity = self._estimate_complexity(query, context)
-        
+
         return {
             "summary": f"Question type: {question_type}, Complexity: {complexity}/5",
             "type": question_type,
@@ -333,7 +333,7 @@ class ExtendedThinkingTool:
             "query_length": len(query),
             "has_context": context is not None
         }
-    
+
     def _identify_key_concepts(self, query: str, context: Optional[str]) -> List[str]:
         """Extract key concepts from the query."""
         text = f"{context or ''} {query}".lower()
@@ -396,7 +396,7 @@ class ExtendedThinkingTool:
 
         # Clip to reasonable range
         return max(0.7, min(1.3, confidence_factor))
-    
+
     def _multi_layer_analysis(
         self,
         query: str,
@@ -431,32 +431,32 @@ class ExtendedThinkingTool:
             analyses.append(analysis)
 
         return analyses
-    
+
     def _layer_perspective(self, layer_id: int, query: str, context: Optional[str]) -> str:
         """Generate perspective from specific layer."""
         perspectives = {
-            1: f"Perceives patterns in the question structure and context",
-            2: f"Applies logical inference and deductive reasoning",
-            3: f"Critically evaluates evidence strength and argument validity",
-            4: f"Coordinates insights and optimizes reasoning strategies"
+            1: "Perceives patterns in the question structure and context",
+            2: "Applies logical inference and deductive reasoning",
+            3: "Critically evaluates evidence strength and argument validity",
+            4: "Coordinates insights and optimizes reasoning strategies"
         }
         return perspectives.get(layer_id, f"Layer {layer_id} analysis")
-    
+
     def _select_strategies(self, query: str, concepts: List[str]) -> List[Dict[str, Any]]:
         """Select relevant reasoning strategies."""
         # Score each strategy
         scored = []
         for name, data in self.strategies.items():
             score = data["weight"]
-            
+
             # Boost score based on concepts
             if "logic" in concepts and name in ["analytical", "eliminative"]:
                 score += 0.1
             if "evidence" in concepts and name in ["evaluative", "comparative"]:
                 score += 0.1
-            
+
             scored.append({"name": name, "score": score, **data})
-        
+
         # Return top 3
         scored.sort(key=lambda x: x["score"], reverse=True)
         return scored[:3]
@@ -472,20 +472,20 @@ class ExtendedThinkingTool:
         outputs = []
         if not self.enabled_modules:
             return outputs
-        
+
         for module_name in self.enabled_modules:
             module = self.available_modules.get(module_name)
             state = self.module_state.get(module_name, {})
             if not module or not state:
                 continue
-            
+
             handler: Callable[[Dict[str, Any], str, Optional[str], List[str], List[Dict[str, Any]]], Optional[Dict[str, Any]]] = module["handler"]
             module_output = handler(state, query, context, concepts, layer_analyses)
             if module_output:
                 module_output.setdefault("module", module["name"])
                 module_output.setdefault("description", module["description"])
                 outputs.append(module_output)
-        
+
         return outputs
 
     def _init_watson_glaser_state(self) -> Dict[str, Any]:
@@ -537,10 +537,10 @@ class ExtendedThinkingTool:
             (concepts[0] if concepts else "general_reasoning")
         )
         state["focus_history"].append(focus_area)
-        
+
         logic_support = self._watson_glaser_logic_summary(layer_analyses)
         recommendations = self._watson_glaser_recommendations(focus_area, concepts)
-        
+
         return {
             "summary": f"Focus on {focus_area.replace('_', ' ')} reasoning (complexity gate {state['max_complexity']}/4)",
             "focus_area": focus_area,
@@ -574,7 +574,7 @@ class ExtendedThinkingTool:
         logic_layers = [layer for layer in layer_analyses if "logic" in layer.get("focus", "")]
         if not logic_layers:
             return {"layers": 0, "avg_confidence": 0.0}
-        
+
         avg_conf = sum(layer["confidence"] for layer in logic_layers) / len(logic_layers)
         return {"layers": len(logic_layers), "avg_confidence": round(avg_conf, 3)}
 
@@ -595,17 +595,17 @@ class ExtendedThinkingTool:
             recommendations.append("Compare alternative interpretations of the evidence.")
         elif focus_area == "evaluations":
             recommendations.append("Assess the reliability and strength of the evidence sources.")
-        
+
         if "evidence" in concepts:
             recommendations.append("Balance each claim against available evidence strength.")
         if "probability" in concepts:
             recommendations.append("Quantify likelihoods to avoid overconfidence.")
-        
+
         if not recommendations:
             recommendations.append("Maintain balanced reasoning across the five Watson Glaser domains.")
-        
+
         return recommendations
-    
+
     def _evaluate_options(
         self,
         options: List[str],
@@ -671,7 +671,7 @@ class ExtendedThinkingTool:
         # Sort by confidence
         evaluations.sort(key=lambda x: x["confidence"], reverse=True)
         return evaluations
-    
+
     def _synthesize_consensus(
         self,
         layer_analyses: List[Dict[str, Any]],
@@ -745,50 +745,50 @@ class ExtendedThinkingTool:
             result["recommendation_note"] = "Based on evaluation order - see Option Evaluation for scores"
 
         return result
-    
+
     def _check_logic_agreement(self, logic_confidences: List[float]) -> float:
         """Check agreement level among logic layers."""
         if len(logic_confidences) <= 1:
             return 1.0
-        
+
         # Calculate standard deviation of logic layer confidences
         mean = sum(logic_confidences) / len(logic_confidences)
         variance = sum((x - mean) ** 2 for x in logic_confidences) / len(logic_confidences)
         std_dev = variance ** 0.5
-        
+
         # Convert to agreement score (lower std dev = higher agreement)
         # std_dev of 0 = perfect agreement (1.0)
         # std_dev of 0.3+ = poor agreement (0.0)
         agreement = max(0.0, 1.0 - (std_dev / 0.3))
         return agreement
-    
+
     def _estimate_complexity(self, query: str, context: Optional[str]) -> int:
         """Estimate question complexity (1-5)."""
         complexity = 1
         text = f"{context or ''} {query}"
-        
+
         # Length-based
         if len(text) > 200:
             complexity += 1
         if len(text) > 400:
             complexity += 1
-        
+
         # Complexity indicators
         indicators = ["however", "although", "nevertheless", "moreover", "furthermore"]
         complexity += sum(1 for ind in indicators if ind in text.lower())
-        
+
         return min(5, complexity)
-    
+
     def _extract_insights(self, thinking_chain: List[Dict[str, Any]]) -> List[str]:
         """Extract key insights from thinking process."""
         insights = []
-        
+
         for step in thinking_chain:
             if step["name"] in ["Question Analysis", "Consensus Synthesis"]:
                 insights.append(step["content"])
-        
+
         return insights
-    
+
     def _meta_analysis(self, thinking_chain: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Analyze the thinking process itself."""
         return {
@@ -796,33 +796,33 @@ class ExtendedThinkingTool:
             "analysis_depth": len([s for s in thinking_chain if "Analysis" in s["name"]]),
             "decision_quality": "high" if len(thinking_chain) >= 5 else "moderate"
         }
-    
+
     def _timestamp(self) -> str:
         """Get current timestamp."""
         from datetime import datetime
         return datetime.now().isoformat()
-    
+
     def _print_thinking_process(self, result: Dict[str, Any]):
         """Print the thinking process for debugging."""
         print("\n" + "="*60)
         print("🧠 EXTENDED THINKING PROCESS")
         print("="*60)
-        
+
         for step in result["thinking_chain"]:
             print(f"\n{step['step']}. {step['name']}")
             print(f"   {step['content']}")
-        
+
         print(f"\n📊 Confidence: {result['confidence']:.1%}")
         if result.get('recommendation'):
             print(f"💡 Recommendation: {result['recommendation']}")
-        
+
         print("="*60 + "\n")
-    
+
     def get_history_summary(self) -> Dict[str, Any]:
         """Get summary of thinking history."""
         if not self.thinking_history:
             return {"total_queries": 0, "avg_confidence": 0}
-        
+
         return {
             "total_queries": len(self.thinking_history),
             "avg_confidence": sum(h["result"]["confidence"] for h in self.thinking_history) / len(self.thinking_history),
@@ -833,20 +833,20 @@ class ExtendedThinkingTool:
 class WatsonGlaserThinkingTool(ExtendedThinkingTool):
     """
     Specialized version for Watson Glaser critical thinking.
-    
+
     Integrates cognitive templates and curriculum learning as an embedded module.
     """
-    
+
     def __init__(self, **kwargs):
         modules = kwargs.pop("modules", None)
         desired_modules = list(modules) if modules else []
         if "watson_glaser" not in desired_modules:
             desired_modules.append("watson_glaser")
-        
+
         super().__init__(modules=desired_modules, **kwargs)
         self.name = "watson_glaser_thinking"
         self._sync_watson_glaser_attributes()
-    
+
     def get_schema(self) -> Dict[str, Any]:
         """Override with Watson Glaser specific schema."""
         schema = super().get_schema()
@@ -856,13 +856,13 @@ class WatsonGlaserThinkingTool(ExtendedThinkingTool):
             "Includes curriculum-based complexity gating and cognitive template matching."
         )
         return schema
-    
+
     def unlock_complexity(self, accuracy: float):
         """Unlock higher complexity levels based on accuracy."""
         state = self.module_state.get("watson_glaser")
         if not state:
             return None
-        
+
         state["accuracy_history"].append(accuracy)
         updated = False
         message = None
@@ -878,7 +878,7 @@ class WatsonGlaserThinkingTool(ExtendedThinkingTool):
             state["max_complexity"] = 2
             message = "🎓 Unlocked Complexity Level 2 (Intermediate)!"
             updated = True
-        
+
         if updated:
             self._sync_watson_glaser_attributes()
         return message

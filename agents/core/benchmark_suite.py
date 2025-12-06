@@ -8,7 +8,7 @@ Provides comprehensive benchmarking for the agent system:
 - Comparison across versions
 """
 
-from typing import List, Dict, Any, Optional, Callable, Tuple
+from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -73,11 +73,11 @@ class RegressionResult:
 
 class BenchmarkRunner:
     """Runs benchmarks and collects results."""
-    
+
     def __init__(self):
         self._results: Dict[str, List[BenchmarkResult]] = {}
         self._baselines: Dict[str, BenchmarkResult] = {}
-    
+
     def run_benchmark(
         self,
         config: BenchmarkConfig,
@@ -88,14 +88,14 @@ class BenchmarkRunner:
         timings = []
         successes = 0
         error_msg = None
-        
+
         # Warmup
         for _ in range(config.warmup_iterations):
             try:
                 func()
             except Exception:
                 pass
-        
+
         # Actual runs
         for _ in range(config.iterations):
             start = time.perf_counter()
@@ -103,14 +103,14 @@ class BenchmarkRunner:
                 result = func()
                 elapsed = (time.perf_counter() - start) * 1000
                 timings.append(elapsed)
-                
+
                 if accuracy_checker is None or accuracy_checker(result):
                     successes += 1
             except Exception as e:
                 elapsed = (time.perf_counter() - start) * 1000
                 timings.append(elapsed)
                 error_msg = str(e)
-        
+
         if not timings:
             return BenchmarkResult(
                 name=config.name,
@@ -121,10 +121,10 @@ class BenchmarkRunner:
                 p50_ms=0, p90_ms=0, p99_ms=0,
                 error="No timings recorded"
             )
-        
+
         sorted_timings = sorted(timings)
         n = len(sorted_timings)
-        
+
         result = BenchmarkResult(
             name=config.name,
             category=config.category,
@@ -141,18 +141,18 @@ class BenchmarkRunner:
             accuracy=successes / n if accuracy_checker else None,
             error=error_msg
         )
-        
+
         # Store result
         if config.name not in self._results:
             self._results[config.name] = []
         self._results[config.name].append(result)
-        
+
         return result
-    
+
     def set_baseline(self, name: str, result: BenchmarkResult) -> None:
         """Set a baseline result for regression tracking."""
         self._baselines[name] = result
-    
+
     def check_regression(
         self,
         name: str,
@@ -161,7 +161,7 @@ class BenchmarkRunner:
     ) -> RegressionResult:
         """Check for regression against baseline."""
         baseline = self._baselines.get(name)
-        
+
         if not baseline:
             return RegressionResult(
                 benchmark_name=name,
@@ -172,10 +172,10 @@ class BenchmarkRunner:
                 threshold_percent=threshold_percent,
                 details="No baseline available"
             )
-        
+
         change = ((current.mean_ms - baseline.mean_ms) / baseline.mean_ms) * 100
         is_regression = change > threshold_percent
-        
+
         return RegressionResult(
             benchmark_name=name,
             baseline_mean_ms=baseline.mean_ms,
@@ -185,20 +185,20 @@ class BenchmarkRunner:
             threshold_percent=threshold_percent,
             details=f"{'REGRESSION' if is_regression else 'OK'}: {change:+.1f}% change"
         )
-    
+
     def get_results(self, name: Optional[str] = None) -> Dict[str, List[BenchmarkResult]]:
         """Get benchmark results."""
         if name:
             return {name: self._results.get(name, [])}
         return dict(self._results)
-    
+
     def export_results(self) -> str:
         """Export all results to JSON."""
         data = {
             "timestamp": datetime.now().isoformat(),
             "benchmarks": {}
         }
-        
+
         for name, results in self._results.items():
             data["benchmarks"][name] = [
                 {
@@ -217,16 +217,16 @@ class BenchmarkRunner:
                 }
                 for r in results
             ]
-        
+
         return json.dumps(data, indent=2)
 
 
 class AccuracyBenchmarks:
     """Benchmarks for reasoning accuracy."""
-    
+
     def __init__(self):
         self._test_cases: List[Dict[str, Any]] = []
-    
+
     def add_test_case(
         self,
         name: str,
@@ -241,7 +241,7 @@ class AccuracyBenchmarks:
             "expected": expected_output,
             "category": category
         })
-    
+
     def run_accuracy_test(
         self,
         evaluator: Callable[[Any], Any],
@@ -249,18 +249,19 @@ class AccuracyBenchmarks:
     ) -> Dict[str, Any]:
         """Run accuracy tests against all test cases."""
         if comparator is None:
-            comparator = lambda expected, actual: expected == actual
-        
+            def comparator(expected, actual):
+                return expected == actual
+
         results = []
         correct = 0
-        
+
         for case in self._test_cases:
             try:
                 actual = evaluator(case["input"])
                 is_correct = comparator(case["expected"], actual)
                 if is_correct:
                     correct += 1
-                
+
                 results.append({
                     "name": case["name"],
                     "category": case["category"],
@@ -275,24 +276,24 @@ class AccuracyBenchmarks:
                     "correct": False,
                     "error": str(e)
                 })
-        
+
         return {
             "total": len(self._test_cases),
             "correct": correct,
             "accuracy": correct / len(self._test_cases) if self._test_cases else 0,
             "results": results
         }
-    
+
     def get_accuracy_by_category(self, results: Dict[str, Any]) -> Dict[str, float]:
         """Get accuracy broken down by category."""
         by_category: Dict[str, List[bool]] = {}
-        
+
         for r in results.get("results", []):
             cat = r.get("category", "general")
             if cat not in by_category:
                 by_category[cat] = []
             by_category[cat].append(r.get("correct", False))
-        
+
         return {
             cat: sum(values) / len(values) if values else 0
             for cat, values in by_category.items()
@@ -301,10 +302,10 @@ class AccuracyBenchmarks:
 
 class PerformanceBenchmarks:
     """Pre-defined performance benchmarks for agent components."""
-    
+
     def __init__(self, runner: BenchmarkRunner):
         self.runner = runner
-    
+
     def benchmark_inference(
         self,
         engine: Any,
@@ -317,12 +318,12 @@ class PerformanceBenchmarks:
             category=BenchmarkCategory.PERFORMANCE,
             iterations=iterations
         )
-        
+
         def run():
             return engine.infer(premises)
-        
+
         return self.runner.run_benchmark(config, run)
-    
+
     def benchmark_memory_retrieval(
         self,
         memory: Any,
@@ -335,12 +336,12 @@ class PerformanceBenchmarks:
             category=BenchmarkCategory.LATENCY,
             iterations=iterations
         )
-        
+
         def run():
             return memory.retrieve(query)
-        
+
         return self.runner.run_benchmark(config, run)
-    
+
     def benchmark_planning(
         self,
         planner: Any,
@@ -353,12 +354,12 @@ class PerformanceBenchmarks:
             category=BenchmarkCategory.PERFORMANCE,
             iterations=iterations
         )
-        
+
         def run():
             return planner.plan(goal)
-        
+
         return self.runner.run_benchmark(config, run)
-    
+
     def benchmark_constraint_checking(
         self,
         engine: Any,
@@ -371,12 +372,12 @@ class PerformanceBenchmarks:
             category=BenchmarkCategory.PERFORMANCE,
             iterations=iterations
         )
-        
+
         def run():
             return engine.check_all(context)
-        
+
         return self.runner.run_benchmark(config, run)
-    
+
     def benchmark_retrieval_augmentation(
         self,
         retriever: Any,
@@ -389,10 +390,10 @@ class PerformanceBenchmarks:
             category=BenchmarkCategory.LATENCY,
             iterations=iterations
         )
-        
+
         def run():
             return retriever.retrieve(query)
-        
+
         return self.runner.run_benchmark(config, run)
 
 
@@ -400,13 +401,13 @@ class BenchmarkSuite:
     """
     Complete benchmark suite for the agent system.
     """
-    
+
     def __init__(self):
         self.runner = BenchmarkRunner()
         self.accuracy = AccuracyBenchmarks()
         self.performance = PerformanceBenchmarks(self.runner)
         self._suite_results: List[Dict[str, Any]] = []
-    
+
     def add_logic_test_cases(self) -> None:
         """Add standard logic test cases."""
         # Modus ponens
@@ -416,7 +417,7 @@ class BenchmarkSuite:
             True,
             "logic"
         )
-        
+
         # Modus tollens
         self.accuracy.add_test_case(
             "modus_tollens_1",
@@ -424,7 +425,7 @@ class BenchmarkSuite:
             True,
             "logic"
         )
-        
+
         # Syllogism
         self.accuracy.add_test_case(
             "syllogism_1",
@@ -432,7 +433,7 @@ class BenchmarkSuite:
             True,
             "logic"
         )
-        
+
         # Contradiction detection
         self.accuracy.add_test_case(
             "contradiction_1",
@@ -440,7 +441,7 @@ class BenchmarkSuite:
             False,  # Should detect contradiction
             "logic"
         )
-    
+
     def run_full_suite(
         self,
         components: Optional[Dict[str, Any]] = None
@@ -453,7 +454,7 @@ class BenchmarkSuite:
             "accuracy": {},
             "regressions": []
         }
-        
+
         # Run component benchmarks if provided
         if components:
             if "inference_engine" in components:
@@ -466,7 +467,7 @@ class BenchmarkSuite:
                     "p99_ms": result.p99_ms,
                     "throughput": result.throughput
                 }
-            
+
             if "memory" in components:
                 result = self.performance.benchmark_memory_retrieval(
                     components["memory"],
@@ -476,7 +477,7 @@ class BenchmarkSuite:
                     "mean_ms": result.mean_ms,
                     "p99_ms": result.p99_ms
                 }
-            
+
             if "constraint_engine" in components:
                 result = self.performance.benchmark_constraint_checking(
                     components["constraint_engine"],
@@ -486,7 +487,7 @@ class BenchmarkSuite:
                     "mean_ms": result.mean_ms,
                     "p99_ms": result.p99_ms
                 }
-        
+
         # Check for regressions
         for name, result_list in self.runner.get_results().items():
             if result_list:
@@ -498,35 +499,35 @@ class BenchmarkSuite:
                         "change_percent": regression.change_percent,
                         "details": regression.details
                     })
-        
+
         results["duration_seconds"] = time.time() - suite_start
         self._suite_results.append(results)
-        
+
         return results
-    
+
     def generate_report(self) -> str:
         """Generate a markdown report of benchmark results."""
         lines = ["# Benchmark Report", ""]
         lines.append(f"Generated: {datetime.now().isoformat()}")
         lines.append("")
-        
+
         # Latest results
         if self._suite_results:
             latest = self._suite_results[-1]
-            
+
             lines.append("## Performance Results")
             lines.append("")
             lines.append("| Benchmark | Mean (ms) | P99 (ms) | Throughput |")
             lines.append("|-----------|-----------|----------|------------|")
-            
+
             for name, data in latest.get("performance", {}).items():
                 mean = data.get("mean_ms", 0)
                 p99 = data.get("p99_ms", 0)
                 throughput = data.get("throughput", 0)
                 lines.append(f"| {name} | {mean:.2f} | {p99:.2f} | {throughput:.1f}/s |")
-            
+
             lines.append("")
-            
+
             # Regressions
             regressions = latest.get("regressions", [])
             if regressions:
@@ -538,9 +539,9 @@ class BenchmarkSuite:
             else:
                 lines.append("## ✅ No Regressions Detected")
                 lines.append("")
-        
+
         return "\n".join(lines)
-    
+
     def export_results(self) -> str:
         """Export all suite results to JSON."""
         return json.dumps({
@@ -567,7 +568,7 @@ def quick_benchmark(func: Callable, iterations: int = 100) -> Dict[str, float]:
         iterations=iterations
     )
     result = runner.run_benchmark(config, func)
-    
+
     return {
         "mean_ms": result.mean_ms,
         "std_ms": result.std_ms,

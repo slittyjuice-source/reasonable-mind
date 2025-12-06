@@ -73,7 +73,7 @@ class FileReadTool(Tool):
 
     async def _read_file(self, path: str, max_lines: int = 0) -> str:
         """Read a file from disk.
-        
+
         Args:
             path: Path to the file to read
             max_lines: Maximum number of lines to read (0 means read entire file)

@@ -20,10 +20,10 @@ from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 from enum import Enum
 
-from .persona_lock import PersonaLock, PersonaContext, AgentType, PersonaLockViolation
+from .persona_lock import PersonaLock, PersonaContext, AgentType
 from .constraint_loader import ConstraintLoader, LoadedProfile
 from .execution_proxy import ExecutionProxy, ExecutionMode, ActionResult
-from .plan_validator import PlanValidator, Plan, ValidationResult, ValidationOutcome
+from .plan_validator import PlanValidator, ValidationResult
 
 
 def _utc_now() -> datetime:
@@ -327,7 +327,7 @@ class GovernedCodingAgent:
         plan_id = str(uuid.uuid4())[:8]
 
         # Create execution context (§1.5 Constraint Binding)
-        context = self._create_execution_context(plan_id)
+        self._create_execution_context(plan_id)
 
         try:
             # §1.6 Plan-Before-Action: validate before execution
@@ -483,7 +483,7 @@ class GovernedCodingAgent:
 
             return True
 
-        except Exception as e:
+        except Exception:
             # If we can't load, assume integrity is maintained in-memory
             return True
 

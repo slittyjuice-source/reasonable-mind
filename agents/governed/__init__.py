@@ -10,14 +10,14 @@ Provides runtime enforcement of governance policies:
 
 Usage:
     from agents.governed import GovernedCodingAgent, ExecutionMode
-    
+
     agent = GovernedCodingAgent.create(
         agent_id="my-agent",
         sandbox_root=Path("sandbox/"),
         governance_dir=Path("agents/governed/policies/"),
         mode=ExecutionMode.LIVE
     )
-    
+
     result = agent.execute_task("read file test.py")
 """
 

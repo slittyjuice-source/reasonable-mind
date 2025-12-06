@@ -175,8 +175,7 @@ class TestRolePersona:
     @pytest.mark.unit
     def test_persona_creation(self):
         """Test creating a role persona."""
-        from agents.core.role_system import ReasoningMode
-        
+
         # ReasoningMode is a dataclass, not an enum
         analytical_mode = ReasoningMode(
             name="analytical",
@@ -185,7 +184,7 @@ class TestRolePersona:
             forbidden_fallacies=["hasty_generalization"],
             preferred_argument_forms=["inductive"]
         )
-        
+
         persona = RolePersona(
             role_id="analyst",
             name="Data Analyst",

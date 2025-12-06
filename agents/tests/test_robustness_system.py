@@ -483,7 +483,7 @@ class TestResourceManager:
     def test_get_current_usage(self, manager):
         """Test getting current resource usage."""
         manager.try_acquire("memory", 30)
-        
+
         assert manager.usage.get("memory") == 30
 
     @pytest.mark.integration
@@ -492,7 +492,7 @@ class TestResourceManager:
         # Acquire up to limit
         result = manager.try_acquire("memory", 100)
         assert result is True
-        
+
         # Try to exceed limit
         result = manager.try_acquire("memory", 1)
         assert result is False

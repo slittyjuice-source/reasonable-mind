@@ -8,7 +8,7 @@ Implements:
 - Expertise level calibration
 """
 
-from typing import List, Dict, Any, Optional, Callable, Set
+from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -81,26 +81,26 @@ class AdaptedResponse:
 
 class RoleRegistry:
     """Registry of available roles."""
-    
+
     def __init__(self):
         self.roles: Dict[str, RolePersona] = {}
         self._register_default_roles()
-    
+
     def register(self, role: RolePersona) -> None:
         """Register a role."""
         self.roles[role.role_id] = role
-    
+
     def get(self, role_id: str) -> Optional[RolePersona]:
         """Get a role by ID."""
         return self.roles.get(role_id)
-    
+
     def list_roles(self) -> List[Dict[str, str]]:
         """List all available roles."""
         return [
             {"id": r.role_id, "name": r.name, "domain": r.domain}
             for r in self.roles.values()
         ]
-    
+
     def _register_default_roles(self) -> None:
         """Register built-in roles."""
         # Legal Analyst
@@ -161,7 +161,7 @@ class RoleRegistry:
                 "constitute legal advice."
             ]
         ))
-        
+
         # Scientific Researcher
         self.register(RolePersona(
             role_id="scientist",
@@ -223,7 +223,7 @@ class RoleRegistry:
             ],
             required_disclaimers=[]
         ))
-        
+
         # Educator / Tutor
         self.register(RolePersona(
             role_id="tutor",
@@ -275,7 +275,7 @@ class RoleRegistry:
             ],
             required_disclaimers=[]
         ))
-        
+
         # Socratic Philosopher
         self.register(RolePersona(
             role_id="socratic",
@@ -320,7 +320,7 @@ class RoleRegistry:
             ],
             required_disclaimers=[]
         ))
-        
+
         # Critical Analyst
         self.register(RolePersona(
             role_id="critic",
@@ -375,11 +375,11 @@ class RoleAdapter:
     """
     Adapts reasoning and responses to specific roles.
     """
-    
+
     def __init__(self, registry: Optional[RoleRegistry] = None):
         self.registry = registry or RoleRegistry()
         self.active_role: Optional[RolePersona] = None
-    
+
     def set_role(self, role_id: str) -> bool:
         """Set the active role."""
         role = self.registry.get(role_id)
@@ -387,13 +387,13 @@ class RoleAdapter:
             self.active_role = role
             return True
         return False
-    
+
     def get_system_prompt(self, role_id: Optional[str] = None) -> str:
         """Generate a system prompt for the role."""
         role = self.registry.get(role_id) if role_id else self.active_role
         if not role:
             return "You are a helpful reasoning assistant."
-        
+
         prompt_parts = [
             f"You are a {role.name} specializing in {role.domain}.",
             f"\n\n{role.description}",
@@ -402,29 +402,29 @@ class RoleAdapter:
             "\n\nReasoning Approach:",
             f"\n- {role.reasoning_mode.description}"
         ]
-        
+
         if role.reasoning_mode.required_steps:
             prompt_parts.append("\n\nRequired Analysis Steps:")
             for i, step in enumerate(role.reasoning_mode.required_steps, 1):
                 prompt_parts.append(f"\n{i}. {step}")
-        
+
         if role.reasoning_mode.forbidden_fallacies:
             prompt_parts.append("\n\nAvoid these fallacies in your reasoning:")
             for fallacy in role.reasoning_mode.forbidden_fallacies:
                 prompt_parts.append(f"\n- {fallacy.replace('_', ' ')}")
-        
+
         if role.forbidden_phrases:
             prompt_parts.append("\n\nAvoid these phrases:")
             for phrase in role.forbidden_phrases:
                 prompt_parts.append(f'\n- "{phrase}"')
-        
+
         if role.required_disclaimers:
             prompt_parts.append("\n\nInclude these disclaimers when appropriate:")
             for disclaimer in role.required_disclaimers:
                 prompt_parts.append(f"\n- {disclaimer}")
-        
+
         return "".join(prompt_parts)
-    
+
     def adapt_response(
         self,
         response: str,
@@ -432,7 +432,7 @@ class RoleAdapter:
     ) -> AdaptedResponse:
         """Adapt a response to the role."""
         role = self.registry.get(role_id) if role_id else self.active_role
-        
+
         if not role:
             return AdaptedResponse(
                 original_response=response,
@@ -442,11 +442,11 @@ class RoleAdapter:
                 constraints_checked=[],
                 violations=[]
             )
-        
+
         adapted = response
         adaptations = []
         violations = []
-        
+
         # Apply vocabulary substitutions
         for original, preferred in role.vocabulary.items():
             if original.lower() in adapted.lower():
@@ -455,25 +455,25 @@ class RoleAdapter:
                 pattern = re.compile(re.escape(original), re.IGNORECASE)
                 adapted = pattern.sub(preferred, adapted)
                 adaptations.append(f"Replaced '{original}' with '{preferred}'")
-        
+
         # Check for forbidden phrases
         for phrase in role.forbidden_phrases:
             if phrase.lower() in adapted.lower():
                 violations.append(f"Contains forbidden phrase: '{phrase}'")
-        
+
         # Add required disclaimers if not present
         for disclaimer in role.required_disclaimers:
             if disclaimer.lower() not in adapted.lower():
                 adapted = f"{adapted}\n\n*{disclaimer}*"
                 adaptations.append("Added required disclaimer")
-        
+
         # Check constraints
         constraints_checked = []
         for constraint in role.constraints:
             constraints_checked.append(constraint.name)
             if constraint.check_fn and not constraint.check_fn(adapted):
                 violations.append(f"{constraint.name}: {constraint.violation_message}")
-        
+
         return AdaptedResponse(
             original_response=response,
             adapted_response=adapted,
@@ -482,7 +482,7 @@ class RoleAdapter:
             constraints_checked=constraints_checked,
             violations=violations
         )
-    
+
     def validate_reasoning(
         self,
         reasoning_steps: List[str],
@@ -490,45 +490,45 @@ class RoleAdapter:
     ) -> Dict[str, Any]:
         """Validate reasoning against role requirements."""
         role = self.registry.get(role_id) if role_id else self.active_role
-        
+
         if not role:
             return {"valid": True, "missing_steps": [], "issues": []}
-        
+
         required = role.reasoning_mode.required_steps
         missing_steps = []
-        
+
         # Check for required steps (simplified check)
         reasoning_text = " ".join(reasoning_steps).lower()
         for step in required:
             step_keywords = step.lower().split()
             if not any(kw in reasoning_text for kw in step_keywords[:3]):
                 missing_steps.append(step)
-        
+
         issues = []
-        
+
         # Check for forbidden fallacies mentioned positively
         for fallacy in role.reasoning_mode.forbidden_fallacies:
             fallacy_text = fallacy.replace("_", " ")
             if fallacy_text in reasoning_text:
                 issues.append(f"May contain {fallacy_text}")
-        
+
         return {
             "valid": len(missing_steps) == 0 and len(issues) == 0,
             "missing_steps": missing_steps,
             "issues": issues,
             "required_steps": required
         }
-    
+
     def get_role_context(
         self,
         role_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get context information for a role."""
         role = self.registry.get(role_id) if role_id else self.active_role
-        
+
         if not role:
             return {}
-        
+
         return {
             "role_id": role.role_id,
             "name": role.name,
@@ -546,7 +546,7 @@ class RoleBasedReasoner:
     """
     Reasoner that adapts behavior based on role.
     """
-    
+
     def __init__(
         self,
         reasoning_fn: Callable[[str, Dict[str, Any]], Dict[str, Any]],
@@ -554,7 +554,7 @@ class RoleBasedReasoner:
     ):
         self.reasoning_fn = reasoning_fn
         self.adapter = adapter or RoleAdapter()
-    
+
     def reason(
         self,
         query: str,
@@ -565,29 +565,29 @@ class RoleBasedReasoner:
         # Set role context
         if role_id:
             self.adapter.set_role(role_id)
-        
+
         role_context = self.adapter.get_role_context()
         full_context = {**(context or {}), "role": role_context}
-        
+
         # Get system prompt
-        system_prompt = self.adapter.get_system_prompt()
-        
+        self.adapter.get_system_prompt()
+
         # Perform reasoning
         result = self.reasoning_fn(query, full_context)
-        
+
         # Adapt response
         if "response" in result:
             adapted = self.adapter.adapt_response(result["response"])
             result["response"] = adapted.adapted_response
             result["adaptations"] = adapted.adaptations_made
             result["violations"] = adapted.violations
-        
+
         # Validate reasoning
         if "reasoning_steps" in result:
             validation = self.adapter.validate_reasoning(result["reasoning_steps"])
             result["reasoning_valid"] = validation["valid"]
             result["missing_steps"] = validation["missing_steps"]
-        
+
         result["role_context"] = role_context
         return result
 
@@ -596,10 +596,10 @@ class PersonaManager:
     """
     Manager for creating and customizing personas.
     """
-    
+
     def __init__(self, registry: Optional[RoleRegistry] = None):
         self.registry = registry or RoleRegistry()
-    
+
     def create_custom_persona(
         self,
         role_id: str,
@@ -620,7 +620,7 @@ class PersonaManager:
             forbidden_fallacies=forbidden_fallacies or [],
             preferred_argument_forms=[]
         )
-        
+
         persona = RolePersona(
             role_id=role_id,
             name=name,
@@ -631,10 +631,10 @@ class PersonaManager:
             reasoning_mode=reasoning_mode,
             vocabulary=vocabulary or {}
         )
-        
+
         self.registry.register(persona)
         return persona
-    
+
     def clone_with_modifications(
         self,
         source_role_id: str,
@@ -645,7 +645,7 @@ class PersonaManager:
         source = self.registry.get(source_role_id)
         if not source:
             return None
-        
+
         # Create a copy with modifications
         new_persona = RolePersona(
             role_id=new_role_id,
@@ -660,6 +660,6 @@ class PersonaManager:
             forbidden_phrases=modifications.get("forbidden_phrases", source.forbidden_phrases.copy()),
             required_disclaimers=modifications.get("required_disclaimers", source.required_disclaimers.copy())
         )
-        
+
         self.registry.register(new_persona)
         return new_persona

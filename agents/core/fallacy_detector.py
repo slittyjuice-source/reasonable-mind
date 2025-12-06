@@ -42,10 +42,10 @@ class FallacyPattern:
 
 class FallacyDetector:
     """Pattern-based fallacy detection system."""
-    
+
     def __init__(self):
         self.fallacies = self._init_fallacy_database()
-    
+
     def _init_fallacy_database(self) -> Dict[str, FallacyPattern]:
         """Initialize comprehensive fallacy database."""
         return {
@@ -113,7 +113,7 @@ class FallacyDetector:
                 pattern_indicators=["but you also", "you do it too", "you're guilty", "hypocrite"],
                 example="You can't criticize my smoking when you drink alcohol"
             ),
-            
+
             # PRESUMPTION FALLACIES
             "false_dilemma": FallacyPattern(
                 id="false_dilemma",
@@ -178,7 +178,7 @@ class FallacyDetector:
                 pattern_indicators=["when did you stop", "why do you", "how long have you"],
                 example="When did you stop cheating on tests?"
             ),
-            
+
             # AMBIGUITY FALLACIES
             "equivocation": FallacyPattern(
                 id="equivocation",
@@ -207,7 +207,7 @@ class FallacyDetector:
                 pattern_indicators=["emphasized", "stressed", "highlighted"],
                 example="We should not speak ILL of our friends (vs. speak ill of our FRIENDS)"
             ),
-            
+
             # FORMAL FALLACIES
             "affirming_consequent": FallacyPattern(
                 id="affirming_consequent",
@@ -246,45 +246,45 @@ class FallacyDetector:
                 example="He's tall; therefore he must be good at basketball"
             )
         }
-    
+
     def detect(self, argument: str, premises: List[str], conclusion: str) -> List[FallacyPattern]:
         """
         Detect fallacies in an argument.
-        
+
         Args:
             argument: Full argument text (optional)
             premises: List of premise statements
             conclusion: Conclusion statement
-            
+
         Returns:
             List of detected fallacy patterns
         """
         detected = []
         text = f"{' '.join(premises)} {conclusion}".lower()
-        
+
         for fallacy_id, fallacy in self.fallacies.items():
             # Check if any pattern indicators are present
             if any(indicator in text for indicator in fallacy.pattern_indicators):
                 detected.append(fallacy)
-        
+
         return detected
-    
+
     def get_by_category(self, category: FallacyCategory) -> List[FallacyPattern]:
         """Get all fallacies in a category."""
         return [f for f in self.fallacies.values() if f.category == category]
-    
+
     def get_by_severity(self, severity: FallacySeverity) -> List[FallacyPattern]:
         """Get all fallacies with a specific severity."""
         return [f for f in self.fallacies.values() if f.severity == severity]
-    
+
     def get_fallacy(self, fallacy_id: str) -> Optional[FallacyPattern]:
         """Get a specific fallacy by ID."""
         return self.fallacies.get(fallacy_id)
-    
+
     def list_all(self) -> List[FallacyPattern]:
         """List all fallacy patterns."""
         return list(self.fallacies.values())
-    
+
     def count_by_category(self) -> Dict[FallacyCategory, int]:
         """Count fallacies by category."""
         counts = {category: 0 for category in FallacyCategory}

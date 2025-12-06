@@ -57,11 +57,11 @@ class TestInMemoryBackend:
         """Test deleting a memory entry."""
         entry = {"id": "entry_002", "content": "To be deleted"}
         backend.save_entry(entry)
-        
+
         # Delete
         result = backend.delete_entry("entry_002")
         assert result is True
-        
+
         # Verify deleted
         loaded = backend.load_entry("entry_002")
         assert loaded is None
@@ -76,7 +76,7 @@ class TestInMemoryBackend:
                 "content": f"Memory {i}",
                 "memory_type": "semantic" if i % 2 == 0 else "episodic"
             })
-        
+
         # List all
         all_entries = backend.list_entries(limit=10)
         assert len(all_entries) >= 5
@@ -100,10 +100,10 @@ class TestSQLiteBackend:
             "content": "SQLite test",
             "memory_type": "semantic"
         }
-        
+
         result = backend.save_entry(entry)
         assert result is True
-        
+
         loaded = backend.load_entry("sql_001")
         assert loaded is not None
         assert loaded["content"] == "SQLite test"
@@ -112,13 +112,13 @@ class TestSQLiteBackend:
     def test_persistence_across_operations(self, backend):
         """Test that data persists across multiple operations."""
         entries = [
-            {"id": f"persist_{i}", "content": f"Data {i}"} 
+            {"id": f"persist_{i}", "content": f"Data {i}"}
             for i in range(3)
         ]
-        
+
         for entry in entries:
             backend.save_entry(entry)
-        
+
         # All should be retrievable
         for i in range(3):
             loaded = backend.load_entry(f"persist_{i}")
@@ -143,10 +143,10 @@ class TestJSONFileBackend:
             "content": "JSON test",
             "memory_type": "working"
         }
-        
+
         result = backend.save_entry(entry)
         assert result is True
-        
+
         loaded = backend.load_entry("json_001")
         assert loaded is not None
 
@@ -171,7 +171,7 @@ class TestPersistentMemoryManager:
     def test_save_and_retrieve(self, manager):
         """Test saving and retrieving memories."""
         manager.save({"id": "mem_001", "content": "Test memory", "type": "semantic"})
-        
+
         loaded = manager.load("mem_001")
         assert loaded is not None
         assert loaded["content"] == "Test memory"
@@ -182,9 +182,9 @@ class TestPersistentMemoryManager:
         # Add some memories
         for i in range(5):
             manager.save({"id": f"mem_{i}", "content": f"Memory {i}"})
-        
+
         snapshot = manager.create_checkpoint()
-        
+
         assert isinstance(snapshot, MemorySnapshot)
         assert snapshot.entry_count >= 5
 
@@ -206,9 +206,9 @@ class TestConsolidation:
         # Add entries
         for i in range(15):
             manager.save({"id": f"mem_{i}", "content": f"Memory {i}"})
-        
+
         result = manager.consolidate(ConsolidationStrategy.HYBRID)
-        
+
         assert isinstance(result, ConsolidationResult)
         assert hasattr(result, 'entries_before')
         assert hasattr(result, 'entries_after')
@@ -218,9 +218,9 @@ class TestConsolidation:
         """Test that consolidation result has all required fields."""
         for i in range(5):
             manager.save({"id": f"mem_{i}", "content": f"Memory {i}"})
-        
+
         result = manager.consolidate(ConsolidationStrategy.HYBRID)
-        
+
         assert hasattr(result, 'entries_before')
         assert hasattr(result, 'entries_after')
         assert hasattr(result, 'entries_removed')
@@ -234,7 +234,7 @@ class TestFactoryFunctions:
     def test_create_volatile_memory(self):
         """Test creating volatile (in-memory) storage."""
         manager = create_volatile_memory()
-        
+
         assert manager is not None
         manager.save({"id": "test", "data": "value"})
         assert manager.load("test") is not None
@@ -244,9 +244,9 @@ class TestFactoryFunctions:
         """Test creating SQLite-backed storage."""
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
             db_path = f.name
-        
+
         manager = create_sqlite_memory(db_path)
-        
+
         assert manager is not None
         manager.save({"id": "sql_test", "content": "test value"})
         assert manager.load("sql_test") is not None
@@ -256,9 +256,9 @@ class TestFactoryFunctions:
         """Test creating JSON-file-backed storage."""
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             json_path = f.name
-        
+
         manager = create_json_memory(json_path)
-        
+
         assert manager is not None
         manager.save({"id": "json_test", "content": "test value"})
         # JSON may need a flush to persist
@@ -271,7 +271,7 @@ class TestPersistenceConfig:
     def test_default_config(self):
         """Test default configuration values."""
         config = PersistenceConfig()
-        
+
         assert config.backend == StorageBackend.MEMORY
         assert config.max_memory_entries > 0
         assert config.retention_days > 0
@@ -284,7 +284,7 @@ class TestPersistenceConfig:
             db_path="/tmp/test.db",
             max_memory_entries=5000
         )
-        
+
         assert config.backend == StorageBackend.SQLITE
         assert config.db_path == "/tmp/test.db"
         assert config.max_memory_entries == 5000
@@ -303,7 +303,7 @@ class TestMemorySnapshot:
             entry_count=100,
             episodic_count=50
         )
-        
+
         assert snapshot.snapshot_id == "snap_001"
         assert snapshot.version == 1
         assert snapshot.entry_count == 100
