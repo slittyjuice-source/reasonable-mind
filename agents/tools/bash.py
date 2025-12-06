@@ -4,6 +4,8 @@ import os
 from typing import List, Optional
 from dataclasses import dataclass, field
 
+from .security import CommandSecurityPolicy
+
 @dataclass
 class BashTool(Tool):
     name: str = "bash"
@@ -30,8 +32,18 @@ class BashTool(Tool):
     allow_pipes: bool = field(default=True)
     allow_redirects: bool = field(default=True)
     timeout: int = field(default=30)
+    security_policy: CommandSecurityPolicy | None = field(default=None)
 
-    def __post_init__(self): 
+    def __post_init__(self):
+        # Ensure a default sandbox policy mirrors the autonomous-coding allowlist
+        self.security_policy = self.security_policy or CommandSecurityPolicy()
+        if self.allowed_commands is None:
+            self.allowed_commands = sorted(self.security_policy.allowed_commands)
+        if self.working_directories:
+            self.security_policy.allowed_paths = [
+                os.path.abspath(path) for path in self.working_directories
+            ]
+
         # Build dynamic description based on permissions
         self.description = self._build_description()
 
@@ -74,6 +86,10 @@ class BashTool(Tool):
 
     async def execute(self, command: str, working_directory: Optional[str] = None) -> str:
         # Basic permission checks
+        validation = self.security_policy.validate(command, working_directory)
+        if not validation.allowed:
+            return f"Error: {validation.reason}"
+
         if not self._is_command_allowed(command):
             return f"Error: Command not permitted by current permissions"
         
