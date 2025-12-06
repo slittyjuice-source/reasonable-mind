@@ -615,13 +615,14 @@ class TestArchitecturalDocumentation:
     @pytest.mark.unit
     def test_architecture_document_exists(self):
         """Architecture metaphysics document must exist."""
-        import os
-        doc_path = "/Users/christiansmith/Documents/GitHub/reasonable-mind/agents/ARCHITECTURE_METAPHYSICS.md"
+        from pathlib import Path
 
-        assert os.path.exists(doc_path), "Architecture document missing"
+        repo_root = Path(__file__).resolve().parents[2]
+        doc_path = repo_root / "agents" / "ARCHITECTURE_METAPHYSICS.md"
 
-        with open(doc_path, 'r') as f:
-            content = f.read()
+        assert doc_path.exists(), "Architecture document missing"
+
+        content = doc_path.read_text()
 
         assert len(content) > 1000, "Architecture document too short"
         assert "Skeleton" in content or "skeleton" in content

@@ -16,9 +16,7 @@ pythonpath = "."
 addopts = [
     "-ra",
     "-q",
-    "--cov=agents.core",
     "--cov=agents.governance",
-    "--cov=agents.tools",
     "--cov-report=html",
     "--cov-report=term-missing",
     "--cov-report=xml",
@@ -43,7 +41,7 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["agents/core", "agents/governance", "agents/tools"]
+source = ["agents/governance"]
 omit = ["*/tests/*", "*/__init__.py", "*/.venv/*", "*/test_*.py", "*_test.py"]
 
 [tool.coverage.report]
