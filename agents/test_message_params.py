@@ -8,51 +8,32 @@ and API parameters.
 
 import os
 import sys
+
+import pytest
+
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agents.agent import Agent, ModelConfig
 
 
+pytestmark = pytest.mark.skipif(
+    not os.environ.get("ANTHROPIC_API_KEY"),
+    reason="ANTHROPIC_API_KEY is required for live API calls",
+)
+
+
 class TestMessageParams:
     """Test cases for message_params functionality."""
 
-    def __init__(self, verbose: bool = True):
-        """Initialize test suite.
-
-        Args:
-            verbose: Whether to print detailed output
-        """
-        self.verbose = verbose
-        self.passed = 0
-        self.failed = 0
+    def setup_method(self) -> None:
+        """Initialize per-test attributes without blocking test collection."""
+        self.verbose = True
 
     def _print(self, message: str) -> None:
         """Print message if verbose mode is on."""
         if self.verbose:
             print(message)
-
-    def _run_test(self, test_name: str, test_func: callable) -> None:
-        """Run a single test and track results.
-
-        Args:
-            test_name: Name of the test
-            test_func: Test function to execute
-        """
-        self._print(f"\n{'='*60}")
-        self._print(f"Running: {test_name}")
-        self._print('='*60)
-
-        try:
-            test_func()
-            self.passed += 1
-            self._print(f"✓ {test_name} PASSED")
-        except Exception as e:
-            self.failed += 1
-            self._print(f"✗ {test_name} FAILED: {str(e)}")
-            if self.verbose:
-                import traceback
-                traceback.print_exc()
 
     def test_basic_agent(self) -> None:
         """Test agent without message_params to ensure backward compatibility."""
@@ -226,47 +207,3 @@ class TestMessageParams:
         response_text = next((block["text"] for block in response if block.get("type") == "text"), "")
         assert "2" in response_text
         self._print(f"Response with combined params: {response_text}")
-
-    def run_all_tests(self) -> None:
-        """Run all test cases."""
-        self._print("\nAgent message_params Test Suite")
-        self._print("="*60)
-
-        tests = [
-            ("Basic Agent (No message_params)", self.test_basic_agent),
-            ("Custom Headers", self.test_custom_headers),
-            ("Beta Feature Headers", self.test_beta_headers),
-            ("Valid Metadata", self.test_metadata),
-            ("API Parameters", self.test_api_parameters),
-            ("Parameter Override", self.test_parameter_override),
-            ("Invalid Metadata Field", self.test_invalid_metadata_field),
-            ("Combined Parameters", self.test_combined_parameters),
-        ]
-
-        for test_name, test_func in tests:
-            self._run_test(test_name, test_func)
-
-        self._print(f"\n{'='*60}")
-        self._print(f"Test Results: {self.passed} passed, {self.failed} failed")
-        self._print("="*60)
-
-        return self.failed == 0
-
-
-def main():
-    """Run the test suite."""
-    # Check for API key
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("Error: Please set ANTHROPIC_API_KEY environment variable")
-        sys.exit(1)
-
-    # Run tests
-    test_suite = TestMessageParams(verbose=True)
-    success = test_suite.run_all_tests()
-
-    # Exit with appropriate code
-    sys.exit(0 if success else 1)
-
-
-if __name__ == "__main__":
-    main()
