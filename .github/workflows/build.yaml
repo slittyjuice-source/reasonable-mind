@@ -18,8 +18,11 @@ jobs:
     outputs:
       computer_use_demo: ${{ steps.filter.outputs.computer_use_demo }}
     steps:
-      - uses: actions/checkout@v4
-      - id: filter
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for computer-use-demo changes
+        id: filter
         uses: dorny/paths-filter@v3
         with:
           filters: |
