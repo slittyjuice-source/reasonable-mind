@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 class FallacyCategory(Enum):
     """Categories of informal fallacies."""
+
     RELEVANCE = "relevance"
     PRESUMPTION = "presumption"
     AMBIGUITY = "ambiguity"
@@ -23,6 +24,7 @@ class FallacyCategory(Enum):
 
 class FallacySeverity(Enum):
     """Severity levels for fallacies."""
+
     MAJOR = "major"
     MODERATE = "moderate"
     MINOR = "minor"
@@ -31,6 +33,7 @@ class FallacySeverity(Enum):
 @dataclass
 class FallacyPattern:
     """Structured fallacy definition."""
+
     id: str
     name: str
     category: FallacyCategory
@@ -56,8 +59,13 @@ class FallacyDetector:
                 category=FallacyCategory.RELEVANCE,
                 severity=FallacySeverity.MAJOR,
                 description="Attacking the person instead of their argument",
-                pattern_indicators=["you're wrong because", "coming from you", "can't trust", "you're just"],
-                example="You can't trust his economic policy because he's wealthy"
+                pattern_indicators=[
+                    "you're wrong because",
+                    "coming from you",
+                    "can't trust",
+                    "you're just",
+                ],
+                example="You can't trust his economic policy because he's wealthy",
             ),
             "appeal_to_authority": FallacyPattern(
                 id="appeal_to_authority",
@@ -65,8 +73,13 @@ class FallacyDetector:
                 category=FallacyCategory.RELEVANCE,
                 severity=FallacySeverity.MODERATE,
                 description="Citing irrelevant or unqualified authority",
-                pattern_indicators=["expert says", "authority claims", "famous person believes", "celebrity"],
-                example="This diet works because a celebrity uses it"
+                pattern_indicators=[
+                    "expert says",
+                    "authority claims",
+                    "famous person believes",
+                    "celebrity",
+                ],
+                example="This diet works because a celebrity uses it",
             ),
             "appeal_to_emotion": FallacyPattern(
                 id="appeal_to_emotion",
@@ -74,8 +87,13 @@ class FallacyDetector:
                 category=FallacyCategory.RELEVANCE,
                 severity=FallacySeverity.MODERATE,
                 description="Using emotion instead of logic",
-                pattern_indicators=["think of the children", "how would you feel", "imagine if", "scary"],
-                example="We must ban this because it's scary"
+                pattern_indicators=[
+                    "think of the children",
+                    "how would you feel",
+                    "imagine if",
+                    "scary",
+                ],
+                example="We must ban this because it's scary",
             ),
             "appeal_to_popularity": FallacyPattern(
                 id="appeal_to_popularity",
@@ -83,8 +101,13 @@ class FallacyDetector:
                 category=FallacyCategory.RELEVANCE,
                 severity=FallacySeverity.MODERATE,
                 description="Arguing something is true because many people believe it",
-                pattern_indicators=["everyone believes", "most people think", "popular opinion", "majority"],
-                example="This must be true because everyone believes it"
+                pattern_indicators=[
+                    "everyone believes",
+                    "most people think",
+                    "popular opinion",
+                    "majority",
+                ],
+                example="This must be true because everyone believes it",
             ),
             "red_herring": FallacyPattern(
                 id="red_herring",
@@ -92,8 +115,13 @@ class FallacyDetector:
                 category=FallacyCategory.RELEVANCE,
                 severity=FallacySeverity.MODERATE,
                 description="Introducing irrelevant information to distract",
-                pattern_indicators=["but what about", "the real issue is", "speaking of", "let's talk about"],
-                example="Climate change? What about immigration!"
+                pattern_indicators=[
+                    "but what about",
+                    "the real issue is",
+                    "speaking of",
+                    "let's talk about",
+                ],
+                example="Climate change? What about immigration!",
             ),
             "straw_man": FallacyPattern(
                 id="straw_man",
@@ -101,8 +129,13 @@ class FallacyDetector:
                 category=FallacyCategory.RELEVANCE,
                 severity=FallacySeverity.MAJOR,
                 description="Misrepresenting opponent's argument to make it easier to attack",
-                pattern_indicators=["so you're saying", "you want to", "you believe", "your position is"],
-                example="You support environmental protection, so you want to destroy the economy"
+                pattern_indicators=[
+                    "so you're saying",
+                    "you want to",
+                    "you believe",
+                    "your position is",
+                ],
+                example="You support environmental protection, so you want to destroy the economy",
             ),
             "tu_quoque": FallacyPattern(
                 id="tu_quoque",
@@ -110,10 +143,14 @@ class FallacyDetector:
                 category=FallacyCategory.RELEVANCE,
                 severity=FallacySeverity.MODERATE,
                 description="Deflecting criticism by accusing the critic of the same thing",
-                pattern_indicators=["but you also", "you do it too", "you're guilty", "hypocrite"],
-                example="You can't criticize my smoking when you drink alcohol"
+                pattern_indicators=[
+                    "but you also",
+                    "you do it too",
+                    "you're guilty",
+                    "hypocrite",
+                ],
+                example="You can't criticize my smoking when you drink alcohol",
             ),
-
             # PRESUMPTION FALLACIES
             "false_dilemma": FallacyPattern(
                 id="false_dilemma",
@@ -121,8 +158,14 @@ class FallacyDetector:
                 category=FallacyCategory.PRESUMPTION,
                 severity=FallacySeverity.MAJOR,
                 description="Presenting only two options when more exist",
-                pattern_indicators=["either", "or", "only two", "must choose", "one or the other"],
-                example="Either support the war or hate your country"
+                pattern_indicators=[
+                    "either",
+                    "or",
+                    "only two",
+                    "must choose",
+                    "one or the other",
+                ],
+                example="Either support the war or hate your country",
             ),
             "begging_question": FallacyPattern(
                 id="begging_question",
@@ -130,8 +173,13 @@ class FallacyDetector:
                 category=FallacyCategory.PRESUMPTION,
                 severity=FallacySeverity.MAJOR,
                 description="Circular reasoning - conclusion assumed in premise",
-                pattern_indicators=["obviously", "clearly", "of course", "it's evident"],
-                example="God exists because the Bible says so, and the Bible is true because God wrote it"
+                pattern_indicators=[
+                    "obviously",
+                    "clearly",
+                    "of course",
+                    "it's evident",
+                ],
+                example="God exists because the Bible says so, and the Bible is true because God wrote it",
             ),
             "hasty_generalization": FallacyPattern(
                 id="hasty_generalization",
@@ -140,7 +188,7 @@ class FallacyDetector:
                 severity=FallacySeverity.MODERATE,
                 description="Drawing broad conclusion from insufficient evidence",
                 pattern_indicators=["all", "every", "always", "never", "none"],
-                example="I met two rude people from that city, so everyone there is rude"
+                example="I met two rude people from that city, so everyone there is rude",
             ),
             "slippery_slope": FallacyPattern(
                 id="slippery_slope",
@@ -148,8 +196,14 @@ class FallacyDetector:
                 category=FallacyCategory.PRESUMPTION,
                 severity=FallacySeverity.MODERATE,
                 description="Claiming small step leads to extreme outcome without justification",
-                pattern_indicators=["will lead to", "next thing", "inevitable", "cascade", "then eventually"],
-                example="If we allow same-sex marriage, people will marry animals"
+                pattern_indicators=[
+                    "will lead to",
+                    "next thing",
+                    "inevitable",
+                    "cascade",
+                    "then eventually",
+                ],
+                example="If we allow same-sex marriage, people will marry animals",
             ),
             "composition": FallacyPattern(
                 id="composition",
@@ -157,8 +211,13 @@ class FallacyDetector:
                 category=FallacyCategory.PRESUMPTION,
                 severity=FallacySeverity.MODERATE,
                 description="Assuming what's true of parts is true of the whole",
-                pattern_indicators=["each", "therefore all", "every part", "so the whole"],
-                example="Each brick is light, therefore the wall is light"
+                pattern_indicators=[
+                    "each",
+                    "therefore all",
+                    "every part",
+                    "so the whole",
+                ],
+                example="Each brick is light, therefore the wall is light",
             ),
             "division": FallacyPattern(
                 id="division",
@@ -166,8 +225,13 @@ class FallacyDetector:
                 category=FallacyCategory.PRESUMPTION,
                 severity=FallacySeverity.MODERATE,
                 description="Assuming what's true of the whole is true of parts",
-                pattern_indicators=["the whole", "therefore each", "all together", "so every part"],
-                example="The team is strong, therefore every player is strong"
+                pattern_indicators=[
+                    "the whole",
+                    "therefore each",
+                    "all together",
+                    "so every part",
+                ],
+                example="The team is strong, therefore every player is strong",
             ),
             "loaded_question": FallacyPattern(
                 id="loaded_question",
@@ -175,10 +239,13 @@ class FallacyDetector:
                 category=FallacyCategory.PRESUMPTION,
                 severity=FallacySeverity.MODERATE,
                 description="Question contains unjustified assumption",
-                pattern_indicators=["when did you stop", "why do you", "how long have you"],
-                example="When did you stop cheating on tests?"
+                pattern_indicators=[
+                    "when did you stop",
+                    "why do you",
+                    "how long have you",
+                ],
+                example="When did you stop cheating on tests?",
             ),
-
             # AMBIGUITY FALLACIES
             "equivocation": FallacyPattern(
                 id="equivocation",
@@ -186,8 +253,13 @@ class FallacyDetector:
                 category=FallacyCategory.AMBIGUITY,
                 severity=FallacySeverity.MAJOR,
                 description="Using same word with different meanings",
-                pattern_indicators=["depends on", "meaning", "definition", "what you mean by"],
-                example="A feather is light; light travels fast; therefore a feather travels fast"
+                pattern_indicators=[
+                    "depends on",
+                    "meaning",
+                    "definition",
+                    "what you mean by",
+                ],
+                example="A feather is light; light travels fast; therefore a feather travels fast",
             ),
             "amphiboly": FallacyPattern(
                 id="amphiboly",
@@ -196,7 +268,7 @@ class FallacyDetector:
                 severity=FallacySeverity.MINOR,
                 description="Ambiguous grammar creates confusion",
                 pattern_indicators=["could mean", "unclear", "ambiguous"],
-                example="I saw the man with binoculars (who had binoculars?)"
+                example="I saw the man with binoculars (who had binoculars?)",
             ),
             "accent": FallacyPattern(
                 id="accent",
@@ -205,9 +277,8 @@ class FallacyDetector:
                 severity=FallacySeverity.MINOR,
                 description="Changing emphasis changes meaning inappropriately",
                 pattern_indicators=["emphasized", "stressed", "highlighted"],
-                example="We should not speak ILL of our friends (vs. speak ill of our FRIENDS)"
+                example="We should not speak ILL of our friends (vs. speak ill of our FRIENDS)",
             ),
-
             # FORMAL FALLACIES
             "affirming_consequent": FallacyPattern(
                 id="affirming_consequent",
@@ -216,7 +287,7 @@ class FallacyDetector:
                 severity=FallacySeverity.MAJOR,
                 description="If P then Q; Q; therefore P (invalid)",
                 pattern_indicators=["if", "then", "therefore"],
-                example="If it rains, the ground is wet; the ground is wet; therefore it rained"
+                example="If it rains, the ground is wet; the ground is wet; therefore it rained",
             ),
             "denying_antecedent": FallacyPattern(
                 id="denying_antecedent",
@@ -225,7 +296,7 @@ class FallacyDetector:
                 severity=FallacySeverity.MAJOR,
                 description="If P then Q; not P; therefore not Q (invalid)",
                 pattern_indicators=["if", "then", "not", "therefore"],
-                example="If it rains, the ground is wet; it's not raining; therefore the ground is dry"
+                example="If it rains, the ground is wet; it's not raining; therefore the ground is dry",
             ),
             "post_hoc": FallacyPattern(
                 id="post_hoc",
@@ -233,8 +304,14 @@ class FallacyDetector:
                 category=FallacyCategory.FORMAL,
                 severity=FallacySeverity.MAJOR,
                 description="Assuming causation from temporal sequence",
-                pattern_indicators=["after", "then", "caused by", "because", "since then"],
-                example="I wore my lucky socks and won the game; the socks caused the win"
+                pattern_indicators=[
+                    "after",
+                    "then",
+                    "caused by",
+                    "because",
+                    "since then",
+                ],
+                example="I wore my lucky socks and won the game; the socks caused the win",
             ),
             "non_sequitur": FallacyPattern(
                 id="non_sequitur",
@@ -243,11 +320,13 @@ class FallacyDetector:
                 severity=FallacySeverity.MAJOR,
                 description="Conclusion doesn't follow from premises",
                 pattern_indicators=["therefore", "thus", "hence", "so"],
-                example="He's tall; therefore he must be good at basketball"
-            )
+                example="He's tall; therefore he must be good at basketball",
+            ),
         }
 
-    def detect(self, argument: str, premises: List[str], conclusion: str) -> List[FallacyPattern]:
+    def detect(
+        self, argument: str, premises: List[str], conclusion: str
+    ) -> List[FallacyPattern]:
         """
         Detect fallacies in an argument.
 

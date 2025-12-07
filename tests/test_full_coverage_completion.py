@@ -33,7 +33,10 @@ def test_categorical_negative_requires_negative_conclusion():
     )
     result = CategoricalEngine().validate(syl)
     assert result.is_valid is False
-    assert any("negative premise requires negative conclusion" in v.lower() for v in result.violations)
+    assert any(
+        "negative premise requires negative conclusion" in v.lower()
+        for v in result.violations
+    )
 
 
 def test_categorical_particular_with_negative_requires_particular_conclusion():
@@ -44,7 +47,10 @@ def test_categorical_particular_with_negative_requires_particular_conclusion():
     )
     result = CategoricalEngine().validate(syl)
     assert result.is_valid is False
-    assert any("particular premise with negative premise" in v.lower() for v in result.violations)
+    assert any(
+        "particular premise with negative premise" in v.lower()
+        for v in result.violations
+    )
 
 
 def test_categorical_valid_but_unnamed_form():
@@ -60,7 +66,9 @@ def test_categorical_valid_but_unnamed_form():
 
 
 def test_validate_barbara_parse_failure():
-    result = validate_barbara("nonsense statement", "invalid minor", "invalid conclusion")
+    result = validate_barbara(
+        "nonsense statement", "invalid minor", "invalid conclusion"
+    )
     assert result.is_valid is False
     assert "failed to parse" in result.explanation.lower()
 
@@ -68,7 +76,10 @@ def test_validate_barbara_parse_failure():
 def test_parse_categorical_statement_edge_cases():
     from agents.core_logic.categorical_engine import parse_categorical_statement
 
-    assert parse_categorical_statement("All planets orbit stars").predicate == "orbit stars"
+    assert (
+        parse_categorical_statement("All planets orbit stars").predicate
+        == "orbit stars"
+    )
     assert parse_categorical_statement("No robots are humans").predicate == "humans"
     assert parse_categorical_statement("Some robots are not humans").copula == "are not"
     assert parse_categorical_statement("All X") is None
@@ -163,15 +174,20 @@ def test_logic_engine_biconditional_and_unknown_eval(tmp_path):
 
 def test_logic_engine_patterns_match_conclusion_mismatch():
     engine = LogicEngine()
-    assert engine._patterns_match(
-        ["P → Q", "P"], ["P → Q", "P"], conclusion="R", expected_conclusion="Q"
-    ) is False
+    assert (
+        engine._patterns_match(
+            ["P → Q", "P"], ["P → Q", "P"], conclusion="R", expected_conclusion="Q"
+        )
+        is False
+    )
 
 
 def test_truth_table_validate_too_many_props():
     engine = LogicEngine()
     props = {Proposition(sym, sym) for sym in ["P", "Q", "R", "S", "T", "U"]}
-    arg = LogicalArgument(premises=["P", "Q", "R", "S", "T", "U"], conclusion="U", propositions=props)
+    arg = LogicalArgument(
+        premises=["P", "Q", "R", "S", "T", "U"], conclusion="U", propositions=props
+    )
     assert engine._truth_table_validate(arg) is None
 
 
@@ -195,7 +211,9 @@ def test_process_gate_edge_cases():
 
     # Inject a failed stage to exercise failure branch
     gate._results = {stage: StageResult(stage, True, 0.9) for stage in ProcessStage}
-    gate._results[ProcessStage.EXECUTION] = StageResult(ProcessStage.EXECUTION, False, 0.9)
+    gate._results[ProcessStage.EXECUTION] = StageResult(
+        ProcessStage.EXECUTION, False, 0.9
+    )
     can_output, reason = gate.can_output()
     assert can_output is False and "EXECUTION failed" in reason
 
@@ -210,7 +228,10 @@ def test_plan_validator_missing_paths():
     validator = PlanValidator()
     # Amend without active plan
     res = validator.amend_plan(PlanStep(id="s-1", goal="do things"))
-    assert res.is_valid is False and res.violations[0].violation_type.name == "UNPLANNED_ACTION"
+    assert (
+        res.is_valid is False
+        and res.violations[0].violation_type.name == "UNPLANNED_ACTION"
+    )
 
     plan = Plan(
         plan_id="p1",
@@ -222,13 +243,22 @@ def test_plan_validator_missing_paths():
     validator.load_plan(plan)
     # Exceed max steps
     res = validator.amend_plan(PlanStep(id="step-2", goal="extra"))
-    assert res.is_valid is False and res.violations[0].violation_type.name == "PLAN_TOO_LARGE"
+    assert (
+        res.is_valid is False
+        and res.violations[0].violation_type.name == "PLAN_TOO_LARGE"
+    )
     # Citation not found
     res = validator.validate_action("create", {}, "missing-step")
-    assert res.is_valid is False and res.violations[0].violation_type.name == "UNPLANNED_ACTION"
+    assert (
+        res.is_valid is False
+        and res.violations[0].violation_type.name == "UNPLANNED_ACTION"
+    )
     # Action not in allowed list
     res = validator.validate_action("other", {}, "step-1")
-    assert res.is_valid is False and res.violations[0].violation_type.name == "UNPLANNED_ACTION"
+    assert (
+        res.is_valid is False
+        and res.violations[0].violation_type.name == "UNPLANNED_ACTION"
+    )
 
 
 def test_execution_proxy_mock_and_live_branches():

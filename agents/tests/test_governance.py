@@ -6,10 +6,18 @@ from pathlib import Path
 from agents.governance.process_gate import ProcessGate, ProcessStage, StageResult
 from agents.governance.registry import ConstraintRegistry, ConstraintProfile
 from agents.governance.execution_proxy import (
-    ExecutionProxy, ExecutionMode, ExecutionResult,
-    ExecutionContext, create_execution_context
+    ExecutionProxy,
+    ExecutionMode,
+    ExecutionResult,
+    ExecutionContext,
+    create_execution_context,
 )
-from agents.governance.plan_validator import PlanValidator, Plan, PlanStep, ViolationType
+from agents.governance.plan_validator import (
+    PlanValidator,
+    Plan,
+    PlanStep,
+    ViolationType,
+)
 
 
 class TestProcessGate:
@@ -51,10 +59,14 @@ class TestProcessGate:
     def test_blocks_unresolved_clarification(self):
         """Blocks when a stage needs clarification."""
         gate = ProcessGate()
-        gate.record_stage(StageResult(
-            ProcessStage.QUESTION_ANALYSIS, True, 0.9,
-            needs_clarification="What is the scope?"
-        ))
+        gate.record_stage(
+            StageResult(
+                ProcessStage.QUESTION_ANALYSIS,
+                True,
+                0.9,
+                needs_clarification="What is the scope?",
+            )
+        )
         for stage in list(ProcessStage)[1:]:
             gate.record_stage(StageResult(stage, True, 0.9))
 
@@ -162,7 +174,7 @@ class TestExecutionProxy:
         proxy = ExecutionProxy(mode=ExecutionMode.MOCK)
         proxy.register_mock(
             r"echo.*",
-            ExecutionResult("", "", ExecutionMode.MOCK, 0, "mocked output", "", 0)
+            ExecutionResult("", "", ExecutionMode.MOCK, 0, "mocked output", "", 0),
         )
 
         result = proxy.execute("echo hello")
@@ -199,22 +211,30 @@ class TestPlanValidator:
             plan_id="test",
             steps=[PlanStep(id="step-1", goal="Create file")],
             constraint_profile="default",
-            persona_id="default"
+            persona_id="default",
         )
         validator.load_plan(plan)
 
-        result = validator.validate_action("create_file", {"path": "x.py"})  # No citation
+        result = validator.validate_action(
+            "create_file", {"path": "x.py"}
+        )  # No citation
         assert result.is_valid is False
-        assert result.violations[0].violation_type == ViolationType.MISSING_PLAN_CITATION
+        assert (
+            result.violations[0].violation_type == ViolationType.MISSING_PLAN_CITATION
+        )
 
     def test_allows_valid_action(self):
         """Allows actions citing valid plan steps."""
         validator = PlanValidator()
         plan = Plan(
             plan_id="test",
-            steps=[PlanStep(id="step-1", goal="Create file", allowed_actions=["create_file"])],
+            steps=[
+                PlanStep(
+                    id="step-1", goal="Create file", allowed_actions=["create_file"]
+                )
+            ],
             constraint_profile="default",
-            persona_id="default"
+            persona_id="default",
         )
         validator.load_plan(plan)
 
@@ -226,15 +246,19 @@ class TestPlanValidator:
         validator = PlanValidator()
         plan = Plan(
             plan_id="test",
-            steps=[PlanStep(id="step-1", goal="Delete", allowed_actions=["delete_file"])],
+            steps=[
+                PlanStep(id="step-1", goal="Delete", allowed_actions=["delete_file"])
+            ],
             constraint_profile="default",
-            persona_id="default"
+            persona_id="default",
         )
         validator.load_plan(plan)
 
         result = validator.validate_action("delete_file", {"path": "x.py"}, "step-1")
         assert result.is_valid is False
-        assert result.violations[0].violation_type == ViolationType.DESTRUCTIVE_OPERATION
+        assert (
+            result.violations[0].violation_type == ViolationType.DESTRUCTIVE_OPERATION
+        )
 
     def test_enforces_max_plan_size(self):
         """Rejects plans exceeding max steps."""
@@ -244,7 +268,7 @@ class TestPlanValidator:
             steps=[PlanStep(id=f"step-{i}", goal=f"Step {i}") for i in range(10)],
             constraint_profile="default",
             persona_id="default",
-            max_steps=5
+            max_steps=5,
         )
 
         result = validator.load_plan(plan)
@@ -259,7 +283,7 @@ class TestPlanValidator:
             steps=[PlanStep(id="step-1", goal="Initial")],
             constraint_profile="default",
             persona_id="default",
-            max_steps=3
+            max_steps=3,
         )
         validator.load_plan(plan)
 
@@ -274,9 +298,7 @@ class TestExecutionContext:
     def test_context_is_immutable(self):
         """ExecutionContext fields cannot be modified after creation."""
         ctx = ExecutionContext(
-            constraint_hash="abc123",
-            plan_id="plan-001",
-            persona_id="agent-001"
+            constraint_hash="abc123", plan_id="plan-001", persona_id="agent-001"
         )
 
         with pytest.raises(Exception):  # FrozenInstanceError
@@ -285,26 +307,20 @@ class TestExecutionContext:
     def test_context_validation(self):
         """Validates all required fields are present."""
         valid_ctx = ExecutionContext(
-            constraint_hash="abc123",
-            plan_id="plan-001",
-            persona_id="agent-001"
+            constraint_hash="abc123", plan_id="plan-001", persona_id="agent-001"
         )
         assert valid_ctx.validate() is True
 
         # Empty fields fail validation
         invalid_ctx = ExecutionContext(
-            constraint_hash="",
-            plan_id="plan-001",
-            persona_id="agent-001"
+            constraint_hash="", plan_id="plan-001", persona_id="agent-001"
         )
         assert invalid_ctx.validate() is False
 
     def test_context_auto_generates_session_id(self):
         """Session ID is auto-generated if not provided."""
         ctx = ExecutionContext(
-            constraint_hash="abc123",
-            plan_id="plan-001",
-            persona_id="agent-001"
+            constraint_hash="abc123", plan_id="plan-001", persona_id="agent-001"
         )
         assert ctx.session_id is not None
         assert len(ctx.session_id) == 8
@@ -315,7 +331,7 @@ class TestExecutionContext:
             constraint_hash="abc123",
             plan_id="plan-001",
             persona_id="agent-001",
-            session_id="sess-001"
+            session_id="sess-001",
         )
         d = ctx.to_dict()
         assert d["constraint_hash"] == "abc123"
@@ -330,9 +346,7 @@ class TestAuditCompliance:
     def test_audit_includes_context_when_provided(self):
         """Audit records include constraint_hash, plan_id, persona_id."""
         ctx = ExecutionContext(
-            constraint_hash="hash-abc",
-            plan_id="plan-xyz",
-            persona_id="agent-007"
+            constraint_hash="hash-abc", plan_id="plan-xyz", persona_id="agent-007"
         )
         proxy = ExecutionProxy(mode=ExecutionMode.DRY_RUN, execution_context=ctx)
 
@@ -360,14 +374,14 @@ class TestAuditCompliance:
         instance_ctx = ExecutionContext(
             constraint_hash="instance-hash",
             plan_id="instance-plan",
-            persona_id="instance-agent"
+            persona_id="instance-agent",
         )
         call_ctx = ExecutionContext(
-            constraint_hash="call-hash",
-            plan_id="call-plan",
-            persona_id="call-agent"
+            constraint_hash="call-hash", plan_id="call-plan", persona_id="call-agent"
         )
-        proxy = ExecutionProxy(mode=ExecutionMode.DRY_RUN, execution_context=instance_ctx)
+        proxy = ExecutionProxy(
+            mode=ExecutionMode.DRY_RUN, execution_context=instance_ctx
+        )
 
         result = proxy.execute("echo test", execution_context=call_ctx)
         audit = result.to_audit_record()
@@ -381,7 +395,7 @@ class TestAuditCompliance:
         ctx = ExecutionContext(
             constraint_hash="hash-blocked",
             plan_id="plan-blocked",
-            persona_id="agent-blocked"
+            persona_id="agent-blocked",
         )
         proxy = ExecutionProxy(mode=ExecutionMode.LIVE, execution_context=ctx)
 

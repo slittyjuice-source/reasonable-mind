@@ -113,7 +113,10 @@ class TestHeuristicPath:
         assert result.is_valid is False
         assert result.method == "heuristic"
         assert result.confidence < 1.0
-        assert "No premises" in result.warnings[0] or "without premises" in result.explanation.lower()
+        assert (
+            "No premises" in result.warnings[0]
+            or "without premises" in result.explanation.lower()
+        )
 
 
 class TestPatternMatching:
@@ -197,12 +200,15 @@ class TestConvenienceFunctions:
 class TestBiconditionalEvaluation:
     """Test ↔ operator - logic correctness."""
 
-    @pytest.mark.parametrize("p,q,expected", [
-        (True, True, True),
-        (False, False, True),
-        (True, False, False),
-        (False, True, False),
-    ])
+    @pytest.mark.parametrize(
+        "p,q,expected",
+        [
+            (True, True, True),
+            (False, False, True),
+            (True, False, False),
+            (False, True, False),
+        ],
+    )
     def test_biconditional_truth_table(self, p: bool, q: bool, expected: bool) -> None:
         """Biconditional follows standard truth table."""
         engine = LogicEngine()

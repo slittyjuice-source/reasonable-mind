@@ -32,7 +32,7 @@ class TestConfidenceEstimate:
             uncertainty_type=UncertaintyType.EPISTEMIC,
             lower_bound=0.75,
             upper_bound=0.95,
-            explanation="High confidence based on clear signal"
+            explanation="High confidence based on clear signal",
         )
 
         assert estimate.value == 0.85
@@ -46,7 +46,7 @@ class TestConfidenceEstimate:
             value=0.8,
             source=ConfidenceSource.CALIBRATION,
             lower_bound=0.7,
-            upper_bound=0.9
+            upper_bound=0.9,
         )
 
         assert abs(estimate.interval_width - 0.2) < 0.0001  # Float precision
@@ -58,7 +58,7 @@ class TestConfidenceEstimate:
             value=0.85,
             source=ConfidenceSource.ENSEMBLE,
             lower_bound=0.8,
-            upper_bound=0.9
+            upper_bound=0.9,
         )
 
         assert estimate.is_reliable(threshold=0.7) is True
@@ -70,7 +70,7 @@ class TestConfidenceEstimate:
             value=0.4,
             source=ConfidenceSource.SELF_ASSESSMENT,
             lower_bound=0.3,
-            upper_bound=0.5
+            upper_bound=0.5,
         )
 
         assert estimate.is_reliable(threshold=0.5) is False
@@ -79,10 +79,7 @@ class TestConfidenceEstimate:
     def test_is_reliable_false_wide_interval(self):
         """Test reliability check fails for wide confidence interval."""
         estimate = ConfidenceEstimate(
-            value=0.7,
-            source=ConfidenceSource.HYBRID,
-            lower_bound=0.2,
-            upper_bound=0.9
+            value=0.7, source=ConfidenceSource.HYBRID, lower_bound=0.2, upper_bound=0.9
         )
 
         # Wide interval (0.7) should fail reliability
@@ -97,8 +94,8 @@ class TestConfidenceEstimate:
             factors={
                 "model_agreement": 0.9,
                 "data_quality": 0.75,
-                "domain_match": 0.85
-            }
+                "domain_match": 0.85,
+            },
         )
 
         assert "model_agreement" in estimate.factors
@@ -122,11 +119,7 @@ class TestConfidenceCalibrator:
     @pytest.mark.unit
     def test_add_calibration_data(self, calibrator):
         """Test adding calibration data."""
-        calibrator.record(
-            predicted=0.8,
-            actual_correct=True,
-            domain="math"
-        )
+        calibrator.record(predicted=0.8, actual_correct=True, domain="math")
 
         assert len(calibrator.history) == 1
 
@@ -135,10 +128,7 @@ class TestConfidenceCalibrator:
         """Test calibrating raw confidence."""
         # Add historical data
         for i in range(50):
-            calibrator.record(
-                predicted=0.9,
-                actual_correct=True
-            )
+            calibrator.record(predicted=0.9, actual_correct=True)
 
         # Calibrate new confidence
         calibrated = calibrator.calibrate(0.9)
@@ -152,15 +142,9 @@ class TestConfidenceCalibrator:
         for conf in [0.1, 0.3, 0.5, 0.7, 0.9]:
             # Each confidence level is correct that percentage of time
             for _ in range(int(conf * 20)):  # 20 samples per level
-                calibrator.record(
-                    predicted=conf,
-                    actual_correct=True
-                )
+                calibrator.record(predicted=conf, actual_correct=True)
             for _ in range(int((1 - conf) * 20)):
-                calibrator.record(
-                    predicted=conf,
-                    actual_correct=False
-                )
+                calibrator.record(predicted=conf, actual_correct=False)
 
         # Explicitly fit calibration after adding data
         calibrator._fit_calibration()
@@ -175,10 +159,7 @@ class TestConfidenceCalibrator:
         """Test getting reliability diagram."""
         # Add some data
         for _ in range(20):
-            calibrator.record(
-                predicted=0.8,
-                actual_correct=True
-            )
+            calibrator.record(predicted=0.8, actual_correct=True)
 
         curve = calibrator.get_reliability_diagram()
 
@@ -189,10 +170,7 @@ class TestConfidenceCalibrator:
         """Test that history is limited to window size."""
         # Add more data than window size
         for i in range(150):
-            calibrator.record(
-                predicted=0.5,
-                actual_correct=i % 2 == 0
-            )
+            calibrator.record(predicted=0.5, actual_correct=i % 2 == 0)
 
         # Should only keep window_size entries
         assert len(calibrator.history) <= calibrator.window_size
@@ -210,7 +188,7 @@ class TestAbstentionDecision:
             confidence=0.3,
             alternative_response="I'm not confident enough to answer this.",
             follow_up_questions=["Could you provide more context?"],
-            explanation="Confidence below threshold"
+            explanation="Confidence below threshold",
         )
 
         assert decision.should_abstain is True
@@ -220,10 +198,7 @@ class TestAbstentionDecision:
     @pytest.mark.unit
     def test_no_abstention_decision(self):
         """Test decision to not abstain."""
-        decision = AbstentionDecision(
-            should_abstain=False,
-            confidence=0.9
-        )
+        decision = AbstentionDecision(should_abstain=False, confidence=0.9)
 
         assert decision.should_abstain is False
         assert decision.reason is None
@@ -245,10 +220,7 @@ class TestAbstentionPolicy:
     @pytest.mark.unit
     def test_should_abstain_low_confidence(self, policy):
         """Test abstention on low confidence."""
-        estimate = ConfidenceEstimate(
-            value=0.3,
-            source=ConfidenceSource.MODEL_LOGPROBS
-        )
+        estimate = ConfidenceEstimate(value=0.3, source=ConfidenceSource.MODEL_LOGPROBS)
 
         decision = policy.should_abstain(estimate, query="What is X?")
 
@@ -258,10 +230,7 @@ class TestAbstentionPolicy:
     @pytest.mark.unit
     def test_should_not_abstain_high_confidence(self, policy):
         """Test no abstention on high confidence."""
-        estimate = ConfidenceEstimate(
-            value=0.85,
-            source=ConfidenceSource.ENSEMBLE
-        )
+        estimate = ConfidenceEstimate(value=0.85, source=ConfidenceSource.ENSEMBLE)
 
         decision = policy.should_abstain(estimate, query="What is 2+2?")
 
@@ -270,10 +239,7 @@ class TestAbstentionPolicy:
     @pytest.mark.unit
     def test_abstain_on_ambiguous_query(self, policy):
         """Test abstention tracks statistics."""
-        estimate = ConfidenceEstimate(
-            value=0.3,
-            source=ConfidenceSource.MODEL_LOGPROBS
-        )
+        estimate = ConfidenceEstimate(value=0.3, source=ConfidenceSource.MODEL_LOGPROBS)
 
         decision = policy.should_abstain(estimate, query="What does 'it' mean?")
 
@@ -283,10 +249,7 @@ class TestAbstentionPolicy:
     @pytest.mark.unit
     def test_abstain_on_harmful_content(self, policy):
         """Test abstention on harmful content via low confidence."""
-        estimate = ConfidenceEstimate(
-            value=0.2,
-            source=ConfidenceSource.MODEL_LOGPROBS
-        )
+        estimate = ConfidenceEstimate(value=0.2, source=ConfidenceSource.MODEL_LOGPROBS)
         decision = policy.should_abstain(estimate, query="How to make explosives?")
 
         # Should abstain on low confidence
@@ -295,10 +258,7 @@ class TestAbstentionPolicy:
     @pytest.mark.unit
     def test_abstain_on_conflicting_evidence(self, policy):
         """Test abstention when confidence is low due to conflicts."""
-        estimate = ConfidenceEstimate(
-            value=0.3,
-            source=ConfidenceSource.ENSEMBLE
-        )
+        estimate = ConfidenceEstimate(value=0.3, source=ConfidenceSource.ENSEMBLE)
 
         decision = policy.should_abstain(estimate, query="Is X true or false?")
 
@@ -308,10 +268,7 @@ class TestAbstentionPolicy:
     @pytest.mark.unit
     def test_generate_idk_response(self, policy):
         """Test that abstention decision includes alternative response."""
-        estimate = ConfidenceEstimate(
-            value=0.2,
-            source=ConfidenceSource.MODEL_LOGPROBS
-        )
+        estimate = ConfidenceEstimate(value=0.2, source=ConfidenceSource.MODEL_LOGPROBS)
 
         decision = policy.should_abstain(estimate, query="What is X?")
 
@@ -322,10 +279,7 @@ class TestAbstentionPolicy:
     @pytest.mark.unit
     def test_suggest_follow_up_questions(self, policy):
         """Test that abstention includes follow-up questions."""
-        estimate = ConfidenceEstimate(
-            value=0.3,
-            source=ConfidenceSource.MODEL_LOGPROBS
-        )
+        estimate = ConfidenceEstimate(value=0.3, source=ConfidenceSource.MODEL_LOGPROBS)
 
         decision = policy.should_abstain(estimate, query="Tell me about X")
 
@@ -345,7 +299,7 @@ class TestUncertaintyTypes:
             value=0.6,
             source=ConfidenceSource.SELF_ASSESSMENT,
             uncertainty_type=UncertaintyType.EPISTEMIC,
-            explanation="Lack of domain knowledge"
+            explanation="Lack of domain knowledge",
         )
 
         assert estimate.uncertainty_type == UncertaintyType.EPISTEMIC
@@ -358,7 +312,7 @@ class TestUncertaintyTypes:
             value=0.5,
             source=ConfidenceSource.MODEL_LOGPROBS,
             uncertainty_type=UncertaintyType.ALEATORIC,
-            explanation="Inherently random outcome"
+            explanation="Inherently random outcome",
         )
 
         assert estimate.uncertainty_type == UncertaintyType.ALEATORIC
@@ -370,7 +324,7 @@ class TestUncertaintyTypes:
             value=0.4,
             source=ConfidenceSource.SELF_ASSESSMENT,
             uncertainty_type=UncertaintyType.MODEL,
-            explanation="Beyond model capabilities"
+            explanation="Beyond model capabilities",
         )
 
         assert estimate.uncertainty_type == UncertaintyType.MODEL
@@ -388,7 +342,7 @@ class TestIntegrationUncertainty:
         for _ in range(50):
             calibrator.record(
                 predicted=0.9,
-                actual_correct=False  # Wrong despite high confidence
+                actual_correct=False,  # Wrong despite high confidence
             )
 
         # Calibrated confidence should be lower after fitting
@@ -405,10 +359,7 @@ class TestIntegrationUncertainty:
 
         # Add historical data using the correct API
         for i in range(50):  # Need at least 50 for calibration
-            calibrator.record(
-                predicted=0.7,
-                actual_correct=i % 2 == 0
-            )
+            calibrator.record(predicted=0.7, actual_correct=i % 2 == 0)
 
         # Fit calibration
         calibrator._fit_calibration()
@@ -419,8 +370,7 @@ class TestIntegrationUncertainty:
 
         # Make abstention decision with ConfidenceEstimate object
         estimate = ConfidenceEstimate(
-            value=calibrated_confidence,
-            source=ConfidenceSource.CALIBRATION
+            value=calibrated_confidence, source=ConfidenceSource.CALIBRATION
         )
 
         decision = system.should_abstain(estimate, query="Sample query")
@@ -435,10 +385,7 @@ class TestEdgeCases:
     @pytest.mark.unit
     def test_zero_confidence(self):
         """Test handling of zero confidence."""
-        estimate = ConfidenceEstimate(
-            value=0.0,
-            source=ConfidenceSource.MODEL_LOGPROBS
-        )
+        estimate = ConfidenceEstimate(value=0.0, source=ConfidenceSource.MODEL_LOGPROBS)
 
         assert estimate.value == 0.0
         assert estimate.is_reliable() is False
@@ -450,7 +397,7 @@ class TestEdgeCases:
             value=1.0,
             source=ConfidenceSource.MODEL_LOGPROBS,
             lower_bound=0.95,
-            upper_bound=1.0
+            upper_bound=1.0,
         )
 
         assert estimate.value == 1.0
@@ -472,8 +419,7 @@ class TestEdgeCases:
         # Should validate or handle NaN values
         try:
             estimate = ConfidenceEstimate(
-                value=float('nan'),
-                source=ConfidenceSource.MODEL_LOGPROBS
+                value=float("nan"), source=ConfidenceSource.MODEL_LOGPROBS
             )
             # If allowed, should detect unreliability
             assert math.isnan(estimate.value) or not estimate.is_reliable()
@@ -494,14 +440,11 @@ class TestConfidenceSources:
             ConfidenceSource.CALIBRATION,
             ConfidenceSource.ENSEMBLE,
             ConfidenceSource.CRITIC,
-            ConfidenceSource.HYBRID
+            ConfidenceSource.HYBRID,
         ]
 
         for source in sources:
-            estimate = ConfidenceEstimate(
-                value=0.8,
-                source=source
-            )
+            estimate = ConfidenceEstimate(value=0.8, source=source)
             assert estimate.source == source
 
     @pytest.mark.unit
@@ -510,11 +453,7 @@ class TestConfidenceSources:
         estimate = ConfidenceEstimate(
             value=0.75,
             source=ConfidenceSource.HYBRID,
-            factors={
-                "model": 0.8,
-                "ensemble": 0.7,
-                "critic": 0.75
-            }
+            factors={"model": 0.8, "ensemble": 0.7, "critic": 0.75},
         )
 
         # Hybrid should combine multiple sources
@@ -535,13 +474,11 @@ class TestAbstentionReasons:
             AbstentionReason.AMBIGUOUS_QUERY,
             AbstentionReason.HARMFUL_CONTENT,
             AbstentionReason.CONFLICTING_EVIDENCE,
-            AbstentionReason.REQUIRES_EXPERTISE
+            AbstentionReason.REQUIRES_EXPERTISE,
         ]
 
         for reason in reasons:
             decision = AbstentionDecision(
-                should_abstain=True,
-                reason=reason,
-                confidence=0.3
+                should_abstain=True, reason=reason, confidence=0.3
             )
             assert decision.reason == reason

@@ -18,6 +18,7 @@ import random
 
 class CritiqueType(Enum):
     """Types of critiques."""
+
     LOGICAL = "logical"  # Logic/validity issues
     FACTUAL = "factual"  # Factual accuracy
     COHERENCE = "coherence"  # Internal consistency
@@ -28,6 +29,7 @@ class CritiqueType(Enum):
 
 class CritiqueSeverity(Enum):
     """Severity of critique."""
+
     CRITICAL = "critical"  # Must be addressed
     MAJOR = "major"  # Should be addressed
     MINOR = "minor"  # Nice to address
@@ -36,6 +38,7 @@ class CritiqueSeverity(Enum):
 
 class DebateOutcome(Enum):
     """Outcome of a debate."""
+
     CONSENSUS = "consensus"  # Agents agreed
     MAJORITY = "majority"  # Majority agreed
     SPLIT = "split"  # No agreement
@@ -45,6 +48,7 @@ class DebateOutcome(Enum):
 @dataclass
 class Critique:
     """A single critique of reasoning."""
+
     critique_type: CritiqueType
     severity: CritiqueSeverity
     description: str
@@ -59,13 +63,14 @@ class Critique:
             "description": self.description,
             "target": self.target,
             "suggestion": self.suggestion,
-            "confidence": self.confidence
+            "confidence": self.confidence,
         }
 
 
 @dataclass
 class CritiqueResult:
     """Result of a critic pass."""
+
     critiques: List[Critique]
     overall_assessment: str
     revised_confidence: float
@@ -84,6 +89,7 @@ class CritiqueResult:
 @dataclass
 class DebatePosition:
     """A position in a debate."""
+
     agent_id: str
     claim: str
     arguments: List[str]
@@ -94,6 +100,7 @@ class DebatePosition:
 @dataclass
 class DebateRound:
     """A single round of debate."""
+
     round_number: int
     positions: List[DebatePosition]
     rebuttals: List[Dict[str, str]]  # agent_id -> rebuttal
@@ -102,6 +109,7 @@ class DebateRound:
 @dataclass
 class DebateResult:
     """Result of a multi-agent debate."""
+
     topic: str
     rounds: List[DebateRound]
     outcome: DebateOutcome
@@ -116,10 +124,7 @@ class Critic(ABC):
 
     @abstractmethod
     def critique(
-        self,
-        reasoning: str,
-        conclusion: str,
-        context: Optional[Dict[str, Any]] = None
+        self, reasoning: str, conclusion: str, context: Optional[Dict[str, Any]] = None
     ) -> List[Critique]:
         """Generate critiques of reasoning."""
         ...
@@ -132,7 +137,10 @@ class LogicCritic(Critic):
     FALLACY_PATTERNS = [
         ("affirming the consequent", r"if .+ then .+; .+ therefore .+"),
         ("denying the antecedent", r"if .+ then .+; not .+ therefore not .+"),
-        ("hasty generalization", r"(all|every|always|never).+based on.+(one|few|single)"),
+        (
+            "hasty generalization",
+            r"(all|every|always|never).+based on.+(one|few|single)",
+        ),
         ("false dichotomy", r"(either|only two).+(or|options)"),
         ("circular reasoning", r"because.+therefore.+because"),
         ("ad hominem", r"(person|character|motives).+(wrong|can't trust)"),
@@ -141,10 +149,7 @@ class LogicCritic(Critic):
     ]
 
     def critique(
-        self,
-        reasoning: str,
-        conclusion: str,
-        context: Optional[Dict[str, Any]] = None
+        self, reasoning: str, conclusion: str, context: Optional[Dict[str, Any]] = None
     ) -> List[Critique]:
         critiques = []
         reasoning_lower = reasoning.lower()
@@ -152,14 +157,17 @@ class LogicCritic(Critic):
         # Check for fallacy patterns
         for fallacy_name, pattern in self.FALLACY_PATTERNS:
             import re
+
             if re.search(pattern, reasoning_lower):
-                critiques.append(Critique(
-                    critique_type=CritiqueType.LOGICAL,
-                    severity=CritiqueSeverity.MAJOR,
-                    description=f"Possible {fallacy_name} fallacy detected",
-                    target=reasoning[:100],
-                    suggestion=f"Review argument structure to avoid {fallacy_name}"
-                ))
+                critiques.append(
+                    Critique(
+                        critique_type=CritiqueType.LOGICAL,
+                        severity=CritiqueSeverity.MAJOR,
+                        description=f"Possible {fallacy_name} fallacy detected",
+                        target=reasoning[:100],
+                        suggestion=f"Review argument structure to avoid {fallacy_name}",
+                    )
+                )
 
         # Check for unsupported leaps
         if "therefore" in reasoning_lower or "thus" in reasoning_lower:
@@ -168,23 +176,27 @@ class LogicCritic(Critic):
             for i, sentence in enumerate(sentences):
                 if "therefore" in sentence.lower() or "thus" in sentence.lower():
                     if i < 2:  # Very quick conclusion
-                        critiques.append(Critique(
-                            critique_type=CritiqueType.LOGICAL,
-                            severity=CritiqueSeverity.MINOR,
-                            description="Conclusion reached with minimal premises",
-                            target=sentence.strip(),
-                            suggestion="Consider adding more supporting premises"
-                        ))
+                        critiques.append(
+                            Critique(
+                                critique_type=CritiqueType.LOGICAL,
+                                severity=CritiqueSeverity.MINOR,
+                                description="Conclusion reached with minimal premises",
+                                target=sentence.strip(),
+                                suggestion="Consider adding more supporting premises",
+                            )
+                        )
 
         # Check for contradictions
         if self._has_contradiction(reasoning):
-            critiques.append(Critique(
-                critique_type=CritiqueType.COHERENCE,
-                severity=CritiqueSeverity.CRITICAL,
-                description="Potential contradiction detected in reasoning",
-                target=reasoning[:200],
-                suggestion="Review for internal consistency"
-            ))
+            critiques.append(
+                Critique(
+                    critique_type=CritiqueType.COHERENCE,
+                    severity=CritiqueSeverity.CRITICAL,
+                    description="Potential contradiction detected in reasoning",
+                    target=reasoning[:200],
+                    suggestion="Review for internal consistency",
+                )
+            )
 
         return critiques
 
@@ -213,46 +225,55 @@ class CompletenessСritic(Critic):
     """Critic focused on completeness of analysis."""
 
     def critique(
-        self,
-        reasoning: str,
-        conclusion: str,
-        context: Optional[Dict[str, Any]] = None
+        self, reasoning: str, conclusion: str, context: Optional[Dict[str, Any]] = None
     ) -> List[Critique]:
         critiques = []
 
         # Check for missing considerations
         if "however" not in reasoning.lower() and "but" not in reasoning.lower():
-            critiques.append(Critique(
-                critique_type=CritiqueType.COMPLETENESS,
-                severity=CritiqueSeverity.MINOR,
-                description="No counter-considerations mentioned",
-                target="overall reasoning",
-                suggestion="Consider addressing potential objections"
-            ))
+            critiques.append(
+                Critique(
+                    critique_type=CritiqueType.COMPLETENESS,
+                    severity=CritiqueSeverity.MINOR,
+                    description="No counter-considerations mentioned",
+                    target="overall reasoning",
+                    suggestion="Consider addressing potential objections",
+                )
+            )
 
         # Check for unstated assumptions
-        assumption_markers = ["obviously", "clearly", "of course", "naturally", "everyone knows"]
+        assumption_markers = [
+            "obviously",
+            "clearly",
+            "of course",
+            "naturally",
+            "everyone knows",
+        ]
         for marker in assumption_markers:
             if marker in reasoning.lower():
-                critiques.append(Critique(
-                    critique_type=CritiqueType.ASSUMPTION,
-                    severity=CritiqueSeverity.MINOR,
-                    description=f"Possible unstated assumption ('{marker}')",
-                    target=marker,
-                    suggestion="Consider making implicit assumptions explicit"
-                ))
+                critiques.append(
+                    Critique(
+                        critique_type=CritiqueType.ASSUMPTION,
+                        severity=CritiqueSeverity.MINOR,
+                        description=f"Possible unstated assumption ('{marker}')",
+                        target=marker,
+                        suggestion="Consider making implicit assumptions explicit",
+                    )
+                )
 
         # Check for missing edge cases
         if context and context.get("domain") == "logic":
             edge_case_terms = ["except", "unless", "edge case", "boundary", "limit"]
             if not any(term in reasoning.lower() for term in edge_case_terms):
-                critiques.append(Critique(
-                    critique_type=CritiqueType.COMPLETENESS,
-                    severity=CritiqueSeverity.SUGGESTION,
-                    description="Edge cases not explicitly addressed",
-                    target="analysis scope",
-                    suggestion="Consider boundary conditions and exceptions"
-                ))
+                critiques.append(
+                    Critique(
+                        critique_type=CritiqueType.COMPLETENESS,
+                        severity=CritiqueSeverity.SUGGESTION,
+                        description="Edge cases not explicitly addressed",
+                        target="analysis scope",
+                        suggestion="Consider boundary conditions and exceptions",
+                    )
+                )
 
         return critiques
 
@@ -268,10 +289,7 @@ class BiasCritic(Critic):
     }
 
     def critique(
-        self,
-        reasoning: str,
-        conclusion: str,
-        context: Optional[Dict[str, Any]] = None
+        self, reasoning: str, conclusion: str, context: Optional[Dict[str, Any]] = None
     ) -> List[Critique]:
         critiques = []
         reasoning_lower = reasoning.lower()
@@ -279,13 +297,15 @@ class BiasCritic(Critic):
         for bias_type, markers in self.BIAS_MARKERS.items():
             for marker in markers:
                 if marker in reasoning_lower:
-                    critiques.append(Critique(
-                        critique_type=CritiqueType.BIAS,
-                        severity=CritiqueSeverity.SUGGESTION,
-                        description=f"Possible {bias_type} bias indicator: '{marker}'",
-                        target=marker,
-                        suggestion=f"Consider if {bias_type} bias is influencing the analysis"
-                    ))
+                    critiques.append(
+                        Critique(
+                            critique_type=CritiqueType.BIAS,
+                            severity=CritiqueSeverity.SUGGESTION,
+                            description=f"Possible {bias_type} bias indicator: '{marker}'",
+                            target=marker,
+                            suggestion=f"Consider if {bias_type} bias is influencing the analysis",
+                        )
+                    )
                     break  # One critique per bias type
 
         return critiques
@@ -315,7 +335,7 @@ class CriticSystem:
         reasoning: str,
         conclusion: str,
         original_confidence: float = 0.8,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> CritiqueResult:
         """Run all critics and aggregate results."""
         all_critiques = []
@@ -326,8 +346,7 @@ class CriticSystem:
 
         # Calculate revised confidence
         revised_confidence = self._calculate_revised_confidence(
-            original_confidence,
-            all_critiques
+            original_confidence, all_critiques
         )
 
         # Determine if revision needed
@@ -343,16 +362,14 @@ class CriticSystem:
             critiques=all_critiques,
             overall_assessment=assessment,
             revised_confidence=revised_confidence,
-            should_revise=should_revise
+            should_revise=should_revise,
         )
 
         self.critique_history.append(result)
         return result
 
     def self_consistency_check(
-        self,
-        responses: List[str],
-        threshold: float = 0.7
+        self, responses: List[str], threshold: float = 0.7
     ) -> Tuple[bool, float, str]:
         """
         Check if multiple reasoning attempts reach consistent conclusions.
@@ -366,7 +383,9 @@ class CriticSystem:
         # Extract conclusions (last sentence of each response)
         conclusions = []
         for resp in responses:
-            sentences = [s.strip().lower() for s in resp.strip().split(".") if s.strip()]
+            sentences = [
+                s.strip().lower() for s in resp.strip().split(".") if s.strip()
+            ]
             if sentences:
                 conclusions.append(sentences[-1])
 
@@ -406,9 +425,7 @@ class CriticSystem:
         return (overlap / union) > 0.5 if union > 0 else False
 
     def _calculate_revised_confidence(
-        self,
-        original: float,
-        critiques: List[Critique]
+        self, original: float, critiques: List[Critique]
     ) -> float:
         """Calculate revised confidence based on critiques."""
         penalty = 0.0
@@ -452,7 +469,7 @@ class DebateAgent:
         self,
         agent_id: str,
         reasoning_fn: Optional[Callable[[str], str]] = None,
-        bias: Optional[str] = None  # For devil's advocate
+        bias: Optional[str] = None,  # For devil's advocate
     ):
         self.agent_id = agent_id
         self.reasoning_fn = reasoning_fn or self._default_reasoning
@@ -460,9 +477,7 @@ class DebateAgent:
         self.positions_taken: List[DebatePosition] = []
 
     def take_position(
-        self,
-        topic: str,
-        context: Optional[Dict[str, Any]] = None
+        self, topic: str, context: Optional[Dict[str, Any]] = None
     ) -> DebatePosition:
         """Take a position on a topic."""
         # Generate reasoning
@@ -482,16 +497,13 @@ class DebateAgent:
             agent_id=self.agent_id,
             claim=arguments[0] if arguments else topic,
             arguments=arguments,
-            confidence=confidence
+            confidence=confidence,
         )
 
         self.positions_taken.append(position)
         return position
 
-    def rebut(
-        self,
-        opposing_position: DebatePosition
-    ) -> str:
+    def rebut(self, opposing_position: DebatePosition) -> str:
         """Generate a rebuttal to an opposing position."""
         rebuttals = [
             f"While {opposing_position.claim}, we must consider...",
@@ -529,9 +541,7 @@ class DebateSystem:
         ]
 
     def debate(
-        self,
-        topic: str,
-        context: Optional[Dict[str, Any]] = None
+        self, topic: str, context: Optional[Dict[str, Any]] = None
     ) -> DebateResult:
         """Run a multi-agent debate on a topic."""
         if len(self.agents) < 2:
@@ -540,10 +550,7 @@ class DebateSystem:
         rounds: List[DebateRound] = []
 
         # Initial positions
-        positions = [
-            agent.take_position(topic, context)
-            for agent in self.agents
-        ]
+        positions = [agent.take_position(topic, context) for agent in self.agents]
 
         for round_num in range(self.max_rounds):
             rebuttals = {}
@@ -557,13 +564,17 @@ class DebateSystem:
                         break  # One rebuttal per agent per round
 
             # Convert rebuttals dict to list format
-            rebuttals_list = [{"agent_id": k, "rebuttal": v} for k, v in rebuttals.items()]
+            rebuttals_list = [
+                {"agent_id": k, "rebuttal": v} for k, v in rebuttals.items()
+            ]
 
-            rounds.append(DebateRound(
-                round_number=round_num + 1,
-                positions=positions.copy(),
-                rebuttals=rebuttals_list
-            ))
+            rounds.append(
+                DebateRound(
+                    round_number=round_num + 1,
+                    positions=positions.copy(),
+                    rebuttals=rebuttals_list,
+                )
+            )
 
             # Update positions based on debate (simplified)
             for i, agent in enumerate(self.agents):
@@ -581,15 +592,14 @@ class DebateSystem:
             winning_position=winning,
             consensus_confidence=sum(p.confidence for p in positions) / len(positions),
             key_agreements=agreements,
-            key_disagreements=disagreements
+            key_disagreements=disagreements,
         )
 
         self.debate_history.append(result)
         return result
 
     def _determine_outcome(
-        self,
-        positions: List[DebatePosition]
+        self, positions: List[DebatePosition]
     ) -> Tuple[DebateOutcome, Optional[str], List[str], List[str]]:
         """Determine the outcome of a debate."""
         if not positions:
@@ -607,28 +617,22 @@ class DebateSystem:
                 DebateOutcome.CONSENSUS,
                 top_position.claim,
                 [top_position.claim],
-                []
+                [],
             )
         elif len(high_confidence) > len(positions) / 2:
             return (
                 DebateOutcome.MAJORITY,
                 top_position.claim,
                 [top_position.claim],
-                [p.claim for p in positions if p.confidence <= 0.5]
+                [p.claim for p in positions if p.confidence <= 0.5],
             )
         else:
-            return (
-                DebateOutcome.SPLIT,
-                None,
-                [],
-                [p.claim for p in positions]
-            )
+            return (DebateOutcome.SPLIT, None, [], [p.claim for p in positions])
 
     def should_escalate(self, result: DebateResult) -> bool:
         """Determine if debate result should be escalated to human."""
         return (
-            result.outcome == DebateOutcome.SPLIT or
-            result.consensus_confidence < 0.5
+            result.outcome == DebateOutcome.SPLIT or result.consensus_confidence < 0.5
         )
 
 
@@ -647,7 +651,7 @@ class SelfChecker:
         conclusion: str,
         confidence: float = 0.8,
         run_debate: bool = False,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Run a full self-checking review.
@@ -668,10 +672,10 @@ class SelfChecker:
                 "critiques": [c.to_dict() for c in critique_result.critiques],
                 "assessment": critique_result.overall_assessment,
                 "revised_confidence": critique_result.revised_confidence,
-                "should_revise": critique_result.should_revise
+                "should_revise": critique_result.should_revise,
             },
             "original_confidence": confidence,
-            "final_confidence": critique_result.revised_confidence
+            "final_confidence": critique_result.revised_confidence,
         }
 
         # Run debate if requested and there are major issues
@@ -681,7 +685,7 @@ class SelfChecker:
                 "outcome": debate_result.outcome.value,
                 "winning_position": debate_result.winning_position,
                 "consensus_confidence": debate_result.consensus_confidence,
-                "should_escalate": self.debate_system.should_escalate(debate_result)
+                "should_escalate": self.debate_system.should_escalate(debate_result),
             }
 
             # Adjust confidence based on debate

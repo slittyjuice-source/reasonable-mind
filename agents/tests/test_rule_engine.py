@@ -67,7 +67,7 @@ class TestRule:
         rule = Rule(
             name="mortality",
             antecedents=[Predicate("Human", ["X"])],
-            consequent=Predicate("Mortal", ["X"])
+            consequent=Predicate("Mortal", ["X"]),
         )
 
         assert rule.name == "mortality"
@@ -80,9 +80,9 @@ class TestRule:
             name="grandparent",
             antecedents=[
                 Predicate("Parent", ["X", "Y"]),
-                Predicate("Parent", ["Y", "Z"])
+                Predicate("Parent", ["Y", "Z"]),
             ],
-            consequent=Predicate("Grandparent", ["X", "Z"])
+            consequent=Predicate("Grandparent", ["X", "Z"]),
         )
 
         assert len(rule.antecedents) == 2
@@ -133,7 +133,7 @@ class TestRuleEngine:
         rule = Rule(
             name="mortality",
             antecedents=[Predicate("Human", ["X"])],
-            consequent=Predicate("Mortal", ["X"])
+            consequent=Predicate("Mortal", ["X"]),
         )
 
         engine.add_rule(rule)
@@ -143,11 +143,13 @@ class TestRuleEngine:
     def test_forward_chain_simple(self, engine):
         """Test simple forward chaining inference."""
         engine.add_fact(Predicate("Human", ["Socrates"]))
-        engine.add_rule(Rule(
-            name="mortality",
-            antecedents=[Predicate("Human", ["X"])],
-            consequent=Predicate("Mortal", ["X"])
-        ))
+        engine.add_rule(
+            Rule(
+                name="mortality",
+                antecedents=[Predicate("Human", ["X"])],
+                consequent=Predicate("Mortal", ["X"]),
+            )
+        )
 
         derived = engine.forward_chain()
 
@@ -158,16 +160,20 @@ class TestRuleEngine:
     def test_forward_chain_multi_step(self, engine):
         """Test chained forward inference."""
         engine.add_fact(Predicate("Human", ["Socrates"]))
-        engine.add_rule(Rule(
-            name="r1",
-            antecedents=[Predicate("Human", ["X"])],
-            consequent=Predicate("Mortal", ["X"])
-        ))
-        engine.add_rule(Rule(
-            name="r2",
-            antecedents=[Predicate("Mortal", ["X"])],
-            consequent=Predicate("Finite", ["X"])
-        ))
+        engine.add_rule(
+            Rule(
+                name="r1",
+                antecedents=[Predicate("Human", ["X"])],
+                consequent=Predicate("Mortal", ["X"]),
+            )
+        )
+        engine.add_rule(
+            Rule(
+                name="r2",
+                antecedents=[Predicate("Mortal", ["X"])],
+                consequent=Predicate("Finite", ["X"]),
+            )
+        )
 
         derived = engine.forward_chain()
 
@@ -182,11 +188,13 @@ class TestRuleEngine:
         lowercase 'socrates' for the constant to distinguish from variable 'X'.
         """
         engine.add_fact(Predicate("human", ["socrates"]))
-        engine.add_rule(Rule(
-            name="mortality",
-            antecedents=[Predicate("human", ["X"])],
-            consequent=Predicate("mortal", ["X"])
-        ))
+        engine.add_rule(
+            Rule(
+                name="mortality",
+                antecedents=[Predicate("human", ["X"])],
+                consequent=Predicate("mortal", ["X"]),
+            )
+        )
 
         goal = Predicate("mortal", ["socrates"])
         result = engine.backward_chain(goal)
@@ -200,16 +208,20 @@ class TestRuleEngine:
         Note: Using lowercase constants to distinguish from uppercase variables.
         """
         engine.add_fact(Predicate("human", ["socrates"]))
-        engine.add_rule(Rule(
-            name="r1",
-            antecedents=[Predicate("human", ["X"])],
-            consequent=Predicate("mortal", ["X"])
-        ))
-        engine.add_rule(Rule(
-            name="r2",
-            antecedents=[Predicate("mortal", ["X"])],
-            consequent=Predicate("finite", ["X"])
-        ))
+        engine.add_rule(
+            Rule(
+                name="r1",
+                antecedents=[Predicate("human", ["X"])],
+                consequent=Predicate("mortal", ["X"]),
+            )
+        )
+        engine.add_rule(
+            Rule(
+                name="r2",
+                antecedents=[Predicate("mortal", ["X"])],
+                consequent=Predicate("finite", ["X"]),
+            )
+        )
 
         goal = Predicate("finite", ["socrates"])
         result = engine.backward_chain(goal)
@@ -238,7 +250,7 @@ class TestProofResult:
             goal=Predicate("Mortal", ["Socrates"]),
             steps=[],
             confidence=1.0,
-            time_ms=10.5
+            time_ms=10.5,
         )
 
         assert result.status == ProofStatus.PROVEN
@@ -253,14 +265,14 @@ class TestProofResult:
                 step_number=1,
                 predicate=Predicate("Human", ["Socrates"]),
                 justification="Given fact",
-                confidence=1.0
+                confidence=1.0,
             ),
             ProofStep(
                 step_number=2,
                 predicate=Predicate("Mortal", ["Socrates"]),
                 justification="By mortality rule",
                 rule_applied="mortality",
-                confidence=0.95
+                confidence=0.95,
             ),
         ]
 
@@ -269,7 +281,7 @@ class TestProofResult:
             goal=Predicate("Mortal", ["Socrates"]),
             steps=steps,
             confidence=0.95,
-            time_ms=15.0
+            time_ms=15.0,
         )
 
         assert len(result.steps) == 2
@@ -285,7 +297,7 @@ class TestProofStep:
             step_number=1,
             predicate=Predicate("Human", ["Socrates"]),
             justification="Given as fact",
-            confidence=1.0
+            confidence=1.0,
         )
 
         assert step.step_number == 1

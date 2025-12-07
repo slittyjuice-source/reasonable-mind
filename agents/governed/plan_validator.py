@@ -29,6 +29,7 @@ def _utc_now() -> datetime:
 
 class ActionCategory(Enum):
     """Categories of actions that can be extracted from plans."""
+
     FILE_READ = "file_read"
     FILE_WRITE = "file_write"
     FILE_CREATE = "file_create"
@@ -42,6 +43,7 @@ class ActionCategory(Enum):
 
 class ValidationResult(Enum):
     """Result of plan validation."""
+
     APPROVED = "approved"
     ESCALATE = "escalate"
     BLOCKED = "blocked"
@@ -50,9 +52,10 @@ class ValidationResult(Enum):
 @dataclass
 class ExtractedAction:
     """An action extracted from a natural language plan step."""
+
     category: ActionCategory
     operation: str  # e.g., "write", "run", "commit"
-    target: str     # e.g., file path, command
+    target: str  # e.g., file path, command
     parameters: Dict[str, Any] = field(default_factory=dict)
     original_text: str = ""
     confidence: float = 1.0  # How confident we are in the extraction
@@ -61,6 +64,7 @@ class ExtractedAction:
 @dataclass
 class ToolCall:
     """A validated tool call ready for execution."""
+
     tool_name: str
     arguments: Dict[str, Any]
     action: ExtractedAction
@@ -71,10 +75,15 @@ class ToolCall:
 @dataclass
 class ValidationOutcome:
     """Outcome of validating a plan step or entire plan."""
+
     result: ValidationResult
     approved_calls: List[ToolCall] = field(default_factory=list)
-    blocked_actions: List[Tuple[ExtractedAction, str]] = field(default_factory=list)  # (action, reason)
-    escalation_requests: List[Tuple[ExtractedAction, str]] = field(default_factory=list)  # (action, reason)
+    blocked_actions: List[Tuple[ExtractedAction, str]] = field(
+        default_factory=list
+    )  # (action, reason)
+    escalation_requests: List[Tuple[ExtractedAction, str]] = field(
+        default_factory=list
+    )  # (action, reason)
     rationale: str = ""
     policy_hash: Optional[str] = None
 
@@ -82,6 +91,7 @@ class ValidationOutcome:
 @dataclass
 class PlanStep:
     """A single step in an agent's plan."""
+
     index: int
     description: str
     intent: Optional[str] = None  # Parsed intent
@@ -92,6 +102,7 @@ class PlanStep:
 @dataclass
 class Plan:
     """An agent's execution plan to be validated."""
+
     goal: str
     steps: List[PlanStep]
     context: Dict[str, Any] = field(default_factory=dict)
@@ -107,10 +118,10 @@ class Plan:
         - Single actions: "read file.py"
         """
         steps = []
-        lines = text.strip().split('\n')
+        lines = text.strip().split("\n")
 
         # Pattern for numbered/bulleted list items
-        step_pattern = re.compile(r'^[\d\-\*\•]+[.\):]?\s*(.+)$')
+        step_pattern = re.compile(r"^[\d\-\*\•]+[.\):]?\s*(.+)$")
 
         index = 0
         for line in lines:
@@ -161,22 +172,25 @@ class PlanValidator:
 
     # Patterns indicating bypass/evasion attempts
     BYPASS_PATTERNS: List[Tuple[str, str]] = [
-        (r'\bbypass\b', "Explicit bypass mentioned"),
-        (r'\bskip\s+(?:validation|check|security)', "Attempting to skip validation"),
-        (r'\bdisable\s+(?:governance|policy|restriction)', "Attempting to disable governance"),
-        (r'\bignore\s+(?:rules?|policies?|constraints?)', "Attempting to ignore rules"),
-        (r'\boverride\s+(?:security|permission)', "Attempting to override security"),
-        (r'\bworkaround\b', "Workaround mentioned"),
-        (r'\bhack\b', "Hack mentioned"),
-        (r'\bexploit\b', "Exploit mentioned"),
-        (r'\bforce\s+(?:through|past)', "Forcing past controls"),
-        (r'\bpretend\b', "Deceptive intent"),
-        (r'\btrick\b', "Deceptive intent"),
-        (r'\bhide\b.*\b(?:from|activity)', "Hiding activity"),
-        (r'\beval\s*\(', "Dynamic code execution"),
-        (r'\bexec\s*\(', "Dynamic code execution"),
-        (r'__import__', "Dynamic import"),
-        (r'\bcompile\s*\(', "Dynamic compilation"),
+        (r"\bbypass\b", "Explicit bypass mentioned"),
+        (r"\bskip\s+(?:validation|check|security)", "Attempting to skip validation"),
+        (
+            r"\bdisable\s+(?:governance|policy|restriction)",
+            "Attempting to disable governance",
+        ),
+        (r"\bignore\s+(?:rules?|policies?|constraints?)", "Attempting to ignore rules"),
+        (r"\boverride\s+(?:security|permission)", "Attempting to override security"),
+        (r"\bworkaround\b", "Workaround mentioned"),
+        (r"\bhack\b", "Hack mentioned"),
+        (r"\bexploit\b", "Exploit mentioned"),
+        (r"\bforce\s+(?:through|past)", "Forcing past controls"),
+        (r"\bpretend\b", "Deceptive intent"),
+        (r"\btrick\b", "Deceptive intent"),
+        (r"\bhide\b.*\b(?:from|activity)", "Hiding activity"),
+        (r"\beval\s*\(", "Dynamic code execution"),
+        (r"\bexec\s*\(", "Dynamic code execution"),
+        (r"__import__", "Dynamic import"),
+        (r"\bcompile\s*\(", "Dynamic compilation"),
     ]
 
     # Action extraction patterns - improved to handle more natural language variants
@@ -185,7 +199,7 @@ class PlanValidator:
             # Pattern: read 'test.py', read file test.py, read "test.py"
             (r'read\s+(?:the\s+)?(?:file\s+)?["\']([^"\']+)["\']', "read"),
             (r'read\s+(?:the\s+)?(?:file\s+)?([^\s,.\'"]+\.[a-zA-Z0-9]+)', "read"),
-            (r'read\s+(?:file\s+)?([^\s]+)', "read"),
+            (r"read\s+(?:file\s+)?([^\s]+)", "read"),
             (r'open\s+["\']?([^\s"\']+)["\']?\s+(?:for\s+)?read', "read"),
             (r'cat\s+["\']?([^\s"\']+)["\']?', "read"),
             (r'view\s+(?:the\s+)?(?:file\s+)?["\']?([^\s"\']+)["\']?', "read"),
@@ -199,7 +213,10 @@ class PlanValidator:
             (r'edit\s+["\']?([^\s"\']+)["\']?', "write"),
         ],
         ActionCategory.FILE_CREATE: [
-            (r'create\s+(?:a\s+)?(?:new\s+)?(?:file\s+)?["\']?([^\s"\']+)["\']?', "create"),
+            (
+                r'create\s+(?:a\s+)?(?:new\s+)?(?:file\s+)?["\']?([^\s"\']+)["\']?',
+                "create",
+            ),
             (r'new\s+file\s+["\']?([^\s"\']+)["\']?', "create"),
             (r'touch\s+["\']?([^\s"\']+)["\']?', "create"),
         ],
@@ -210,20 +227,23 @@ class PlanValidator:
         ],
         ActionCategory.SHELL_COMMAND: [
             # Pattern: run command `ls`, run `cat file`, run command 'ls -la'
-            (r'run\s+(?:the\s+)?(?:command\s+)?[`]([^`]+)[`]', "run"),
+            (r"run\s+(?:the\s+)?(?:command\s+)?[`]([^`]+)[`]", "run"),
             (r'run\s+(?:the\s+)?(?:command\s+)?["\']([^"\']+)["\']', "run"),
             (r'execute\s+(?:the\s+)?(?:command\s+)?[`"\']([^`"\']+)[`"\']', "run"),
-            (r'\$\s*([^\n]+)', "run"),
-            (r'[`]([^`]+)[`]', "run"),
+            (r"\$\s*([^\n]+)", "run"),
+            (r"[`]([^`]+)[`]", "run"),
         ],
         ActionCategory.GIT_OPERATION: [
-            (r'git\s+(add|commit|push|pull|checkout|branch|merge|rebase)\b', "git"),
-            (r'commit\s+(?:changes?|files?)', "commit"),
-            (r'push\s+(?:to\s+)?(?:remote|origin)', "push"),
-            (r'stage\s+(?:changes?|files?)', "add"),
+            (r"git\s+(add|commit|push|pull|checkout|branch|merge|rebase)\b", "git"),
+            (r"commit\s+(?:changes?|files?)", "commit"),
+            (r"push\s+(?:to\s+)?(?:remote|origin)", "push"),
+            (r"stage\s+(?:changes?|files?)", "add"),
         ],
         ActionCategory.NETWORK_REQUEST: [
-            (r'(?:fetch|get|post|request)\s+(?:from\s+)?(?:url\s+)?["\']?(https?://[^\s"\']+)["\']?', "request"),
+            (
+                r'(?:fetch|get|post|request)\s+(?:from\s+)?(?:url\s+)?["\']?(https?://[^\s"\']+)["\']?',
+                "request",
+            ),
             (r'curl\s+["\']?(https?://[^\s"\']+)["\']?', "request"),
             (r'wget\s+["\']?(https?://[^\s"\']+)["\']?', "request"),
             (r'download\s+(?:from\s+)?["\']?(https?://[^\s"\']+)["\']?', "request"),
@@ -247,7 +267,7 @@ class PlanValidator:
         governance_matrix: Dict[str, Any],
         profile: Any,  # LoadedProfile
         sandbox_root: Path,
-        strict_mode: bool = True
+        strict_mode: bool = True,
     ):
         """
         Initialize plan validator.
@@ -291,27 +311,33 @@ class PlanValidator:
                 matches = re.finditer(pattern, text, re.IGNORECASE)
                 for match in matches:
                     target = match.group(1) if match.lastindex else ""
-                    actions.append(ExtractedAction(
-                        category=category,
-                        operation=operation,
-                        target=target,
-                        original_text=step.description,
-                        confidence=0.8 if target else 0.5
-                    ))
+                    actions.append(
+                        ExtractedAction(
+                            category=category,
+                            operation=operation,
+                            target=target,
+                            original_text=step.description,
+                            confidence=0.8 if target else 0.5,
+                        )
+                    )
 
         # If no actions extracted, mark as unknown
         if not actions:
-            actions.append(ExtractedAction(
-                category=ActionCategory.UNKNOWN,
-                operation="unknown",
-                target="",
-                original_text=step.description,
-                confidence=0.0
-            ))
+            actions.append(
+                ExtractedAction(
+                    category=ActionCategory.UNKNOWN,
+                    operation="unknown",
+                    target="",
+                    original_text=step.description,
+                    confidence=0.0,
+                )
+            )
 
         return actions
 
-    def _check_governance(self, action: ExtractedAction) -> Tuple[ValidationResult, str]:
+    def _check_governance(
+        self, action: ExtractedAction
+    ) -> Tuple[ValidationResult, str]:
         """
         Check an action against the governance matrix.
 
@@ -334,15 +360,24 @@ class PlanValidator:
 
         if action.category not in category_map:
             if self.strict_mode:
-                return ValidationResult.BLOCKED, f"Unknown action category: {action.category}"
-            return ValidationResult.ESCALATE, f"Unknown action category: {action.category}"
+                return (
+                    ValidationResult.BLOCKED,
+                    f"Unknown action category: {action.category}",
+                )
+            return (
+                ValidationResult.ESCALATE,
+                f"Unknown action category: {action.category}",
+            )
 
         section, subsection = category_map[action.category]
         rules = matrix.get(section, {}).get(subsection, {})
 
         # For shell commands, extract the base command for allow list matching
         base_command = None
-        if action.category in (ActionCategory.SHELL_COMMAND, ActionCategory.GIT_OPERATION):
+        if action.category in (
+            ActionCategory.SHELL_COMMAND,
+            ActionCategory.GIT_OPERATION,
+        ):
             # Extract base command (first word) for allow matching
             parts = action.target.strip().split()
             base_command = parts[0] if parts else action.target
@@ -350,20 +385,27 @@ class PlanValidator:
         # Check deny first - use full target AND original text for deny checks
         deny_patterns = rules.get("deny", [])
         for pattern in deny_patterns:
-            if self._match_pattern(action.target, pattern) or self._match_pattern(action.operation, pattern):
+            if self._match_pattern(action.target, pattern) or self._match_pattern(
+                action.operation, pattern
+            ):
                 return ValidationResult.BLOCKED, f"Denied by policy: {pattern}"
             # Also check if target contains the deny pattern (e.g., "rm -rf" in command)
             if pattern.lower() in action.target.lower():
                 return ValidationResult.BLOCKED, f"Denied by policy: {pattern}"
             # For write operations, also check original text for sensitive keywords
-            if action.category in (ActionCategory.FILE_WRITE, ActionCategory.FILE_CREATE):
-                if pattern.lower().strip('*') in action.original_text.lower():
+            if action.category in (
+                ActionCategory.FILE_WRITE,
+                ActionCategory.FILE_CREATE,
+            ):
+                if pattern.lower().strip("*") in action.original_text.lower():
                     return ValidationResult.BLOCKED, f"Denied by policy: {pattern}"
 
         # Check escalate
         escalate_patterns = rules.get("escalate", [])
         for pattern in escalate_patterns:
-            if self._match_pattern(action.target, pattern) or self._match_pattern(action.operation, pattern):
+            if self._match_pattern(action.target, pattern) or self._match_pattern(
+                action.operation, pattern
+            ):
                 return ValidationResult.ESCALATE, f"Requires approval: {pattern}"
             # Check if escalation pattern appears in target
             if pattern.lower() in action.target.lower():
@@ -375,7 +417,9 @@ class PlanValidator:
             # For shell commands, check base command against allow list
             if base_command and self._match_pattern(base_command, pattern):
                 return ValidationResult.APPROVED, f"Allowed by policy: {pattern}"
-            if self._match_pattern(action.target, pattern) or self._match_pattern(action.operation, pattern):
+            if self._match_pattern(action.target, pattern) or self._match_pattern(
+                action.operation, pattern
+            ):
                 return ValidationResult.APPROVED, f"Allowed by policy: {pattern}"
 
         # Default based on action type
@@ -398,7 +442,12 @@ class PlanValidator:
             return True
 
         # Convert glob to regex
-        regex = pattern.replace(".", r"\.").replace("**", ".*").replace("*", "[^/]*").replace("?", ".")
+        regex = (
+            pattern.replace(".", r"\.")
+            .replace("**", ".*")
+            .replace("*", "[^/]*")
+            .replace("?", ".")
+        )
         try:
             return bool(re.match(f"^{regex}$", value, re.IGNORECASE))
         except re.error:
@@ -410,7 +459,9 @@ class PlanValidator:
             "category": action.category.value,
             "operation": action.operation,
             "target": action.target,
-            "policy_hash": self.profile.integrity_hash if hasattr(self.profile, 'integrity_hash') else None
+            "policy_hash": self.profile.integrity_hash
+            if hasattr(self.profile, "integrity_hash")
+            else None,
         }
         canonical = json.dumps(data, sort_keys=True)
         return hashlib.sha256(canonical.encode()).hexdigest()[:16]
@@ -421,7 +472,7 @@ class PlanValidator:
 
         arguments: Dict[str, Any] = {
             "target": action.target,
-            "operation": action.operation
+            "operation": action.operation,
         }
         arguments.update(action.parameters)
 
@@ -430,7 +481,7 @@ class PlanValidator:
             arguments=arguments,
             action=action,
             plan_step_index=step_index,
-            validation_hash=self._compute_validation_hash(action)
+            validation_hash=self._compute_validation_hash(action),
         )
 
     def validate_step(self, step: PlanStep) -> ValidationOutcome:
@@ -445,14 +496,19 @@ class PlanValidator:
         if bypass_reason:
             return ValidationOutcome(
                 result=ValidationResult.BLOCKED,
-                blocked_actions=[(ExtractedAction(
-                    category=ActionCategory.UNKNOWN,
-                    operation="bypass",
-                    target="",
-                    original_text=step.description
-                ), bypass_reason)],
+                blocked_actions=[
+                    (
+                        ExtractedAction(
+                            category=ActionCategory.UNKNOWN,
+                            operation="bypass",
+                            target="",
+                            original_text=step.description,
+                        ),
+                        bypass_reason,
+                    )
+                ],
                 rationale=f"Bypass attempt detected: {bypass_reason}",
-                policy_hash=getattr(self.profile, 'integrity_hash', None)
+                policy_hash=getattr(self.profile, "integrity_hash", None),
             )
 
         # Extract actions from step
@@ -490,7 +546,7 @@ class PlanValidator:
             blocked_actions=blocked_actions,
             escalation_requests=escalation_requests,
             rationale=rationale,
-            policy_hash=getattr(self.profile, 'integrity_hash', None)
+            policy_hash=getattr(self.profile, "integrity_hash", None),
         )
 
     def validate(self, plan: Plan) -> ValidationOutcome:
@@ -516,7 +572,9 @@ class PlanValidator:
             rationale = f"Plan blocked: {len(all_blocked)} action(s) denied"
         elif all_escalations:
             overall_result = ValidationResult.ESCALATE
-            rationale = f"Plan requires approval: {len(all_escalations)} action(s) need review"
+            rationale = (
+                f"Plan requires approval: {len(all_escalations)} action(s) need review"
+            )
         elif all_approved:
             overall_result = ValidationResult.APPROVED
             rationale = f"Plan approved: {len(all_approved)} action(s) validated"
@@ -530,7 +588,7 @@ class PlanValidator:
             blocked_actions=all_blocked,
             escalation_requests=all_escalations,
             rationale=rationale,
-            policy_hash=getattr(self.profile, 'integrity_hash', None)
+            policy_hash=getattr(self.profile, "integrity_hash", None),
         )
 
     def validate_text(self, text: str, goal: str = "") -> ValidationOutcome:

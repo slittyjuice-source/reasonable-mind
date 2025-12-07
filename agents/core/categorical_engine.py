@@ -14,19 +14,21 @@ from dataclasses import dataclass
 
 class SyllogismType(Enum):
     """Valid syllogistic forms (Aristotelian)."""
+
     BARBARA = "AAA-1"  # All M are P, All S are M → All S are P
     CELARENT = "EAE-1"  # No M are P, All S are M → No S are P
-    DARII = "AII-1"     # All M are P, Some S are M → Some S are P
-    FERIO = "EIO-1"     # No M are P, Some S are M → Some S are not P
-    CESARE = "EAE-2"    # No P are M, All S are M → No S are P
-    CAMESTRES = "AEE-2" # All P are M, No S are M → No S are P
-    FESTINO = "EIO-2"   # No P are M, Some S are M → Some S are not P
-    BAROCO = "AOO-2"    # All P are M, Some S are not M → Some S are not P
+    DARII = "AII-1"  # All M are P, Some S are M → Some S are P
+    FERIO = "EIO-1"  # No M are P, Some S are M → Some S are not P
+    CESARE = "EAE-2"  # No P are M, All S are M → No S are P
+    CAMESTRES = "AEE-2"  # All P are M, No S are M → No S are P
+    FESTINO = "EIO-2"  # No P are M, Some S are M → Some S are not P
+    BAROCO = "AOO-2"  # All P are M, Some S are not M → Some S are not P
 
 
 @dataclass
 class SyllogismResult:
     """Result of syllogism validation."""
+
     valid: bool
     form: Optional[SyllogismType]
     explanation: str
@@ -43,60 +45,62 @@ class CategoricalEngine:
                 "minor": "All S are M",
                 "conclusion": "All S are P",
                 "description": "Universal affirmative throughout (AAA-1)",
-                "example": "All humans are mortal; Socrates is human; therefore Socrates is mortal"
+                "example": "All humans are mortal; Socrates is human; therefore Socrates is mortal",
             },
             SyllogismType.CELARENT: {
                 "major": "No M are P",
                 "minor": "All S are M",
                 "conclusion": "No S are P",
                 "description": "Universal negative major, universal affirmative minor (EAE-1)",
-                "example": "No reptiles are mammals; all snakes are reptiles; therefore no snakes are mammals"
+                "example": "No reptiles are mammals; all snakes are reptiles; therefore no snakes are mammals",
             },
             SyllogismType.DARII: {
                 "major": "All M are P",
                 "minor": "Some S are M",
                 "conclusion": "Some S are P",
                 "description": "Universal affirmative major, particular affirmative minor (AII-1)",
-                "example": "All birds fly; some animals are birds; therefore some animals fly"
+                "example": "All birds fly; some animals are birds; therefore some animals fly",
             },
             SyllogismType.FERIO: {
                 "major": "No M are P",
                 "minor": "Some S are M",
                 "conclusion": "Some S are not P",
                 "description": "Universal negative major, particular affirmative minor (EIO-1)",
-                "example": "No fish are mammals; some animals are fish; therefore some animals are not mammals"
+                "example": "No fish are mammals; some animals are fish; therefore some animals are not mammals",
             },
             SyllogismType.CESARE: {
                 "major": "No P are M",
                 "minor": "All S are M",
                 "conclusion": "No S are P",
                 "description": "Universal negative major (EAE-2)",
-                "example": "No mammals are cold-blooded; all dogs are mammals; therefore no dogs are cold-blooded"
+                "example": "No mammals are cold-blooded; all dogs are mammals; therefore no dogs are cold-blooded",
             },
             SyllogismType.CAMESTRES: {
                 "major": "All P are M",
                 "minor": "No S are M",
                 "conclusion": "No S are P",
                 "description": "Universal affirmative major, universal negative minor (AEE-2)",
-                "example": "All cats are mammals; no rocks are mammals; therefore no rocks are cats"
+                "example": "All cats are mammals; no rocks are mammals; therefore no rocks are cats",
             },
             SyllogismType.FESTINO: {
                 "major": "No P are M",
                 "minor": "Some S are M",
                 "conclusion": "Some S are not P",
                 "description": "Universal negative major, particular affirmative minor (EIO-2)",
-                "example": "No mammals are insects; some animals are insects; therefore some animals are not mammals"
+                "example": "No mammals are insects; some animals are insects; therefore some animals are not mammals",
             },
             SyllogismType.BAROCO: {
                 "major": "All P are M",
                 "minor": "Some S are not M",
                 "conclusion": "Some S are not P",
                 "description": "Universal affirmative major, particular negative minor (AOO-2)",
-                "example": "All dogs are mammals; some pets are not mammals; therefore some pets are not dogs"
-            }
+                "example": "All dogs are mammals; some pets are not mammals; therefore some pets are not dogs",
+            },
         }
 
-    def validate_syllogism(self, major: str, minor: str, conclusion: str) -> SyllogismResult:
+    def validate_syllogism(
+        self, major: str, minor: str, conclusion: str
+    ) -> SyllogismResult:
         """
         Validate a categorical syllogism.
 
@@ -120,7 +124,7 @@ class CategoricalEngine:
             return SyllogismResult(
                 valid=True,
                 form=SyllogismType.BARBARA,
-                explanation="Valid: Barbara form (AAA-1) - All M are P; All S are M; therefore All S are P"
+                explanation="Valid: Barbara form (AAA-1) - All M are P; All S are M; therefore All S are P",
             )
 
         # Check for Celarent form (EAE-1)
@@ -128,7 +132,7 @@ class CategoricalEngine:
             return SyllogismResult(
                 valid=True,
                 form=SyllogismType.CELARENT,
-                explanation="Valid: Celarent form (EAE-1) - No M are P; All S are M; therefore No S are P"
+                explanation="Valid: Celarent form (EAE-1) - No M are P; All S are M; therefore No S are P",
             )
 
         # Check for Darii form (AII-1)
@@ -136,7 +140,7 @@ class CategoricalEngine:
             return SyllogismResult(
                 valid=True,
                 form=SyllogismType.DARII,
-                explanation="Valid: Darii form (AII-1) - All M are P; Some S are M; therefore Some S are P"
+                explanation="Valid: Darii form (AII-1) - All M are P; Some S are M; therefore Some S are P",
             )
 
         # Check for Ferio form (EIO-1)
@@ -144,14 +148,14 @@ class CategoricalEngine:
             return SyllogismResult(
                 valid=True,
                 form=SyllogismType.FERIO,
-                explanation="Valid: Ferio form (EIO-1) - No M are P; Some S are M; therefore Some S are not P"
+                explanation="Valid: Ferio form (EIO-1) - No M are P; Some S are M; therefore Some S are not P",
             )
 
         return SyllogismResult(
             valid=False,
             form=None,
             explanation=f"Does not match known valid syllogistic forms (detected {form_code})",
-            confidence=0.0
+            confidence=0.0,
         )
 
     def _classify_proposition(self, statement: str) -> str:

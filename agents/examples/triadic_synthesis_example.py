@@ -18,6 +18,7 @@ from enum import Enum
 
 # ==================== LOGIC LAYER (Skeleton) ====================
 
+
 class LogicValidation:
     """Pure logical validation - no interpretation."""
 
@@ -39,14 +40,16 @@ class LogicValidation:
             "confidence": 1.0,  # Logic is certain about structure
             "form": "conditional_argument" if valid else "incomplete",
             "explanation": "Valid structure" if valid else "Missing premises",
-            "layer": "LOGIC"
+            "layer": "LOGIC",
         }
 
 
 # ==================== AI LAYER (Muscles) ====================
 
+
 class InterpretiveProfile(Enum):
     """Different intellectual traditions as interpretive lenses."""
+
     MARX = "marx"
     FREUD = "freud"
     BLACKSTONE = "blackstone"
@@ -56,6 +59,7 @@ class InterpretiveProfile(Enum):
 @dataclass
 class Perspective:
     """A single interpretive perspective from AI."""
+
     profile: InterpretiveProfile
     interpretation: str
     confidence: float  # Always < 1.0 for non-formal interpretations
@@ -68,8 +72,7 @@ class AIInterpretation:
 
     @staticmethod
     def interpret_from_profile(
-        argument: str,
-        profile: InterpretiveProfile
+        argument: str, profile: InterpretiveProfile
     ) -> Perspective:
         """
         Interprets argument through a specific intellectual lens.
@@ -85,8 +88,8 @@ class AIInterpretation:
                 concerns=[
                     "Who benefits from this policy?",
                     "Does it perpetuate economic inequality?",
-                    "What are the material conditions?"
-                ]
+                    "What are the material conditions?",
+                ],
             )
 
         elif profile == InterpretiveProfile.FREUD:
@@ -98,8 +101,8 @@ class AIInterpretation:
                 concerns=[
                     "What unconscious fears drive this position?",
                     "Is this a defense mechanism?",
-                    "What is the latent content?"
-                ]
+                    "What is the latent content?",
+                ],
             )
 
         elif profile == InterpretiveProfile.BLACKSTONE:
@@ -111,8 +114,8 @@ class AIInterpretation:
                 concerns=[
                     "Does this violate established law?",
                     "What is the constitutional basis?",
-                    "Are property rights respected?"
-                ]
+                    "Are property rights respected?",
+                ],
             )
 
         elif profile == InterpretiveProfile.RAWLS:
@@ -124,14 +127,13 @@ class AIInterpretation:
                 concerns=[
                     "Would you accept this policy if you were disadvantaged?",
                     "Does it maximize benefit to the least advantaged?",
-                    "Is it fair regardless of your position?"
-                ]
+                    "Is it fair regardless of your position?",
+                ],
             )
 
     @staticmethod
     def provide_multiple_perspectives(
-        argument: str,
-        profiles: List[InterpretiveProfile]
+        argument: str, profiles: List[InterpretiveProfile]
     ) -> List[Perspective]:
         """
         Returns MULTIPLE interpretations, never auto-selecting "best".
@@ -148,9 +150,11 @@ class AIInterpretation:
 
 # ==================== USER LAYER (Heart) ====================
 
+
 @dataclass
 class UserPreferences:
     """User's values, weightings, and preferences."""
+
     user_id: str
     profile_weights: Dict[InterpretiveProfile, float]
     values: Dict[str, float]
@@ -185,7 +189,7 @@ class UserContext:
             constraints=[
                 "Must not violate human rights",
                 "Must consider impact on disadvantaged",
-            ]
+            ],
         )
 
     @staticmethod
@@ -201,22 +205,22 @@ class UserContext:
         return "I care most about fairness and equality"
 
     @staticmethod
-    def user_override(
-        system_suggestion: str,
-        user_choice: Optional[str]
-    ) -> str:
+    def user_override(system_suggestion: str, user_choice: Optional[str]) -> str:
         """
         Allows user to override any system recommendation.
 
         User agency is preserved.
         """
         if user_choice:
-            print(f"\n[USER OVERRIDE]: User chose '{user_choice}' over system suggestion '{system_suggestion}'")
+            print(
+                f"\n[USER OVERRIDE]: User chose '{user_choice}' over system suggestion '{system_suggestion}'"
+            )
             return user_choice
         return system_suggestion
 
 
 # ==================== SYNTHESIS LAYER (Reason) ====================
+
 
 @dataclass
 class SynthesizedDecision:
@@ -225,6 +229,7 @@ class SynthesizedDecision:
 
     Arises from interaction of Logic + AI + User
     """
+
     recommendation: str
     confidence: float
     provenance: Dict[str, Any]
@@ -243,7 +248,7 @@ class TriadicSynthesis:
     def synthesize(
         logic_validation: Dict[str, Any],
         ai_perspectives: List[Perspective],
-        user_prefs: UserPreferences
+        user_prefs: UserPreferences,
     ) -> SynthesizedDecision:
         """
         Produces reasoned output from three layers.
@@ -257,10 +262,10 @@ class TriadicSynthesis:
                 confidence=0.0,
                 provenance={
                     "logic": logic_validation,
-                    "reason": "Skeleton blocks: invalid structure"
+                    "reason": "Skeleton blocks: invalid structure",
                 },
                 explanation="The argument has an invalid logical form. Logic prevents synthesis.",
-                requires_user_approval=False
+                requires_user_approval=False,
             )
 
         # STEP 2: Weight AI perspectives by user preferences (Muscles + Heart)
@@ -293,16 +298,16 @@ class TriadicSynthesis:
         explanation = f"""
         SYNTHESIS OF THREE LAYERS:
 
-        1. LOGIC (Skeleton): {logic_validation['explanation']}
+        1. LOGIC (Skeleton): {logic_validation["explanation"]}
            - Structure is valid, reasoning can proceed
 
         2. AI (Muscles): {len(ai_perspectives)} perspectives considered
-           {chr(10).join(f'   - {s}' for s in synthesis)}
+           {chr(10).join(f"   - {s}" for s in synthesis)}
 
         3. USER (Heart): Applied your preferences
-           - Fairness weight: {user_prefs.values.get('fairness', 0):.0%}
-           - Equality weight: {user_prefs.values.get('economic_equality', 0):.0%}
-           - Emphasized: {', '.join(p.profile.value for p, _ in top_perspectives)}
+           - Fairness weight: {user_prefs.values.get("fairness", 0):.0%}
+           - Equality weight: {user_prefs.values.get("economic_equality", 0):.0%}
+           - Emphasized: {", ".join(p.profile.value for p, _ in top_perspectives)}
 
         4. REASON (Emergent): Based on this synthesis, the argument should be
            evaluated primarily through fairness and equality lenses.
@@ -310,7 +315,9 @@ class TriadicSynthesis:
 
         # Compute synthesis confidence
         # Not just AI confidence - weighted by user preferences
-        synth_confidence = sum(w for _, w in top_perspectives) / len(weighted_perspectives)
+        synth_confidence = sum(w for _, w in top_perspectives) / len(
+            weighted_perspectives
+        )
 
         recommendation = (
             f"Consider this argument through {top_perspectives[0][0].profile.value.capitalize()} "
@@ -329,22 +336,23 @@ class TriadicSynthesis:
                         "interpretation": p.interpretation,
                         "confidence": p.confidence,
                         "user_weight": user_prefs.profile_weights.get(p.profile, 0.5),
-                        "weighted_confidence": w
+                        "weighted_confidence": w,
                     }
                     for p, w in weighted_perspectives
                 ],
                 "user_layer": {
                     "user_id": user_prefs.user_id,
                     "values_applied": user_prefs.values,
-                    "constraints": user_prefs.constraints
-                }
+                    "constraints": user_prefs.constraints,
+                },
             },
             explanation=explanation.strip(),
-            requires_user_approval=True  # High-stakes = user approval required
+            requires_user_approval=True,  # High-stakes = user approval required
         )
 
 
 # ==================== DEMONSTRATION ====================
+
 
 def demonstrate_triadic_synthesis():
     """
@@ -364,7 +372,7 @@ def demonstrate_triadic_synthesis():
 
     premises = [
         "If we increase minimum wage, then workers will have more purchasing power",
-        "We should increase minimum wage"
+        "We should increase minimum wage",
     ]
     conclusion = "Workers will have more purchasing power"
 
@@ -394,12 +402,11 @@ def demonstrate_triadic_synthesis():
         InterpretiveProfile.MARX,
         InterpretiveProfile.RAWLS,
         InterpretiveProfile.BLACKSTONE,
-        InterpretiveProfile.FREUD
+        InterpretiveProfile.FREUD,
     ]
 
     ai_perspectives = AIInterpretation.provide_multiple_perspectives(
-        argument,
-        profiles_to_use
+        argument, profiles_to_use
     )
 
     for p in ai_perspectives:
@@ -441,11 +448,7 @@ def demonstrate_triadic_synthesis():
     print("   Role: Arises from interaction of all three layers")
     print("=" * 70)
 
-    synthesis = TriadicSynthesis.synthesize(
-        logic_result,
-        ai_perspectives,
-        user_prefs
-    )
+    synthesis = TriadicSynthesis.synthesize(logic_result, ai_perspectives, user_prefs)
 
     print(f"\n   Recommendation: {synthesis.recommendation}")
     print(f"   Confidence: {synthesis.confidence:.0%}")
@@ -462,11 +465,13 @@ def demonstrate_triadic_synthesis():
     print(f"      Form: {synthesis.provenance['logic_layer']['form']}")
 
     print("\n   AI Layer Contribution:")
-    for ai_contrib in synthesis.provenance['ai_layer']:
-        print(f"      {ai_contrib['profile'].capitalize()}: "
-              f"confidence={ai_contrib['confidence']:.0%}, "
-              f"user_weight={ai_contrib['user_weight']:.0%}, "
-              f"weighted={ai_contrib['weighted_confidence']:.2f}")
+    for ai_contrib in synthesis.provenance["ai_layer"]:
+        print(
+            f"      {ai_contrib['profile'].capitalize()}: "
+            f"confidence={ai_contrib['confidence']:.0%}, "
+            f"user_weight={ai_contrib['user_weight']:.0%}, "
+            f"weighted={ai_contrib['weighted_confidence']:.2f}"
+        )
 
     print("\n   User Layer Contribution:")
     print(f"      Values: {synthesis.provenance['user_layer']['values_applied']}")

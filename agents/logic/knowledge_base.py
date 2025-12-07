@@ -15,6 +15,7 @@ from enum import Enum
 
 class LogicType(Enum):
     """Types of logical systems supported."""
+
     PROPOSITIONAL = "propositional"  # P → Q
     FIRST_ORDER = "first_order"  # ∀x(Human(x) → Mortal(x))
     MODAL = "modal"  # □P (necessarily P)
@@ -23,6 +24,7 @@ class LogicType(Enum):
 
 class InferenceRule(Enum):
     """Formal inference rules."""
+
     MODUS_PONENS = "modus_ponens"  # P, P→Q ⊢ Q
     MODUS_TOLLENS = "modus_tollens"  # ¬Q, P→Q ⊢ ¬P
     HYPOTHETICAL_SYLLOGISM = "hypothetical_syllogism"  # P→Q, Q→R ⊢ P→R
@@ -38,6 +40,7 @@ class InferenceRule(Enum):
 @dataclass
 class Fact:
     """Represents a validated fact in the knowledge base."""
+
     statement: str
     logical_form: Optional[str] = None  # Formalized representation
     confidence: float = 1.0
@@ -57,6 +60,7 @@ class Fact:
 @dataclass
 class ValidationResult:
     """Result of validating a claim against the knowledge base."""
+
     valid: bool
     confidence: float
     sources: List[str]
@@ -67,6 +71,7 @@ class ValidationResult:
 @dataclass
 class LogicalStatement:
     """A statement in formal logic notation."""
+
     natural_language: str
     formal_notation: str
     logic_type: LogicType
@@ -94,7 +99,7 @@ class KnowledgeBase:
         statement: str,
         source: str = "agent",
         confidence: float = 1.0,
-        logical_form: Optional[str] = None
+        logical_form: Optional[str] = None,
     ) -> str:
         """
         Add a validated fact to the knowledge base.
@@ -112,7 +117,7 @@ class KnowledgeBase:
             statement=statement,
             logical_form=logical_form or self._parse_to_logic(statement),
             confidence=confidence,
-            source=source
+            source=source,
         )
 
         self.facts[fact.fact_id] = fact
@@ -147,7 +152,7 @@ class KnowledgeBase:
 
         facts_list = list(self.facts.values())
         for i, fact_a in enumerate(facts_list):
-            for fact_b in facts_list[i + 1:]:
+            for fact_b in facts_list[i + 1 :]:
                 if self._are_contradictory(fact_a.statement, fact_b.statement):
                     contradictions.append(
                         f"Contradiction between '{fact_a.statement}' and '{fact_b.statement}'"
@@ -182,7 +187,7 @@ class KnowledgeBase:
                     valid=True,
                     confidence=fact.confidence,
                     sources=[fact.source],
-                    reasoning_chain=[f"Direct match: {fact.statement}"]
+                    reasoning_chain=[f"Direct match: {fact.statement}"],
                 )
                 self.inference_cache[cache_key] = result
                 return result
@@ -204,10 +209,12 @@ class KnowledgeBase:
             valid=False,
             confidence=0.0,
             sources=[],
-            reasoning_chain=["No evidence found"]
+            reasoning_chain=["No evidence found"],
         )
 
-    def validate_with_contradiction_check(self, claim: str, use_ml: bool = True) -> ValidationResult:
+    def validate_with_contradiction_check(
+        self, claim: str, use_ml: bool = True
+    ) -> ValidationResult:
         """
         Validate a claim and surface contradictions in the KB.
         """
@@ -219,19 +226,17 @@ class KnowledgeBase:
         return base
 
     def add_inference_rule(
-        self,
-        name: str,
-        premises: List[str],
-        conclusion: str,
-        rule_type: InferenceRule
+        self, name: str, premises: List[str], conclusion: str, rule_type: InferenceRule
     ):
         """Add a custom inference rule to the knowledge base."""
-        self.rules.append({
-            "name": name,
-            "premises": premises,
-            "conclusion": conclusion,
-            "type": rule_type
-        })
+        self.rules.append(
+            {
+                "name": name,
+                "premises": premises,
+                "conclusion": conclusion,
+                "type": rule_type,
+            }
+        )
 
     def add_to_ontology(self, concept: str, related_concepts: List[str]):
         """Add concept relationships to the ontology."""
@@ -310,16 +315,27 @@ class KnowledgeBase:
 
         # Direct negation pattern
         for marker in neg_markers:
-            if marker in normalized_a and normalized_a.replace(marker, " ") == normalized_b:
+            if (
+                marker in normalized_a
+                and normalized_a.replace(marker, " ") == normalized_b
+            ):
                 return True
-            if marker in normalized_b and normalized_b.replace(marker, " ") == normalized_a:
+            if (
+                marker in normalized_b
+                and normalized_b.replace(marker, " ") == normalized_a
+            ):
                 return True
 
         # Simple contradictory forms
         if " are " in normalized_a and " are " in normalized_b:
             left = normalized_a.split(" are ")
             right = normalized_b.split(" are ")
-            if len(left) == 2 and len(right) == 2 and left[0] == right[0] and left[1] != right[1]:
+            if (
+                len(left) == 2
+                and len(right) == 2
+                and left[0] == right[0]
+                and left[1] != right[1]
+            ):
                 return True
 
         return False
@@ -352,7 +368,7 @@ class KnowledgeBase:
                     derived_fact = Fact(
                         statement=rule["conclusion"],
                         source=f"inferred_via_{rule['name']}",
-                        confidence=0.9
+                        confidence=0.9,
                     )
                     results.append(derived_fact)
 
@@ -375,7 +391,9 @@ class KnowledgeBase:
             # Look for implication: "If X then Y" or "All X are Y"
             if "→" in fact.logical_form or "if" in fact.statement.lower():
                 # Check if we have the antecedent
-                parts = fact.statement.lower().split("then" if "then" in fact.statement.lower() else "are")
+                parts = fact.statement.lower().split(
+                    "then" if "then" in fact.statement.lower() else "are"
+                )
                 if len(parts) == 2:
                     antecedent = parts[0].replace("if", "").replace("all", "").strip()
                     consequent = parts[1].strip()
@@ -392,10 +410,11 @@ class KnowledgeBase:
 
                                 return ValidationResult(
                                     valid=True,
-                                    confidence=min(fact.confidence, f2.confidence) * 0.95,
+                                    confidence=min(fact.confidence, f2.confidence)
+                                    * 0.95,
                                     sources=[fact.source, f2.source],
                                     reasoning_chain=reasoning_chain,
-                                    inference_rules_used=[InferenceRule.MODUS_PONENS]
+                                    inference_rules_used=[InferenceRule.MODUS_PONENS],
                                 )
 
         # Try Universal Instantiation
@@ -419,7 +438,9 @@ class KnowledgeBase:
                             confidence=fact.confidence * 0.9,
                             sources=[fact.source],
                             reasoning_chain=reasoning_chain,
-                            inference_rules_used=[InferenceRule.UNIVERSAL_INSTANTIATION]
+                            inference_rules_used=[
+                                InferenceRule.UNIVERSAL_INSTANTIATION
+                            ],
                         )
 
         return None
@@ -440,7 +461,7 @@ class KnowledgeBase:
             valid=False,
             confidence=0.0,
             sources=["ml_research_needed"],
-            reasoning_chain=["ML research not implemented in this demo"]
+            reasoning_chain=["ML research not implemented in this demo"],
         )
 
     def export_to_prolog(self) -> str:
@@ -471,5 +492,8 @@ class KnowledgeBase:
             "ontology_concepts": len(self.ontology),
             "logic_system": self.logic_system.value,
             "cache_size": len(self.inference_cache),
-            "avg_confidence": sum(f.confidence for f in self.facts.values()) / len(self.facts) if self.facts else 0
+            "avg_confidence": sum(f.confidence for f in self.facts.values())
+            / len(self.facts)
+            if self.facts
+            else 0,
         }

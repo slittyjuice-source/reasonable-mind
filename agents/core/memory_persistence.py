@@ -23,6 +23,7 @@ import time
 
 class StorageBackend(Enum):
     """Available storage backends."""
+
     MEMORY = "memory"
     SQLITE = "sqlite"
     JSON_FILE = "json_file"
@@ -30,6 +31,7 @@ class StorageBackend(Enum):
 
 class ConsolidationStrategy(Enum):
     """Strategies for memory consolidation."""
+
     RECENT_PRIORITY = "recent_priority"  # Keep most recent
     ACCESS_FREQUENCY = "access_frequency"  # Keep most accessed
     IMPORTANCE_WEIGHTED = "importance_weighted"  # Keep highest importance
@@ -39,6 +41,7 @@ class ConsolidationStrategy(Enum):
 @dataclass
 class MemorySnapshot:
     """A point-in-time snapshot of memory state."""
+
     snapshot_id: str
     timestamp: str
     version: int
@@ -51,6 +54,7 @@ class MemorySnapshot:
 @dataclass
 class ConsolidationResult:
     """Result of a memory consolidation operation."""
+
     entries_before: int
     entries_after: int
     entries_removed: int
@@ -63,6 +67,7 @@ class ConsolidationResult:
 @dataclass
 class PersistenceConfig:
     """Configuration for persistence layer."""
+
     backend: StorageBackend = StorageBackend.MEMORY
     db_path: Optional[str] = None
     auto_checkpoint_interval_s: int = 300  # 5 minutes
@@ -93,10 +98,7 @@ class PersistenceBackend(ABC):
 
     @abstractmethod
     def list_entries(
-        self,
-        memory_type: Optional[str] = None,
-        limit: int = 100,
-        offset: int = 0
+        self, memory_type: Optional[str] = None, limit: int = 100, offset: int = 0
     ) -> List[Dict[str, Any]]:
         """List memory entries with optional filtering."""
         pass
@@ -147,16 +149,13 @@ class InMemoryBackend(PersistenceBackend):
             return False
 
     def list_entries(
-        self,
-        memory_type: Optional[str] = None,
-        limit: int = 100,
-        offset: int = 0
+        self, memory_type: Optional[str] = None, limit: int = 100, offset: int = 0
     ) -> List[Dict[str, Any]]:
         with self._lock:
             entries = list(self.entries.values())
             if memory_type:
                 entries = [e for e in entries if e.get("memory_type") == memory_type]
-            return entries[offset:offset + limit]
+            return entries[offset : offset + limit]
 
     def save_episodic(self, episodic: Dict[str, Any]) -> bool:
         with self._lock:
@@ -187,7 +186,7 @@ class SQLiteBackend(PersistenceBackend):
 
     def _get_conn(self) -> sqlite3.Connection:
         """Get thread-local connection."""
-        if not hasattr(self._local, 'conn'):
+        if not hasattr(self._local, "conn"):
             self._local.conn = sqlite3.connect(self.db_path)
             self._local.conn.row_factory = sqlite3.Row
         return self._local.conn
@@ -243,23 +242,28 @@ class SQLiteBackend(PersistenceBackend):
     def save_entry(self, entry: Dict[str, Any]) -> bool:
         conn = self._get_conn()
         try:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO memory_entries
                 (id, memory_type, content, embedding, keywords, metadata,
                  timestamp, access_count, last_accessed, importance)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                entry["id"],
-                entry.get("memory_type", "fact"),
-                entry["content"],
-                json.dumps(entry.get("embedding")) if entry.get("embedding") else None,
-                json.dumps(entry.get("keywords", [])),
-                json.dumps(entry.get("metadata", {})),
-                entry.get("timestamp", datetime.now().isoformat()),
-                entry.get("access_count", 0),
-                entry.get("last_accessed"),
-                entry.get("importance", 0.5)
-            ))
+            """,
+                (
+                    entry["id"],
+                    entry.get("memory_type", "fact"),
+                    entry["content"],
+                    json.dumps(entry.get("embedding"))
+                    if entry.get("embedding")
+                    else None,
+                    json.dumps(entry.get("keywords", [])),
+                    json.dumps(entry.get("metadata", {})),
+                    entry.get("timestamp", datetime.now().isoformat()),
+                    entry.get("access_count", 0),
+                    entry.get("last_accessed"),
+                    entry.get("importance", 0.5),
+                ),
+            )
             conn.commit()
             return True
         except sqlite3.Error:
@@ -267,10 +271,7 @@ class SQLiteBackend(PersistenceBackend):
 
     def load_entry(self, entry_id: str) -> Optional[Dict[str, Any]]:
         conn = self._get_conn()
-        cursor = conn.execute(
-            "SELECT * FROM memory_entries WHERE id = ?",
-            (entry_id,)
-        )
+        cursor = conn.execute("SELECT * FROM memory_entries WHERE id = ?", (entry_id,))
         row = cursor.fetchone()
         if row:
             return self._row_to_entry(row)
@@ -288,23 +289,17 @@ class SQLiteBackend(PersistenceBackend):
             "timestamp": row["timestamp"],
             "access_count": row["access_count"],
             "last_accessed": row["last_accessed"],
-            "importance": row["importance"] if row["importance"] is not None else 0.5
+            "importance": row["importance"] if row["importance"] is not None else 0.5,
         }
 
     def delete_entry(self, entry_id: str) -> bool:
         conn = self._get_conn()
-        cursor = conn.execute(
-            "DELETE FROM memory_entries WHERE id = ?",
-            (entry_id,)
-        )
+        cursor = conn.execute("DELETE FROM memory_entries WHERE id = ?", (entry_id,))
         conn.commit()
         return cursor.rowcount > 0
 
     def list_entries(
-        self,
-        memory_type: Optional[str] = None,
-        limit: int = 100,
-        offset: int = 0
+        self, memory_type: Optional[str] = None, limit: int = 100, offset: int = 0
     ) -> List[Dict[str, Any]]:
         conn = self._get_conn()
         if memory_type:
@@ -313,36 +308,39 @@ class SQLiteBackend(PersistenceBackend):
                    WHERE memory_type = ?
                    ORDER BY timestamp DESC
                    LIMIT ? OFFSET ?""",
-                (memory_type, limit, offset)
+                (memory_type, limit, offset),
             )
         else:
             cursor = conn.execute(
                 """SELECT * FROM memory_entries
                    ORDER BY timestamp DESC
                    LIMIT ? OFFSET ?""",
-                (limit, offset)
+                (limit, offset),
             )
         return [self._row_to_entry(row) for row in cursor.fetchall()]
 
     def save_episodic(self, episodic: Dict[str, Any]) -> bool:
         conn = self._get_conn()
         try:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO episodic_memories
                 (query_id, query_text, reasoning_steps, tools_used,
                  outcome, confidence, feedback, timestamp, duration_ms)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                episodic["query_id"],
-                episodic["query_text"],
-                json.dumps(episodic.get("reasoning_steps", [])),
-                json.dumps(episodic.get("tools_used", [])),
-                episodic["outcome"],
-                episodic.get("confidence", 0.5),
-                episodic.get("feedback"),
-                episodic.get("timestamp", datetime.now().isoformat()),
-                episodic.get("duration_ms", 0)
-            ))
+            """,
+                (
+                    episodic["query_id"],
+                    episodic["query_text"],
+                    json.dumps(episodic.get("reasoning_steps", [])),
+                    json.dumps(episodic.get("tools_used", [])),
+                    episodic["outcome"],
+                    episodic.get("confidence", 0.5),
+                    episodic.get("feedback"),
+                    episodic.get("timestamp", datetime.now().isoformat()),
+                    episodic.get("duration_ms", 0),
+                ),
+            )
             conn.commit()
             return True
         except sqlite3.Error:
@@ -351,21 +349,24 @@ class SQLiteBackend(PersistenceBackend):
     def load_episodic(self, query_id: str) -> Optional[Dict[str, Any]]:
         conn = self._get_conn()
         cursor = conn.execute(
-            "SELECT * FROM episodic_memories WHERE query_id = ?",
-            (query_id,)
+            "SELECT * FROM episodic_memories WHERE query_id = ?", (query_id,)
         )
         row = cursor.fetchone()
         if row:
             return {
                 "query_id": row["query_id"],
                 "query_text": row["query_text"],
-                "reasoning_steps": json.loads(row["reasoning_steps"]) if row["reasoning_steps"] else [],
-                "tools_used": json.loads(row["tools_used"]) if row["tools_used"] else [],
+                "reasoning_steps": json.loads(row["reasoning_steps"])
+                if row["reasoning_steps"]
+                else [],
+                "tools_used": json.loads(row["tools_used"])
+                if row["tools_used"]
+                else [],
                 "outcome": row["outcome"],
                 "confidence": row["confidence"],
                 "feedback": row["feedback"],
                 "timestamp": row["timestamp"],
-                "duration_ms": row["duration_ms"]
+                "duration_ms": row["duration_ms"],
             }
         return None
 
@@ -381,9 +382,7 @@ class SQLiteBackend(PersistenceBackend):
         conn.commit()
 
     def get_entries_by_importance(
-        self,
-        min_importance: float = 0.0,
-        limit: int = 100
+        self, min_importance: float = 0.0, limit: int = 100
     ) -> List[Dict[str, Any]]:
         """Get entries above importance threshold."""
         conn = self._get_conn()
@@ -392,14 +391,12 @@ class SQLiteBackend(PersistenceBackend):
                WHERE importance >= ?
                ORDER BY importance DESC, access_count DESC
                LIMIT ?""",
-            (min_importance, limit)
+            (min_importance, limit),
         )
         return [self._row_to_entry(row) for row in cursor.fetchall()]
 
     def get_stale_entries(
-        self,
-        days_threshold: int = 30,
-        access_threshold: int = 2
+        self, days_threshold: int = 30, access_threshold: int = 2
     ) -> List[str]:
         """Get IDs of entries that are old and rarely accessed."""
         conn = self._get_conn()
@@ -408,7 +405,7 @@ class SQLiteBackend(PersistenceBackend):
             """SELECT id FROM memory_entries
                WHERE timestamp < ? AND access_count <= ?
                ORDER BY timestamp ASC""",
-            (cutoff_date, access_threshold)
+            (cutoff_date, access_threshold),
         )
         return [row["id"] for row in cursor.fetchall()]
 
@@ -426,7 +423,7 @@ class JSONFileBackend(PersistenceBackend):
         """Load data from file."""
         if self.file_path.exists():
             try:
-                with self.file_path.open('r') as f:
+                with self.file_path.open("r") as f:
                     content = f.read().strip()
                     if content:
                         self._data = json.loads(content)
@@ -437,7 +434,7 @@ class JSONFileBackend(PersistenceBackend):
     def _save(self) -> None:
         """Save data to file."""
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
-        with self.file_path.open('w') as f:
+        with self.file_path.open("w") as f:
             json.dump(self._data, f, indent=2)
 
     def save_entry(self, entry: Dict[str, Any]) -> bool:
@@ -459,10 +456,7 @@ class JSONFileBackend(PersistenceBackend):
             return False
 
     def list_entries(
-        self,
-        memory_type: Optional[str] = None,
-        limit: int = 100,
-        offset: int = 0
+        self, memory_type: Optional[str] = None, limit: int = 100, offset: int = 0
     ) -> List[Dict[str, Any]]:
         with self._lock:
             entries = list(self._data["entries"].values())
@@ -470,7 +464,7 @@ class JSONFileBackend(PersistenceBackend):
                 entries = [e for e in entries if e.get("memory_type") == memory_type]
             # Sort by timestamp
             entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-            return entries[offset:offset + limit]
+            return entries[offset : offset + limit]
 
     def save_episodic(self, episodic: Dict[str, Any]) -> bool:
         with self._lock:
@@ -495,23 +489,20 @@ class JSONFileBackend(PersistenceBackend):
 class MemoryConsolidator:
     """Handles memory consolidation and cleanup."""
 
-    def __init__(
-        self,
-        backend: PersistenceBackend,
-        config: PersistenceConfig
-    ):
+    def __init__(self, backend: PersistenceBackend, config: PersistenceConfig):
         self.backend = backend
         self.config = config
 
     def should_consolidate(self) -> bool:
         """Check if consolidation is needed."""
         count = self.backend.count_entries()
-        threshold = int(self.config.max_memory_entries * self.config.consolidation_threshold)
+        threshold = int(
+            self.config.max_memory_entries * self.config.consolidation_threshold
+        )
         return count >= threshold
 
     def consolidate(
-        self,
-        strategy: ConsolidationStrategy = ConsolidationStrategy.HYBRID
+        self, strategy: ConsolidationStrategy = ConsolidationStrategy.HYBRID
     ) -> ConsolidationResult:
         """Perform memory consolidation."""
         start_time = time.time()
@@ -537,7 +528,7 @@ class MemoryConsolidator:
             entries_removed=entries_removed,
             entries_merged=entries_merged,
             strategy_used=strategy,
-            duration_ms=duration_ms
+            duration_ms=duration_ms,
         )
 
     def _consolidate_by_recency(self) -> int:
@@ -606,7 +597,9 @@ class MemoryConsolidator:
         for entry in entries:
             # Recency score (0-1, higher is more recent)
             try:
-                timestamp = datetime.fromisoformat(entry.get("timestamp", now.isoformat()))
+                timestamp = datetime.fromisoformat(
+                    entry.get("timestamp", now.isoformat())
+                )
                 days_old = (now - timestamp).days
                 recency_score = max(0, 1 - (days_old / self.config.retention_days))
             except ValueError:
@@ -621,9 +614,7 @@ class MemoryConsolidator:
 
             # Composite score (weighted average)
             composite = (
-                0.3 * recency_score +
-                0.3 * access_score +
-                0.4 * importance_score
+                0.3 * recency_score + 0.3 * access_score + 0.4 * importance_score
             )
 
             scored_entries.append((entry, composite))
@@ -651,17 +642,15 @@ class MemoryConsolidator:
 class SnapshotManager:
     """Manages memory snapshots for versioning and recovery."""
 
-    def __init__(
-        self,
-        backend: PersistenceBackend,
-        config: PersistenceConfig
-    ):
+    def __init__(self, backend: PersistenceBackend, config: PersistenceConfig):
         self.backend = backend
         self.config = config
         self.snapshots: List[MemorySnapshot] = []
         self._version = 0
 
-    def create_snapshot(self, metadata: Optional[Dict[str, Any]] = None) -> MemorySnapshot:
+    def create_snapshot(
+        self, metadata: Optional[Dict[str, Any]] = None
+    ) -> MemorySnapshot:
         """Create a new snapshot of current memory state."""
         self._version += 1
 
@@ -680,14 +669,14 @@ class SnapshotManager:
             entry_count=entry_count,
             episodic_count=0,  # Would need separate count
             metadata=metadata or {},
-            checksum=checksum
+            checksum=checksum,
         )
 
         self.snapshots.append(snapshot)
 
         # Prune old snapshots
         if len(self.snapshots) > self.config.max_snapshots:
-            self.snapshots = self.snapshots[-self.config.max_snapshots:]
+            self.snapshots = self.snapshots[-self.config.max_snapshots :]
 
         return snapshot
 
@@ -755,10 +744,7 @@ class PersistentMemoryManager:
         return self.backend.delete_entry(entry_id)
 
     def list_entries(
-        self,
-        memory_type: Optional[str] = None,
-        limit: int = 100,
-        offset: int = 0
+        self, memory_type: Optional[str] = None, limit: int = 100, offset: int = 0
     ) -> List[Dict[str, Any]]:
         """List memory entries."""
         return self.backend.list_entries(memory_type, limit, offset)
@@ -778,8 +764,7 @@ class PersistentMemoryManager:
         )
 
     def consolidate(
-        self,
-        strategy: ConsolidationStrategy = ConsolidationStrategy.HYBRID
+        self, strategy: ConsolidationStrategy = ConsolidationStrategy.HYBRID
     ) -> ConsolidationResult:
         """Manually trigger consolidation."""
         return self.consolidator.consolidate(strategy)
@@ -791,8 +776,7 @@ class PersistentMemoryManager:
 
         self._running = True
         self._checkpoint_thread = threading.Thread(
-            target=self._checkpoint_loop,
-            daemon=True
+            target=self._checkpoint_loop, daemon=True
         )
         self._checkpoint_thread.start()
 
@@ -817,20 +801,24 @@ class PersistentMemoryManager:
             "backend": self.config.backend.value,
             "entry_count": self.backend.count_entries(),
             "max_entries": self.config.max_memory_entries,
-            "utilization": self.backend.count_entries() / self.config.max_memory_entries,
+            "utilization": self.backend.count_entries()
+            / self.config.max_memory_entries,
             "snapshot_count": len(self.snapshot_manager.snapshots),
             "retention_days": self.config.retention_days,
-            "consolidation_threshold": self.config.consolidation_threshold
+            "consolidation_threshold": self.config.consolidation_threshold,
         }
 
     def export_json(self) -> str:
         """Export all memory to JSON string."""
         entries = self.backend.list_entries(limit=self.config.max_memory_entries)
-        return json.dumps({
-            "entries": entries,
-            "exported_at": datetime.now().isoformat(),
-            "stats": self.get_stats()
-        }, indent=2)
+        return json.dumps(
+            {
+                "entries": entries,
+                "exported_at": datetime.now().isoformat(),
+                "stats": self.get_stats(),
+            },
+            indent=2,
+        )
 
     def import_json(self, json_str: str) -> int:
         """Import memory from JSON string. Returns count of imported entries."""
@@ -844,21 +832,16 @@ class PersistentMemoryManager:
 
 # Convenience factory functions
 
+
 def create_sqlite_memory(db_path: str = "memory.db") -> PersistentMemoryManager:
     """Create a SQLite-backed persistent memory manager."""
-    config = PersistenceConfig(
-        backend=StorageBackend.SQLITE,
-        db_path=db_path
-    )
+    config = PersistenceConfig(backend=StorageBackend.SQLITE, db_path=db_path)
     return PersistentMemoryManager(config)
 
 
 def create_json_memory(file_path: str = "memory.json") -> PersistentMemoryManager:
     """Create a JSON file-backed persistent memory manager."""
-    config = PersistenceConfig(
-        backend=StorageBackend.JSON_FILE,
-        db_path=file_path
-    )
+    config = PersistenceConfig(backend=StorageBackend.JSON_FILE, db_path=file_path)
     return PersistentMemoryManager(config)
 
 

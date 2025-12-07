@@ -22,6 +22,4 @@ class Tool:
 
     async def execute(self, **kwargs) -> str:
         """Execute the tool with provided parameters."""
-        raise NotImplementedError(
-            "Tool subclasses must implement execute method"
-        )
+        raise NotImplementedError("Tool subclasses must implement execute method")

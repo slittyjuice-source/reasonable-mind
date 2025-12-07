@@ -15,6 +15,7 @@ from enum import Enum
 
 class ValidityStatus(Enum):
     """Logical validity of an argument."""
+
     VALID = "valid"  # Conclusion follows from premises
     INVALID = "invalid"  # Conclusion doesn't follow
     UNKNOWN = "unknown"  # Can't determine validity
@@ -22,6 +23,7 @@ class ValidityStatus(Enum):
 
 class SoundnessStatus(Enum):
     """Epistemic status of premises."""
+
     SOUND = "sound"  # Premises are true AND argument is valid
     UNSOUND = "unsound"  # At least one premise is false OR argument invalid
     UNKNOWN = "unknown"  # Can't determine truth of premises
@@ -29,6 +31,7 @@ class SoundnessStatus(Enum):
 
 class ConfidenceType(Enum):
     """Different types of confidence/uncertainty."""
+
     LOGICAL = "logical"  # Confidence in argument structure
     EMPIRICAL = "empirical"  # Confidence in factual claims
     DEFINITIONAL = "definitional"  # Confidence in term meanings
@@ -42,6 +45,7 @@ class EpistemicStatus:
 
     Separates structural validity from factual truth.
     """
+
     # Logical properties
     validity: ValidityStatus
     validity_confidence: float  # How sure are we it's valid/invalid?
@@ -64,10 +68,10 @@ class EpistemicStatus:
         Requires BOTH structural validity AND empirical soundness.
         """
         return (
-            self.validity == ValidityStatus.VALID and
-            self.validity_confidence >= threshold and
-            self.soundness != SoundnessStatus.UNSOUND and
-            self.overall_confidence >= threshold
+            self.validity == ValidityStatus.VALID
+            and self.validity_confidence >= threshold
+            and self.soundness != SoundnessStatus.UNSOUND
+            and self.overall_confidence >= threshold
         )
 
 
@@ -78,6 +82,7 @@ class ConfidenceBreakdown:
 
     Makes confidence propagation explicit and auditable.
     """
+
     logical_confidence: float  # Argument structure is valid
     premise_confidences: List[float]  # Each premise is true
     source_confidence: float  # Sources are reliable
@@ -93,7 +98,7 @@ class ConfidenceBreakdown:
             "source": self.source_confidence,
             "definitional": self.definitional_confidence,
             "propagation": self.propagation_method,
-            "chain_length": self.chain_length
+            "chain_length": self.chain_length,
         }
 
 
@@ -138,7 +143,7 @@ class ConfidenceCalculator:
 
         result = 1.0
         for conf in confidences:
-            result *= (1.0 - conf)
+            result *= 1.0 - conf
 
         return 1.0 - result
 
@@ -146,7 +151,7 @@ class ConfidenceCalculator:
     def inference_step(
         premise_confidence: float,
         rule_confidence: float,
-        rule_type: str = "modus_ponens"
+        rule_type: str = "modus_ponens",
     ) -> float:
         """
         Confidence after one inference step.
@@ -179,7 +184,7 @@ class ConfidenceCalculator:
     def multi_step_chain(
         premise_confidences: List[float],
         rule_confidences: List[float],
-        rule_types: List[str]
+        rule_types: List[str],
     ) -> ConfidenceBreakdown:
         """
         Confidence for multi-step reasoning chain.
@@ -193,7 +198,7 @@ class ConfidenceCalculator:
                 source_confidence=0.0,
                 definitional_confidence=0.0,
                 propagation_method="none",
-                chain_length=0
+                chain_length=0,
             )
 
         # Start with first premise
@@ -202,9 +207,7 @@ class ConfidenceCalculator:
         # Apply each inference step
         for i, (rule_conf, rule_type) in enumerate(zip(rule_confidences, rule_types)):
             current_confidence = ConfidenceCalculator.inference_step(
-                current_confidence,
-                rule_conf,
-                rule_type
+                current_confidence, rule_conf, rule_type
             )
 
         # Logical confidence = how confident are we the rules are valid?
@@ -219,14 +222,12 @@ class ConfidenceCalculator:
             source_confidence=source_conf,
             definitional_confidence=0.9,  # Default - would come from grounding
             propagation_method="sequential_product",
-            chain_length=len(rule_types)
+            chain_length=len(rule_types),
         )
 
     @staticmethod
     def detect_fallacy(
-        premises: List[str],
-        conclusion: str,
-        claimed_rule: str
+        premises: List[str], conclusion: str, claimed_rule: str
     ) -> Optional[str]:
         """
         Detect common logical fallacies.
@@ -246,9 +247,11 @@ class ConfidenceCalculator:
         # Valid only if "ALL A are B"
         if claimed_rule == "modus_ponens":
             for premise in premises:
-                if ("are" in premise.lower() and
-                    "all" not in premise.lower() and
-                    "every" not in premise.lower()):
+                if (
+                    "are" in premise.lower()
+                    and "all" not in premise.lower()
+                    and "every" not in premise.lower()
+                ):
                     # This might be affirming consequent
                     return "affirming_the_consequent"
 
@@ -265,7 +268,9 @@ class ConfidenceCalculator:
         if claimed_rule == "universal_generalization":
             # Check if sample size is mentioned
             small_sample_indicators = ["few", "some", "a couple", "one", "two"]
-            if any(ind in " ".join(premises).lower() for ind in small_sample_indicators):
+            if any(
+                ind in " ".join(premises).lower() for ind in small_sample_indicators
+            ):
                 return "hasty_generalization"
 
         return None
@@ -281,9 +286,7 @@ class ValidityChecker:
 
     @staticmethod
     def check_modus_ponens(
-        premise1: str,
-        premise2: str,
-        conclusion: str
+        premise1: str, premise2: str, conclusion: str
     ) -> EpistemicStatus:
         """
         Check if argument follows modus ponens form:
@@ -313,7 +316,7 @@ class ValidityChecker:
                     premise_confidences=[0.5, 0.5],
                     overall_confidence=0.0,
                     validity_justification="Could not parse implication",
-                    soundness_justification="Unknown"
+                    soundness_justification="Unknown",
                 )
 
             if len(parts) == 2:
@@ -331,7 +334,7 @@ class ValidityChecker:
                             premise_confidences=[0.5, 0.5],  # Unknown
                             overall_confidence=0.5,
                             validity_justification="Valid modus ponens form: P→Q, P ⊢ Q",
-                            soundness_justification="Cannot verify premise truth"
+                            soundness_justification="Cannot verify premise truth",
                         )
 
         return EpistemicStatus(
@@ -341,14 +344,12 @@ class ValidityChecker:
             premise_confidences=[0.5, 0.5],
             overall_confidence=0.0,
             validity_justification="Does not follow modus ponens form",
-            soundness_justification="Invalid argument form"
+            soundness_justification="Invalid argument form",
         )
 
     @staticmethod
     def check_universal_instantiation(
-        universal_premise: str,
-        instance_premise: str,
-        conclusion: str
+        universal_premise: str, instance_premise: str, conclusion: str
     ) -> EpistemicStatus:
         """
         Check universal instantiation:
@@ -374,7 +375,7 @@ class ValidityChecker:
                 premise_confidences=[0.5, 0.5],
                 overall_confidence=0.0,
                 validity_justification="Universal quantifier required for UI",
-                soundness_justification="Invalid: premise not universal"
+                soundness_justification="Invalid: premise not universal",
             )
 
         # Extract class and property
@@ -395,7 +396,7 @@ class ValidityChecker:
                             premise_confidences=[0.5, 0.5],
                             overall_confidence=0.5,
                             validity_justification="Valid universal instantiation: ∀x P(x), a ⊢ P(a)",
-                            soundness_justification="Cannot verify premise truth"
+                            soundness_justification="Cannot verify premise truth",
                         )
 
         return EpistemicStatus(
@@ -405,5 +406,5 @@ class ValidityChecker:
             premise_confidences=[0.5, 0.5],
             overall_confidence=0.0,
             validity_justification="Does not match UI form",
-            soundness_justification="Invalid argument"
+            soundness_justification="Invalid argument",
         )

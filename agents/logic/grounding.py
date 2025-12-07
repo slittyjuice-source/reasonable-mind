@@ -18,6 +18,7 @@ from enum import Enum
 
 class QuantifierType(Enum):
     """Types of quantification in natural language."""
+
     UNIVERSAL = "all"  # ∀x
     EXISTENTIAL = "some"  # ∃x
     GENERIC = "plural"  # Birds fly (generic, not universal)
@@ -27,6 +28,7 @@ class QuantifierType(Enum):
 
 class ModalityType(Enum):
     """Types of modality that require specialized logic."""
+
     ALETHIC = "necessary/possible"  # □P, ◊P
     EPISTEMIC = "knows/believes"  # K_a(P), B_a(P)
     DEONTIC = "obligatory/permitted"  # O(P), P(P)
@@ -41,6 +43,7 @@ class SemanticContext:
 
     Addresses the grounding problem by making context explicit.
     """
+
     domain: str  # e.g., "machine_learning", "ethics", "physics"
     ontology: Dict[str, Set[str]]  # Concept hierarchies
     predicates: Dict[str, str]  # Predicate definitions
@@ -71,6 +74,7 @@ class ParseResult:
 
     Separates successful parses from unparseable fragments.
     """
+
     success: bool
     logical_form: Optional[str]
     quantifier: Optional[QuantifierType]
@@ -150,7 +154,7 @@ class SemanticParser:
                     assumptions=assumptions,
                     quantifier=None,
                     modality=None,
-                    unparseable=unparseable
+                    unparseable=unparseable,
                 )
                 result.modality = modality
                 if not result.success:
@@ -159,7 +163,9 @@ class SemanticParser:
                     )
                 return result
 
-            unparseable.append(f"Modality '{modality.value}' requires specialized logic")
+            unparseable.append(
+                f"Modality '{modality.value}' requires specialized logic"
+            )
             return ParseResult(
                 success=False,
                 logical_form=None,
@@ -169,7 +175,7 @@ class SemanticParser:
                 variables=set(),
                 unparseable_fragments=unparseable,
                 assumptions=assumptions,
-                confidence=0.0
+                confidence=0.0,
             )
 
         return self._parse_core(
@@ -177,7 +183,7 @@ class SemanticParser:
             assumptions=assumptions,
             quantifier=quantifier,
             modality=modality,
-            unparseable=unparseable
+            unparseable=unparseable,
         )
 
     def _parse_core(
@@ -186,7 +192,7 @@ class SemanticParser:
         assumptions: List[str],
         quantifier: Optional[QuantifierType],
         modality: Optional[ModalityType],
-        unparseable: List[str]
+        unparseable: List[str],
     ) -> ParseResult:
         """Core parse dispatcher that assumes modality is already handled."""
         if quantifier is None:
@@ -220,7 +226,7 @@ class SemanticParser:
                 variables=set(),
                 unparseable_fragments=unparseable,
                 assumptions=assumptions,
-                confidence=0.0
+                confidence=0.0,
             )
 
         else:
@@ -262,11 +268,7 @@ class SemanticParser:
                 return mod_type
         return None
 
-    def _parse_universal(
-        self,
-        statement: str,
-        assumptions: List[str]
-    ) -> ParseResult:
+    def _parse_universal(self, statement: str, assumptions: List[str]) -> ParseResult:
         """
         Parse universal quantification: "All X are Y"
 
@@ -284,14 +286,20 @@ class SemanticParser:
                 y_grounded = self.context.ground_term(y_class)
 
                 if not x_grounded:
-                    assumptions.append(f"Predicate '{x_class}' not defined in context, using literal")
+                    assumptions.append(
+                        f"Predicate '{x_class}' not defined in context, using literal"
+                    )
                 if not y_grounded:
-                    assumptions.append(f"Predicate '{y_class}' not defined in context, using literal")
+                    assumptions.append(
+                        f"Predicate '{y_class}' not defined in context, using literal"
+                    )
 
                 predicates = {x_class, y_class}
                 variables = {"x"}
 
-                logical_form = f"∀x({x_class.capitalize()}(x) → {y_class.capitalize()}(x))"
+                logical_form = (
+                    f"∀x({x_class.capitalize()}(x) → {y_class.capitalize()}(x))"
+                )
 
                 return ParseResult(
                     success=True,
@@ -302,7 +310,7 @@ class SemanticParser:
                     variables=variables,
                     unparseable_fragments=[],
                     assumptions=assumptions,
-                    confidence=0.9 if (x_grounded and y_grounded) else 0.7
+                    confidence=0.9 if (x_grounded and y_grounded) else 0.7,
                 )
 
         return ParseResult(
@@ -314,14 +322,10 @@ class SemanticParser:
             variables=set(),
             unparseable_fragments=["Could not parse universal statement"],
             assumptions=assumptions,
-            confidence=0.0
+            confidence=0.0,
         )
 
-    def _parse_existential(
-        self,
-        statement: str,
-        assumptions: List[str]
-    ) -> ParseResult:
+    def _parse_existential(self, statement: str, assumptions: List[str]) -> ParseResult:
         """
         Parse existential quantification: "Some X are Y"
 
@@ -336,7 +340,9 @@ class SemanticParser:
                 predicates = {x_class, y_class}
                 variables = {"x"}
 
-                logical_form = f"∃x({x_class.capitalize()}(x) ∧ {y_class.capitalize()}(x))"
+                logical_form = (
+                    f"∃x({x_class.capitalize()}(x) ∧ {y_class.capitalize()}(x))"
+                )
 
                 return ParseResult(
                     success=True,
@@ -347,7 +353,7 @@ class SemanticParser:
                     variables=variables,
                     unparseable_fragments=[],
                     assumptions=assumptions,
-                    confidence=0.85
+                    confidence=0.85,
                 )
 
         return ParseResult(
@@ -359,14 +365,10 @@ class SemanticParser:
             variables=set(),
             unparseable_fragments=["Could not parse existential statement"],
             assumptions=assumptions,
-            confidence=0.0
+            confidence=0.0,
         )
 
-    def _parse_generic(
-        self,
-        statement: str,
-        assumptions: List[str]
-    ) -> ParseResult:
+    def _parse_generic(self, statement: str, assumptions: List[str]) -> ParseResult:
         """
         Parse generic statements: "Birds fly"
 
@@ -386,7 +388,9 @@ class SemanticParser:
             subject = words[0]
             predicate = " ".join(words[1:])
 
-            logical_form = f"Gen x({subject.capitalize()}(x) → {predicate.capitalize()}(x))"
+            logical_form = (
+                f"Gen x({subject.capitalize()}(x) → {predicate.capitalize()}(x))"
+            )
 
             return ParseResult(
                 success=True,
@@ -397,7 +401,7 @@ class SemanticParser:
                 variables={"x"},
                 unparseable_fragments=[],
                 assumptions=assumptions,
-                confidence=0.6  # Lower confidence due to approximation
+                confidence=0.6,  # Lower confidence due to approximation
             )
 
         return ParseResult(
@@ -409,14 +413,10 @@ class SemanticParser:
             variables=set(),
             unparseable_fragments=["Could not parse generic statement"],
             assumptions=assumptions,
-            confidence=0.0
+            confidence=0.0,
         )
 
-    def _parse_atomic(
-        self,
-        statement: str,
-        assumptions: List[str]
-    ) -> ParseResult:
+    def _parse_atomic(self, statement: str, assumptions: List[str]) -> ParseResult:
         """
         Parse atomic statement: "Socrates is mortal"
 
@@ -440,7 +440,7 @@ class SemanticParser:
                     variables=set(),
                     unparseable_fragments=[],
                     assumptions=assumptions,
-                    confidence=0.9
+                    confidence=0.9,
                 )
 
         return ParseResult(
@@ -452,7 +452,7 @@ class SemanticParser:
             variables=set(),
             unparseable_fragments=[statement],
             assumptions=assumptions,
-            confidence=0.0
+            confidence=0.0,
         )
 
 
@@ -463,16 +463,16 @@ def create_ml_context() -> SemanticContext:
         ontology={
             "ml_model": {"neural_network", "decision_tree", "svm"},
             "data": {"training_data", "test_data", "biased_data"},
-            "output": {"prediction", "classification", "biased_output"}
+            "output": {"prediction", "classification", "biased_output"},
         },
         predicates={
             "biased": "exhibits statistical correlation with protected attributes beyond task relevance",
             "trained_on": "learned parameters from dataset D",
-            "produces": "generates output O given input I"
+            "produces": "generates output O given input I",
         },
         grounding_rules={
             "model": "computational system with learnable parameters",
             "data": "collection of input-output pairs or feature vectors",
-            "bias": "systematic deviation from population statistics"
-        }
+            "bias": "systematic deviation from population statistics",
+        },
     )

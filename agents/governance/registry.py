@@ -48,7 +48,8 @@ class ConstraintRegistry:
             return
 
         combined = "|".join(
-            f"{name}:{profile.integrity_hash}" for name, profile in sorted(self._profiles.items())
+            f"{name}:{profile.integrity_hash}"
+            for name, profile in sorted(self._profiles.items())
         )
         self._active_hash = hashlib.sha256(combined.encode("utf-8")).hexdigest()
 

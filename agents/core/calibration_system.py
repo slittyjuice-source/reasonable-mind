@@ -17,6 +17,7 @@ import math
 
 class CalibrationMethod(Enum):
     """Methods for calibration adjustment."""
+
     PLATT_SCALING = "platt_scaling"
     ISOTONIC_REGRESSION = "isotonic_regression"
     TEMPERATURE_SCALING = "temperature_scaling"
@@ -26,6 +27,7 @@ class CalibrationMethod(Enum):
 @dataclass
 class CalibrationPoint:
     """A single prediction with outcome for calibration."""
+
     predicted_confidence: float
     actual_outcome: bool  # True if prediction was correct
     category: str = "general"
@@ -36,6 +38,7 @@ class CalibrationPoint:
 @dataclass
 class CalibrationBin:
     """A bin for calibration analysis."""
+
     bin_start: float
     bin_end: float
     count: int
@@ -47,6 +50,7 @@ class CalibrationBin:
 @dataclass
 class CalibrationMetrics:
     """Calibration quality metrics."""
+
     expected_calibration_error: float
     maximum_calibration_error: float
     brier_score: float
@@ -68,14 +72,14 @@ class CalibrationTracker:
         predicted_confidence: float,
         actual_outcome: bool,
         category: str = "general",
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Record a prediction and outcome."""
         point = CalibrationPoint(
             predicted_confidence=max(0.0, min(1.0, predicted_confidence)),
             actual_outcome=actual_outcome,
             category=category,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
         self._points.append(point)
 
@@ -93,7 +97,7 @@ class CalibrationTracker:
                 log_loss=0,
                 reliability_diagram=[],
                 total_samples=0,
-                overall_accuracy=0
+                overall_accuracy=0,
             )
 
         # Create bins
@@ -101,27 +105,32 @@ class CalibrationTracker:
 
         # Calculate ECE (Expected Calibration Error)
         n = len(points)
-        ece = sum(
-            (bin.count / n) * bin.gap
-            for bin in bins if bin.count > 0
-        )
+        ece = sum((bin.count / n) * bin.gap for bin in bins if bin.count > 0)
 
         # Calculate MCE (Maximum Calibration Error)
         mce = max((bin.gap for bin in bins if bin.count > 0), default=0)
 
         # Calculate Brier Score
-        brier = sum(
-            (p.predicted_confidence - (1.0 if p.actual_outcome else 0.0)) ** 2
-            for p in points
-        ) / n
+        brier = (
+            sum(
+                (p.predicted_confidence - (1.0 if p.actual_outcome else 0.0)) ** 2
+                for p in points
+            )
+            / n
+        )
 
         # Calculate Log Loss
         epsilon = 1e-15
-        log_loss_val = -sum(
-            (1.0 if p.actual_outcome else 0.0) * math.log(max(p.predicted_confidence, epsilon)) +
-            (0.0 if p.actual_outcome else 1.0) * math.log(max(1 - p.predicted_confidence, epsilon))
-            for p in points
-        ) / n
+        log_loss_val = (
+            -sum(
+                (1.0 if p.actual_outcome else 0.0)
+                * math.log(max(p.predicted_confidence, epsilon))
+                + (0.0 if p.actual_outcome else 1.0)
+                * math.log(max(1 - p.predicted_confidence, epsilon))
+                for p in points
+            )
+            / n
+        )
 
         # Overall accuracy
         correct = sum(1 for p in points if p.actual_outcome)
@@ -134,7 +143,7 @@ class CalibrationTracker:
             log_loss=log_loss_val,
             reliability_diagram=bins,
             total_samples=n,
-            overall_accuracy=accuracy
+            overall_accuracy=accuracy,
         )
 
     def _create_bins(self, points: List[CalibrationPoint]) -> List[CalibrationBin]:
@@ -147,8 +156,7 @@ class CalibrationTracker:
             bin_end = (i + 1) * bin_size
 
             bin_points = [
-                p for p in points
-                if bin_start <= p.predicted_confidence < bin_end
+                p for p in points if bin_start <= p.predicted_confidence < bin_end
             ]
 
             if bin_points:
@@ -162,21 +170,21 @@ class CalibrationTracker:
                 avg_conf = (bin_start + bin_end) / 2
                 gap = 0
 
-            bins.append(CalibrationBin(
-                bin_start=bin_start,
-                bin_end=bin_end,
-                count=count,
-                accuracy=accuracy,
-                avg_confidence=avg_conf,
-                gap=gap
-            ))
+            bins.append(
+                CalibrationBin(
+                    bin_start=bin_start,
+                    bin_end=bin_end,
+                    count=count,
+                    accuracy=accuracy,
+                    avg_confidence=avg_conf,
+                    gap=gap,
+                )
+            )
 
         return bins
 
     def get_points(
-        self,
-        category: Optional[str] = None,
-        limit: Optional[int] = None
+        self, category: Optional[str] = None, limit: Optional[int] = None
     ) -> List[CalibrationPoint]:
         """Get calibration points."""
         points = self._points
@@ -251,7 +259,7 @@ class TemperatureScaler:
 
         # Grid search for best temperature
         best_temp = 1.0
-        best_loss = float('inf')
+        best_loss = float("inf")
 
         for temp in [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0]:
             self._temperature = temp
@@ -260,8 +268,8 @@ class TemperatureScaler:
             # Calculate NLL
             epsilon = 1e-15
             loss = -sum(
-                (1.0 if out else 0.0) * math.log(max(cal, epsilon)) +
-                (0.0 if out else 1.0) * math.log(max(1 - cal, epsilon))
+                (1.0 if out else 0.0) * math.log(max(cal, epsilon))
+                + (0.0 if out else 1.0) * math.log(max(1 - cal, epsilon))
                 for cal, out in zip(calibrated, outcomes)
             ) / len(predictions)
 
@@ -306,7 +314,8 @@ class HistogramBinningCalibrator:
             bin_end = (i + 1) * bin_size
 
             bin_preds = [
-                (p, o) for p, o in zip(predictions, outcomes)
+                (p, o)
+                for p, o in zip(predictions, outcomes)
                 if bin_start <= p < bin_end
             ]
 
@@ -318,10 +327,7 @@ class HistogramBinningCalibrator:
 
     def calibrate(self, confidence: float) -> float:
         """Apply histogram binning calibration."""
-        bin_idx = min(
-            int(confidence * self._num_bins),
-            self._num_bins - 1
-        )
+        bin_idx = min(int(confidence * self._num_bins), self._num_bins - 1)
         return self._bin_accuracies.get(bin_idx, confidence)
 
     def calibrate_batch(self, confidences: List[float]) -> List[float]:
@@ -333,8 +339,7 @@ class ConfidenceAdjuster:
     """Adjusts confidence based on historical calibration."""
 
     def __init__(
-        self,
-        method: CalibrationMethod = CalibrationMethod.TEMPERATURE_SCALING
+        self, method: CalibrationMethod = CalibrationMethod.TEMPERATURE_SCALING
     ):
         self._method = method
         self._tracker = CalibrationTracker()
@@ -352,10 +357,7 @@ class ConfidenceAdjuster:
         self._refit_threshold = 50
 
     def record_outcome(
-        self,
-        predicted: float,
-        actual: bool,
-        category: str = "general"
+        self, predicted: float, actual: bool, category: str = "general"
     ) -> None:
         """Record an outcome for calibration."""
         self._tracker.record(predicted, actual, category)
@@ -392,7 +394,9 @@ class ConfidenceAdjuster:
 class CategoryCalibrator:
     """Separate calibration for different categories."""
 
-    def __init__(self, method: CalibrationMethod = CalibrationMethod.TEMPERATURE_SCALING):
+    def __init__(
+        self, method: CalibrationMethod = CalibrationMethod.TEMPERATURE_SCALING
+    ):
         self._method = method
         self._adjusters: Dict[str, ConfidenceAdjuster] = {}
         self._default_adjuster = ConfidenceAdjuster(method)
@@ -404,10 +408,7 @@ class CategoryCalibrator:
         return self._adjusters[category]
 
     def record_outcome(
-        self,
-        predicted: float,
-        actual: bool,
-        category: str = "general"
+        self, predicted: float, actual: bool, category: str = "general"
     ) -> None:
         """Record an outcome for a category."""
         adjuster = self._get_adjuster(category)
@@ -418,7 +419,9 @@ class CategoryCalibrator:
         adjuster = self._adjusters.get(category, self._default_adjuster)
         return adjuster.adjust(confidence)
 
-    def get_metrics(self, category: Optional[str] = None) -> Dict[str, CalibrationMetrics]:
+    def get_metrics(
+        self, category: Optional[str] = None
+    ) -> Dict[str, CalibrationMetrics]:
         """Get metrics for categories."""
         if category:
             adjuster = self._adjusters.get(category)
@@ -426,10 +429,7 @@ class CategoryCalibrator:
                 return {category: adjuster.get_metrics()}
             return {}
 
-        return {
-            cat: adj.get_metrics()
-            for cat, adj in self._adjusters.items()
-        }
+        return {cat: adj.get_metrics() for cat, adj in self._adjusters.items()}
 
 
 class CalibrationSystem:
@@ -442,7 +442,7 @@ class CalibrationSystem:
     def __init__(
         self,
         method: CalibrationMethod = CalibrationMethod.TEMPERATURE_SCALING,
-        per_category: bool = True
+        per_category: bool = True,
     ):
         self._method = method
         self._per_category = per_category
@@ -459,34 +459,29 @@ class CalibrationSystem:
         predicted_confidence: float,
         actual_outcome: bool,
         category: str = "general",
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Record a prediction outcome."""
         self._calibrator.record_outcome(predicted_confidence, actual_outcome, category)
 
-        self._history.append({
-            "predicted": predicted_confidence,
-            "actual": actual_outcome,
-            "category": category,
-            "metadata": metadata or {},
-            "timestamp": datetime.now().isoformat()
-        })
+        self._history.append(
+            {
+                "predicted": predicted_confidence,
+                "actual": actual_outcome,
+                "category": category,
+                "metadata": metadata or {},
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
-    def calibrate(
-        self,
-        confidence: float,
-        category: str = "general"
-    ) -> float:
+    def calibrate(self, confidence: float, category: str = "general") -> float:
         """Calibrate a confidence value."""
         if self._per_category and isinstance(self._calibrator, CategoryCalibrator):
             return self._calibrator.adjust(confidence, category)
         return self._calibrator.adjust(confidence)
 
     def calibrate_with_bounds(
-        self,
-        confidence: float,
-        category: str = "general",
-        uncertainty: float = 0.1
+        self, confidence: float, category: str = "general", uncertainty: float = 0.1
     ) -> Tuple[float, float, float]:
         """Calibrate with uncertainty bounds."""
         calibrated = self.calibrate(confidence, category)
@@ -506,7 +501,7 @@ class CalibrationSystem:
                     "mce": m.maximum_calibration_error,
                     "brier_score": m.brier_score,
                     "total_samples": m.total_samples,
-                    "overall_accuracy": m.overall_accuracy
+                    "overall_accuracy": m.overall_accuracy,
                 }
                 for cat, m in metrics.items()
             }
@@ -519,15 +514,14 @@ class CalibrationSystem:
                     "mce": m.maximum_calibration_error,
                     "brier_score": m.brier_score,
                     "total_samples": m.total_samples,
-                    "overall_accuracy": m.overall_accuracy
+                    "overall_accuracy": m.overall_accuracy,
                 }
             }
 
         return {}
 
     def get_reliability_diagram(
-        self,
-        category: str = "general"
+        self, category: str = "general"
     ) -> List[Dict[str, Any]]:
         """Get reliability diagram data."""
         if self._per_category and isinstance(self._calibrator, CategoryCalibrator):
@@ -540,7 +534,7 @@ class CalibrationSystem:
                         "count": b.count,
                         "accuracy": b.accuracy,
                         "avg_confidence": b.avg_confidence,
-                        "gap": b.gap
+                        "gap": b.gap,
                     }
                     for b in metrics[category].reliability_diagram
                 ]
@@ -554,7 +548,7 @@ class CalibrationSystem:
                     "count": b.count,
                     "accuracy": b.accuracy,
                     "avg_confidence": b.avg_confidence,
-                    "gap": b.gap
+                    "gap": b.gap,
                 }
                 for b in m.reliability_diagram
             ]
@@ -562,9 +556,7 @@ class CalibrationSystem:
         return []
 
     def is_well_calibrated(
-        self,
-        category: str = "general",
-        ece_threshold: float = 0.1
+        self, category: str = "general", ece_threshold: float = 0.1
     ) -> bool:
         """Check if calibration is within acceptable bounds."""
         metrics = self.get_metrics(category)
@@ -594,26 +586,24 @@ class CalibrationSystem:
 
 # Convenience functions
 
+
 def create_calibration_system(
-    method: str = "temperature",
-    per_category: bool = True
+    method: str = "temperature", per_category: bool = True
 ) -> CalibrationSystem:
     """Create a calibration system."""
     method_map = {
         "temperature": CalibrationMethod.TEMPERATURE_SCALING,
         "platt": CalibrationMethod.PLATT_SCALING,
-        "histogram": CalibrationMethod.HISTOGRAM_BINNING
+        "histogram": CalibrationMethod.HISTOGRAM_BINNING,
     }
     return CalibrationSystem(
         method=method_map.get(method, CalibrationMethod.TEMPERATURE_SCALING),
-        per_category=per_category
+        per_category=per_category,
     )
 
 
 def calculate_ece(
-    predictions: List[float],
-    outcomes: List[bool],
-    num_bins: int = 10
+    predictions: List[float], outcomes: List[bool], num_bins: int = 10
 ) -> float:
     """Calculate Expected Calibration Error."""
     tracker = CalibrationTracker(num_bins=num_bins)
@@ -624,16 +614,12 @@ def calculate_ece(
     return metrics.expected_calibration_error
 
 
-def calculate_brier_score(
-    predictions: List[float],
-    outcomes: List[bool]
-) -> float:
+def calculate_brier_score(predictions: List[float], outcomes: List[bool]) -> float:
     """Calculate Brier score."""
     n = len(predictions)
     if n == 0:
         return 0.0
 
-    return sum(
-        (p - (1.0 if o else 0.0)) ** 2
-        for p, o in zip(predictions, outcomes)
-    ) / n
+    return (
+        sum((p - (1.0 if o else 0.0)) ** 2 for p, o in zip(predictions, outcomes)) / n
+    )

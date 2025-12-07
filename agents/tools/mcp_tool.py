@@ -15,18 +15,14 @@ class MCPTool(Tool):
         input_schema: dict[str, Any],
         connection: "MCPConnection",
     ):
-        super().__init__(
-            name=name, description=description, input_schema=input_schema
-        )
+        super().__init__(name=name, description=description, input_schema=input_schema)
         self.connection = connection
 
     async def execute(self, **kwargs) -> str:
         """Execute the MCP tool with the given input_schema.
         Note: Currently only supports text results from MCP tools."""
         try:
-            result = await self.connection.call_tool(
-                self.name, arguments=kwargs
-            )
+            result = await self.connection.call_tool(self.name, arguments=kwargs)
 
             if hasattr(result, "content") and result.content:
                 for item in result.content:

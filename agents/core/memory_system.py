@@ -18,6 +18,7 @@ import math
 
 class MemoryType(Enum):
     """Types of memory entries."""
+
     QUERY = "query"  # A question or task
     REASONING = "reasoning"  # A reasoning chain
     FACT = "fact"  # A learned fact
@@ -27,6 +28,7 @@ class MemoryType(Enum):
 
 class OutcomeStatus(Enum):
     """Status of an outcome."""
+
     SUCCESS = "success"
     FAILURE = "failure"
     PARTIAL = "partial"
@@ -36,6 +38,7 @@ class OutcomeStatus(Enum):
 @dataclass
 class MemoryEntry:
     """A single memory entry."""
+
     id: str
     memory_type: MemoryType
     content: str
@@ -53,6 +56,7 @@ class MemoryEntry:
 @dataclass
 class EpisodicMemory:
     """An episodic memory linking query to outcome."""
+
     query_id: str
     query_text: str
     reasoning_steps: List[str]
@@ -67,6 +71,7 @@ class EpisodicMemory:
 @dataclass
 class RetrievalResult:
     """Result of a retrieval query."""
+
     entries: List[MemoryEntry]
     scores: List[float]
     method: str  # "vector", "keyword", "hybrid"
@@ -86,30 +91,31 @@ class SimpleVectorStore:
         self.vectors: Dict[str, List[float]] = {}
         self.metadata: Dict[str, Dict[str, Any]] = {}
 
-    def add(self, entry_id: str, vector: List[float], metadata: Optional[Dict] = None) -> None:
+    def add(
+        self, entry_id: str, vector: List[float], metadata: Optional[Dict] = None
+    ) -> None:
         """Add a vector to the store."""
         if len(vector) != self.dimension:
             # Pad or truncate to match dimension
             if len(vector) < self.dimension:
                 vector = vector + [0.0] * (self.dimension - len(vector))
             else:
-                vector = vector[:self.dimension]
+                vector = vector[: self.dimension]
 
         self.vectors[entry_id] = vector
         self.metadata[entry_id] = metadata or {}
 
     def search(
-        self,
-        query_vector: List[float],
-        top_k: int = 5,
-        threshold: float = 0.0
+        self, query_vector: List[float], top_k: int = 5, threshold: float = 0.0
     ) -> List[Tuple[str, float]]:
         """Search for similar vectors."""
         if len(query_vector) != self.dimension:
             if len(query_vector) < self.dimension:
-                query_vector = query_vector + [0.0] * (self.dimension - len(query_vector))
+                query_vector = query_vector + [0.0] * (
+                    self.dimension - len(query_vector)
+                )
             else:
-                query_vector = query_vector[:self.dimension]
+                query_vector = query_vector[: self.dimension]
 
         scores = []
         for entry_id, vector in self.vectors.items():
@@ -162,7 +168,9 @@ class KeywordIndex:
                 self.index[keyword] = set()
             self.index[keyword].add(entry_id)
 
-    def search(self, query_keywords: List[str], top_k: int = 10) -> List[Tuple[str, float]]:
+    def search(
+        self, query_keywords: List[str], top_k: int = 10
+    ) -> List[Tuple[str, float]]:
         """Search for documents matching keywords."""
         query_keywords = [k.lower() for k in query_keywords]
 
@@ -179,7 +187,9 @@ class KeywordIndex:
             doc_keywords = self.documents.get(doc_id, [])
             if doc_keywords:
                 # Jaccard-like similarity
-                score = match_count / (len(query_keywords) + len(doc_keywords) - match_count)
+                score = match_count / (
+                    len(query_keywords) + len(doc_keywords) - match_count
+                )
                 results.append((doc_id, score))
 
         results.sort(key=lambda x: x[1], reverse=True)
@@ -213,7 +223,7 @@ class MemorySystem:
         self,
         vector_dim: int = 384,
         max_memories: int = 10000,
-        episodic_window: int = 100
+        episodic_window: int = 100,
     ):
         self.vector_store = SimpleVectorStore(vector_dim)
         self.keyword_index = KeywordIndex()
@@ -224,11 +234,7 @@ class MemorySystem:
         self.episodic_window = episodic_window
 
         # Statistics
-        self.stats = {
-            "total_queries": 0,
-            "successful_retrievals": 0,
-            "cache_hits": 0
-        }
+        self.stats = {"total_queries": 0, "successful_retrievals": 0, "cache_hits": 0}
 
     def store(
         self,
@@ -236,7 +242,7 @@ class MemorySystem:
         memory_type: MemoryType,
         keywords: Optional[List[str]] = None,
         embedding: Optional[List[float]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Store a new memory entry."""
         # Generate ID (using sha256 for better collision resistance)
@@ -255,7 +261,7 @@ class MemorySystem:
             content=content,
             embedding=embedding,
             keywords=keywords,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Store in all indexes
@@ -279,7 +285,7 @@ class MemorySystem:
         outcome: OutcomeStatus,
         confidence: float,
         feedback: Optional[str] = None,
-        duration_ms: float = 0.0
+        duration_ms: float = 0.0,
     ) -> str:
         """Store an episodic memory of a complete interaction."""
         query_id = hashlib.sha256(query.encode()).hexdigest()[:16]
@@ -292,7 +298,7 @@ class MemorySystem:
             outcome=outcome,
             confidence=confidence,
             feedback=feedback,
-            duration_ms=duration_ms
+            duration_ms=duration_ms,
         )
 
         self.episodic_memories.append(episode)
@@ -304,13 +310,13 @@ class MemorySystem:
             metadata={
                 "outcome": outcome.value,
                 "confidence": confidence,
-                "tools": tools_used
-            }
+                "tools": tools_used,
+            },
         )
 
         # Maintain window
         if len(self.episodic_memories) > self.episodic_window:
-            self.episodic_memories = self.episodic_memories[-self.episodic_window:]
+            self.episodic_memories = self.episodic_memories[-self.episodic_window :]
 
         return query_id
 
@@ -319,7 +325,7 @@ class MemorySystem:
         query: str,
         top_k: int = 5,
         method: str = "hybrid",
-        embedding: Optional[List[float]] = None
+        embedding: Optional[List[float]] = None,
     ) -> RetrievalResult:
         """Retrieve relevant memories."""
         start_time = datetime.now()
@@ -353,14 +359,10 @@ class MemorySystem:
             scores=scores,
             method=method,
             total_candidates=len(self.memories),
-            retrieval_time_ms=elapsed
+            retrieval_time_ms=elapsed,
         )
 
-    def get_similar_episodes(
-        self,
-        query: str,
-        top_k: int = 5
-    ) -> List[EpisodicMemory]:
+    def get_similar_episodes(self, query: str, top_k: int = 5) -> List[EpisodicMemory]:
         """Get similar past episodes for learning."""
         query_lower = query.lower()
 
@@ -388,8 +390,7 @@ class MemorySystem:
     def get_successful_patterns(self) -> Dict[str, Any]:
         """Analyze successful episodes to find patterns."""
         successful = [
-            ep for ep in self.episodic_memories
-            if ep.outcome == OutcomeStatus.SUCCESS
+            ep for ep in self.episodic_memories if ep.outcome == OutcomeStatus.SUCCESS
         ]
 
         if not successful:
@@ -418,16 +419,14 @@ class MemorySystem:
                 step_patterns[step] = step_patterns.get(step, 0) + 1
 
         common_patterns = sorted(
-            step_patterns.items(),
-            key=lambda x: x[1],
-            reverse=True
+            step_patterns.items(), key=lambda x: x[1], reverse=True
         )[:10]
 
         return {
             "patterns": [p for p, _ in common_patterns],
             "tool_effectiveness": tool_effectiveness,
             "success_rate": len(successful) / len(self.episodic_memories),
-            "avg_confidence": sum(ep.confidence for ep in successful) / len(successful)
+            "avg_confidence": sum(ep.confidence for ep in successful) / len(successful),
         }
 
     def should_avoid(self, query: str) -> Tuple[bool, Optional[str]]:
@@ -446,27 +445,18 @@ class MemorySystem:
         return False, None
 
     def _vector_search(
-        self,
-        embedding: List[float],
-        top_k: int
+        self, embedding: List[float], top_k: int
     ) -> List[Tuple[str, float]]:
         """Search using vector similarity."""
         return self.vector_store.search(embedding, top_k)
 
-    def _keyword_search(
-        self,
-        query: str,
-        top_k: int
-    ) -> List[Tuple[str, float]]:
+    def _keyword_search(self, query: str, top_k: int) -> List[Tuple[str, float]]:
         """Search using keyword matching."""
         keywords = self._extract_keywords(query)
         return self.keyword_index.search(keywords, top_k)
 
     def _hybrid_search(
-        self,
-        query: str,
-        embedding: Optional[List[float]],
-        top_k: int
+        self, query: str, embedding: Optional[List[float]], top_k: int
     ) -> List[Tuple[str, float]]:
         """Combine vector and keyword search."""
         # Get keyword results
@@ -497,21 +487,98 @@ class MemorySystem:
 
         # Simple extraction: words that aren't stopwords
         stopwords = {
-            "the", "a", "an", "is", "are", "was", "were", "be", "been",
-            "being", "have", "has", "had", "do", "does", "did", "will",
-            "would", "could", "should", "may", "might", "must", "shall",
-            "can", "need", "dare", "ought", "used", "to", "of", "in",
-            "for", "on", "with", "at", "by", "from", "as", "into",
-            "through", "during", "before", "after", "above", "below",
-            "between", "under", "again", "further", "then", "once",
-            "here", "there", "when", "where", "why", "how", "all",
-            "each", "few", "more", "most", "other", "some", "such",
-            "no", "nor", "not", "only", "own", "same", "so", "than",
-            "too", "very", "just", "and", "but", "if", "or", "because",
-            "as", "until", "while", "this", "that", "these", "those"
+            "the",
+            "a",
+            "an",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "must",
+            "shall",
+            "can",
+            "need",
+            "dare",
+            "ought",
+            "used",
+            "to",
+            "of",
+            "in",
+            "for",
+            "on",
+            "with",
+            "at",
+            "by",
+            "from",
+            "as",
+            "into",
+            "through",
+            "during",
+            "before",
+            "after",
+            "above",
+            "below",
+            "between",
+            "under",
+            "again",
+            "further",
+            "then",
+            "once",
+            "here",
+            "there",
+            "when",
+            "where",
+            "why",
+            "how",
+            "all",
+            "each",
+            "few",
+            "more",
+            "most",
+            "other",
+            "some",
+            "such",
+            "no",
+            "nor",
+            "not",
+            "only",
+            "own",
+            "same",
+            "so",
+            "than",
+            "too",
+            "very",
+            "just",
+            "and",
+            "but",
+            "if",
+            "or",
+            "because",
+            "as",
+            "until",
+            "while",
+            "this",
+            "that",
+            "these",
+            "those",
         }
 
-        words = re.findall(r'\b\w+\b', text.lower())
+        words = re.findall(r"\b\w+\b", text.lower())
         keywords = [w for w in words if w not in stopwords and len(w) > 2]
 
         return list(set(keywords))[:20]  # Limit to 20 keywords
@@ -524,7 +591,7 @@ class MemorySystem:
         # Sort by last access time and access count
         sorted_memories = sorted(
             self.memories.values(),
-            key=lambda m: (m.access_count, m.last_accessed or m.timestamp)
+            key=lambda m: (m.access_count, m.last_accessed or m.timestamp),
         )
 
         # Remove oldest 10%
@@ -549,7 +616,7 @@ class MemorySystem:
             **self.stats,
             "total_memories": len(self.memories),
             "episodic_memories": len(self.episodic_memories),
-            "vector_store_size": self.vector_store.size()
+            "vector_store_size": self.vector_store.size(),
         }
 
     def export(self) -> Dict[str, Any]:
@@ -562,7 +629,7 @@ class MemorySystem:
                     "content": m.content,
                     "keywords": m.keywords,
                     "metadata": m.metadata,
-                    "timestamp": m.timestamp
+                    "timestamp": m.timestamp,
                 }
                 for m in self.memories.values()
             ],
@@ -575,11 +642,11 @@ class MemorySystem:
                     "outcome": ep.outcome.value,
                     "confidence": ep.confidence,
                     "feedback": ep.feedback,
-                    "timestamp": ep.timestamp
+                    "timestamp": ep.timestamp,
                 }
                 for ep in self.episodic_memories
             ],
-            "stats": self.stats
+            "stats": self.stats,
         }
 
     def import_state(self, state: Dict[str, Any]) -> None:
@@ -590,21 +657,23 @@ class MemorySystem:
                 content=m["content"],
                 memory_type=MemoryType(m["type"]),
                 keywords=m.get("keywords"),
-                metadata=m.get("metadata")
+                metadata=m.get("metadata"),
             )
 
         # Import episodes
         for ep in state.get("episodes", []):
-            self.episodic_memories.append(EpisodicMemory(
-                query_id=ep["query_id"],
-                query_text=ep["query_text"],
-                reasoning_steps=ep["reasoning_steps"],
-                tools_used=ep["tools_used"],
-                outcome=OutcomeStatus(ep["outcome"]),
-                confidence=ep["confidence"],
-                feedback=ep.get("feedback"),
-                timestamp=ep.get("timestamp", datetime.now().isoformat())
-            ))
+            self.episodic_memories.append(
+                EpisodicMemory(
+                    query_id=ep["query_id"],
+                    query_text=ep["query_text"],
+                    reasoning_steps=ep["reasoning_steps"],
+                    tools_used=ep["tools_used"],
+                    outcome=OutcomeStatus(ep["outcome"]),
+                    confidence=ep["confidence"],
+                    feedback=ep.get("feedback"),
+                    timestamp=ep.get("timestamp", datetime.now().isoformat()),
+                )
+            )
 
         # Import stats
         self.stats.update(state.get("stats", {}))

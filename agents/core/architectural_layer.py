@@ -26,6 +26,7 @@ from functools import wraps
 
 class ArchLayer(Enum):
     """Architectural layers in the ReasonableMind system."""
+
     LOGIC = "logic"  # Skeleton - Defines validity
     AI = "ai"  # Muscles - Provides perspectives
     USER = "user"  # Heart - Determines meaning
@@ -44,6 +45,7 @@ UtilityLayer = ArchLayer.UTILITY
 @dataclass
 class LayerMetadata:
     """Metadata about an architectural layer assignment."""
+
     layer: ArchLayer
     purpose: str
     allowed_dependencies: List[ArchLayer]
@@ -61,8 +63,8 @@ LAYER_METADATA = {
             "Must not depend on user context",
             "Must separate validity from soundness",
             "Must not make value judgments",
-            "Confidence must be 1.0 for valid structures"
-        ]
+            "Confidence must be 1.0 for valid structures",
+        ],
     ),
     ArchLayer.AI: LayerMetadata(
         layer=ArchLayer.AI,
@@ -73,8 +75,8 @@ LAYER_METADATA = {
             "Must express uncertainty (confidence < 1.0 for non-formal)",
             "Must attribute interpretations to sources/profiles",
             "Must not auto-select 'best' interpretation",
-            "Must operate within logical constraints"
-        ]
+            "Must operate within logical constraints",
+        ],
     ),
     ArchLayer.USER: LayerMetadata(
         layer=ArchLayer.USER,
@@ -85,8 +87,8 @@ LAYER_METADATA = {
             "Must allow user override of AI suggestions",
             "Must request clarification for ambiguity",
             "Must require confirmation for high-stakes actions",
-            "Must never bypass user agency"
-        ]
+            "Must never bypass user agency",
+        ],
     ),
     ArchLayer.SYNTHESIS: LayerMetadata(
         layer=ArchLayer.SYNTHESIS,
@@ -97,8 +99,8 @@ LAYER_METADATA = {
             "Must trace provenance to sources",
             "Must degrade gracefully under conflict",
             "Must provide explanations",
-            "Invalid logic must block synthesis"
-        ]
+            "Invalid logic must block synthesis",
+        ],
     ),
     ArchLayer.UTILITY: LayerMetadata(
         layer=ArchLayer.UTILITY,
@@ -107,13 +109,13 @@ LAYER_METADATA = {
         constraints=[
             "Should be layer-agnostic",
             "Should not embed reasoning logic",
-            "Should be reusable across layers"
-        ]
+            "Should be reusable across layers",
+        ],
     ),
 }
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def layer(layer_type: ArchLayer, purpose: Optional[str] = None):
@@ -129,6 +131,7 @@ def layer(layer_type: ArchLayer, purpose: Optional[str] = None):
         class ModusPonensValidator:
             pass
     """
+
     def decorator(cls: T) -> T:
         # Attach metadata to the class
         cls.__arch_layer__ = layer_type
@@ -145,7 +148,9 @@ def layer(layer_type: ArchLayer, purpose: Optional[str] = None):
                 "layer": self.__arch_layer__.value,
                 "purpose": self.__layer_purpose__,
                 "constraints": self.__layer_metadata__.constraints,
-                "allowed_dependencies": [l.value for l in self.__layer_metadata__.allowed_dependencies]
+                "allowed_dependencies": [
+                    l.value for l in self.__layer_metadata__.allowed_dependencies
+                ],
             }
 
         cls.get_layer_info = get_layer_info
@@ -194,16 +199,18 @@ def require_confidence(min_conf: float = 0.0, max_conf: float = 1.0):
         def interpret_text(text):
             return Interpretation(confidence=0.85, ...)
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
             result = func(*args, **kwargs)
 
             # Check if result has confidence attribute
-            if hasattr(result, 'confidence'):
+            if hasattr(result, "confidence"):
                 conf = result.confidence
-                assert min_conf <= conf <= max_conf, \
+                assert min_conf <= conf <= max_conf, (
                     f"Confidence {conf} outside allowed range [{min_conf}, {max_conf}]"
+                )
 
             return result
 
@@ -218,12 +225,13 @@ def require_provenance(func: Callable) -> Callable:
 
     Synthesis outputs must trace back to their sources.
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
 
         # Check for provenance
-        if not hasattr(result, 'provenance') and not hasattr(result, 'sources'):
+        if not hasattr(result, "provenance") and not hasattr(result, "sources"):
             raise AttributeError(
                 f"Synthesis layer function {func.__name__} must return "
                 f"result with 'provenance' or 'sources' attribute"
@@ -241,6 +249,7 @@ def require_user_confirmation(action_type: str = "high-stakes"):
     Args:
         action_type: Description of action type (for logging/UX)
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -248,7 +257,7 @@ def require_user_confirmation(action_type: str = "high-stakes"):
             # In testing, we check for confirmation parameter
 
             # Check if 'user_confirmed' is in kwargs
-            if action_type == "high-stakes" and not kwargs.get('user_confirmed', False):
+            if action_type == "high-stakes" and not kwargs.get("user_confirmed", False):
                 raise PermissionError(
                     f"Action {func.__name__} requires user confirmation. "
                     f"Pass user_confirmed=True after obtaining user consent."
@@ -269,17 +278,18 @@ def multiple_perspectives(func: Callable) -> Callable:
     """
     Decorator to enforce that AI layer functions return multiple perspectives.
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
 
         # Check that result contains multiple perspectives
-        if hasattr(result, 'perspectives'):
-            assert len(result.perspectives) >= 1, \
+        if hasattr(result, "perspectives"):
+            assert len(result.perspectives) >= 1, (
                 "AI layer must provide at least one perspective"
+            )
         elif isinstance(result, list):
-            assert len(result) >= 1, \
-                "AI layer must provide at least one perspective"
+            assert len(result) >= 1, "AI layer must provide at least one perspective"
 
         return result
 
@@ -294,7 +304,7 @@ def validate_layer_compliance(obj: object) -> bool:
     Returns:
         True if compliant, raises AssertionError otherwise
     """
-    if not hasattr(obj, '__arch_layer__'):
+    if not hasattr(obj, "__arch_layer__"):
         # No layer declared - skip validation
         return True
 
@@ -330,11 +340,11 @@ def get_layer(obj: object) -> Optional[ArchLayer]:
     Returns:
         ArchLayer if declared, None otherwise
     """
-    if hasattr(obj, '__arch_layer__'):
+    if hasattr(obj, "__arch_layer__"):
         return obj.__arch_layer__
 
     # Check class if obj is an instance
-    if hasattr(obj, '__class__') and hasattr(obj.__class__, '__arch_layer__'):
+    if hasattr(obj, "__class__") and hasattr(obj.__class__, "__arch_layer__"):
         return obj.__class__.__arch_layer__
 
     return None
@@ -369,10 +379,10 @@ def declare_module_layer(layer_type: ArchLayer, purpose: str):
         )
     """
     return {
-        'layer': layer_type,
-        'purpose': purpose,
-        'metadata': LAYER_METADATA[layer_type],
-        'constraints': LAYER_METADATA[layer_type].constraints,
+        "layer": layer_type,
+        "purpose": purpose,
+        "metadata": LAYER_METADATA[layer_type],
+        "constraints": LAYER_METADATA[layer_type].constraints,
     }
 
 
@@ -386,7 +396,9 @@ def print_layer_hierarchy():
             meta = LAYER_METADATA[layer]
             print(f"{layer.value.upper()} Layer")
             print(f"  Purpose: {meta.purpose}")
-            print(f"  Dependencies: {[l.value for l in meta.allowed_dependencies] or 'None'}")
+            print(
+                f"  Dependencies: {[l.value for l in meta.allowed_dependencies] or 'None'}"
+            )
             print("  Constraints:")
             for constraint in meta.constraints:
                 print(f"    - {constraint}")

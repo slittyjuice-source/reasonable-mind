@@ -18,6 +18,7 @@ import json
 
 class EventType(Enum):
     """Types of telemetry events."""
+
     INPUT = "input"  # User input
     OUTPUT = "output"  # Agent output
     TOOL_CALL = "tool_call"  # Tool invocation
@@ -33,6 +34,7 @@ class EventType(Enum):
 
 class LogLevel(Enum):
     """Logging levels."""
+
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
@@ -42,6 +44,7 @@ class LogLevel(Enum):
 @dataclass
 class TelemetryEvent:
     """A single telemetry event."""
+
     event_id: str
     event_type: EventType
     timestamp: datetime
@@ -63,7 +66,7 @@ class TelemetryEvent:
             "level": self.level.value,
             "parent_event_id": self.parent_event_id,
             "duration_ms": self.duration_ms,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -78,13 +81,14 @@ class TelemetryEvent:
             level=LogLevel(data.get("level", "info")),
             parent_event_id=data.get("parent_event_id"),
             duration_ms=data.get("duration_ms"),
-            metadata=data.get("metadata", {})
+            metadata=data.get("metadata", {}),
         )
 
 
 @dataclass
 class Session:
     """A recorded session."""
+
     session_id: str
     start_time: datetime
     end_time: Optional[datetime] = None
@@ -112,7 +116,7 @@ class Session:
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "events": [e.to_dict() for e in self.events],
             "metadata": self.metadata,
-            "checkpoints": self.checkpoints
+            "checkpoints": self.checkpoints,
         }
 
     @classmethod
@@ -121,16 +125,19 @@ class Session:
         return cls(
             session_id=data["session_id"],
             start_time=datetime.fromisoformat(data["start_time"]),
-            end_time=datetime.fromisoformat(data["end_time"]) if data.get("end_time") else None,
+            end_time=datetime.fromisoformat(data["end_time"])
+            if data.get("end_time")
+            else None,
             events=[TelemetryEvent.from_dict(e) for e in data.get("events", [])],
             metadata=data.get("metadata", {}),
-            checkpoints=data.get("checkpoints", {})
+            checkpoints=data.get("checkpoints", {}),
         )
 
 
 @dataclass
 class PerformanceMetrics:
     """Aggregated performance metrics."""
+
     total_events: int
     total_duration_ms: float
     avg_response_time_ms: float
@@ -158,7 +165,7 @@ class EventStore(ABC):
         session_id: Optional[str] = None,
         event_type: Optional[EventType] = None,
         start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        end_time: Optional[datetime] = None,
     ) -> List[TelemetryEvent]:
         """Query events."""
 
@@ -176,8 +183,7 @@ class InMemoryEventStore(EventStore):
         # Ensure session exists
         if event.session_id not in self.sessions:
             self.sessions[event.session_id] = Session(
-                session_id=event.session_id,
-                start_time=event.timestamp
+                session_id=event.session_id, start_time=event.timestamp
             )
 
         session = self.sessions[event.session_id]
@@ -189,7 +195,7 @@ class InMemoryEventStore(EventStore):
 
         # Trim if needed
         if len(self.events) > self.max_events:
-            self.events = self.events[-self.max_events:]
+            self.events = self.events[-self.max_events :]
 
     def get_session(self, session_id: str) -> Optional[Session]:
         """Get a session by ID."""
@@ -200,7 +206,7 @@ class InMemoryEventStore(EventStore):
         session_id: Optional[str] = None,
         event_type: Optional[EventType] = None,
         start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        end_time: Optional[datetime] = None,
     ) -> List[TelemetryEvent]:
         """Query events."""
         results = self.events
@@ -226,7 +232,7 @@ class TelemetryLogger:
     def __init__(
         self,
         store: Optional[EventStore] = None,
-        default_level: LogLevel = LogLevel.INFO
+        default_level: LogLevel = LogLevel.INFO,
     ):
         self.store = store or InMemoryEventStore()
         self.default_level = default_level
@@ -246,7 +252,7 @@ class TelemetryLogger:
         data: Dict[str, Any],
         level: Optional[LogLevel] = None,
         parent_event_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> TelemetryEvent:
         """Log a telemetry event."""
         event = TelemetryEvent(
@@ -257,50 +263,40 @@ class TelemetryLogger:
             data=data,
             level=level or self.default_level,
             parent_event_id=parent_event_id,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self.store.store(event)
         return event
 
     def log_input(
-        self,
-        session_id: str,
-        input_text: str,
-        **kwargs: Any
+        self, session_id: str, input_text: str, **kwargs: Any
     ) -> TelemetryEvent:
         """Log user input."""
         return self.log(
             session_id=session_id,
             event_type=EventType.INPUT,
-            data={"text": input_text, **kwargs}
+            data={"text": input_text, **kwargs},
         )
 
     def log_output(
-        self,
-        session_id: str,
-        output_text: str,
-        **kwargs: Any
+        self, session_id: str, output_text: str, **kwargs: Any
     ) -> TelemetryEvent:
         """Log agent output."""
         return self.log(
             session_id=session_id,
             event_type=EventType.OUTPUT,
-            data={"text": output_text, **kwargs}
+            data={"text": output_text, **kwargs},
         )
 
     def log_tool_call(
-        self,
-        session_id: str,
-        tool_name: str,
-        arguments: Dict[str, Any],
-        **kwargs: Any
+        self, session_id: str, tool_name: str, arguments: Dict[str, Any], **kwargs: Any
     ) -> TelemetryEvent:
         """Log tool invocation."""
         return self.log(
             session_id=session_id,
             event_type=EventType.TOOL_CALL,
-            data={"tool": tool_name, "arguments": arguments, **kwargs}
+            data={"tool": tool_name, "arguments": arguments, **kwargs},
         )
 
     def log_tool_result(
@@ -309,28 +305,24 @@ class TelemetryLogger:
         tool_name: str,
         result: Any,
         success: bool = True,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> TelemetryEvent:
         """Log tool result."""
         return self.log(
             session_id=session_id,
             event_type=EventType.TOOL_RESULT,
-            data={"tool": tool_name, "result": result, "success": success, **kwargs}
+            data={"tool": tool_name, "result": result, "success": success, **kwargs},
         )
 
     def log_error(
-        self,
-        session_id: str,
-        error_type: str,
-        error_message: str,
-        **kwargs: Any
+        self, session_id: str, error_type: str, error_message: str, **kwargs: Any
     ) -> TelemetryEvent:
         """Log an error."""
         return self.log(
             session_id=session_id,
             event_type=EventType.ERROR,
             data={"type": error_type, "message": error_message, **kwargs},
-            level=LogLevel.ERROR
+            level=LogLevel.ERROR,
         )
 
     def log_metric(
@@ -339,31 +331,23 @@ class TelemetryLogger:
         metric_name: str,
         value: Union[int, float],
         unit: str = "",
-        **kwargs: Any
+        **kwargs: Any,
     ) -> TelemetryEvent:
         """Log a metric."""
         return self.log(
             session_id=session_id,
             event_type=EventType.METRIC,
-            data={"name": metric_name, "value": value, "unit": unit, **kwargs}
+            data={"name": metric_name, "value": value, "unit": unit, **kwargs},
         )
 
-    def start_span(
-        self,
-        session_id: str,
-        span_name: str
-    ) -> str:
+    def start_span(self, session_id: str, span_name: str) -> str:
         """Start a timed span."""
         span_id = f"span_{span_name}_{datetime.now().timestamp()}"
         self._active_spans[span_id] = datetime.now()
         return span_id
 
     def end_span(
-        self,
-        session_id: str,
-        span_id: str,
-        span_name: str,
-        **kwargs: Any
+        self, session_id: str, span_id: str, span_name: str, **kwargs: Any
     ) -> TelemetryEvent:
         """End a timed span."""
         start_time = self._active_spans.pop(span_id, datetime.now())
@@ -372,7 +356,7 @@ class TelemetryLogger:
         event = self.log(
             session_id=session_id,
             event_type=EventType.METRIC,
-            data={"name": f"span_{span_name}", "duration_ms": duration_ms, **kwargs}
+            data={"name": f"span_{span_name}", "duration_ms": duration_ms, **kwargs},
         )
         event.duration_ms = duration_ms
         return event
@@ -381,7 +365,7 @@ class TelemetryLogger:
         self,
         session_id: str,
         checkpoint_name: str,
-        state: Optional[Dict[str, Any]] = None
+        state: Optional[Dict[str, Any]] = None,
     ) -> TelemetryEvent:
         """Create a checkpoint."""
         session = self.store.get_session(session_id)
@@ -391,7 +375,7 @@ class TelemetryLogger:
         return self.log(
             session_id=session_id,
             event_type=EventType.CHECKPOINT,
-            data={"name": checkpoint_name, "state": state or {}}
+            data={"name": checkpoint_name, "state": state or {}},
         )
 
 
@@ -410,9 +394,7 @@ class SessionReplay:
         return self._current_session is not None
 
     def get_events(
-        self,
-        start: int = 0,
-        count: Optional[int] = None
+        self, start: int = 0, count: Optional[int] = None
     ) -> List[TelemetryEvent]:
         """Get events from current session."""
         if not self._current_session:
@@ -470,8 +452,7 @@ class SessionReplay:
         return False
 
     def iterate_events(
-        self,
-        event_types: Optional[List[EventType]] = None
+        self, event_types: Optional[List[EventType]] = None
     ) -> Iterator[TelemetryEvent]:
         """Iterate through events."""
         if not self._current_session:
@@ -515,18 +496,13 @@ class MetricsAggregator:
         return self._aggregate_events(session.events)
 
     def aggregate_range(
-        self,
-        start_time: datetime,
-        end_time: datetime
+        self, start_time: datetime, end_time: datetime
     ) -> PerformanceMetrics:
         """Aggregate metrics for a time range."""
         events = self.store.query(start_time=start_time, end_time=end_time)
         return self._aggregate_events(events)
 
-    def _aggregate_events(
-        self,
-        events: List[TelemetryEvent]
-    ) -> PerformanceMetrics:
+    def _aggregate_events(self, events: List[TelemetryEvent]) -> PerformanceMetrics:
         """Aggregate metrics from events."""
         if not events:
             return self._empty_metrics()
@@ -567,13 +543,10 @@ class MetricsAggregator:
             tool_calls=tool_calls,
             retrievals=retrievals,
             by_event_type=by_type,
-            latency_percentiles=percentiles
+            latency_percentiles=percentiles,
         )
 
-    def _compute_percentiles(
-        self,
-        values: List[float]
-    ) -> Dict[str, float]:
+    def _compute_percentiles(self, values: List[float]) -> Dict[str, float]:
         """Compute latency percentiles."""
         if not values:
             return {"p50": 0.0, "p90": 0.0, "p99": 0.0}
@@ -584,7 +557,7 @@ class MetricsAggregator:
         return {
             "p50": sorted_values[int(n * 0.5)],
             "p90": sorted_values[int(n * 0.9)] if n > 1 else sorted_values[-1],
-            "p99": sorted_values[int(n * 0.99)] if n > 1 else sorted_values[-1]
+            "p99": sorted_values[int(n * 0.99)] if n > 1 else sorted_values[-1],
         }
 
     def _empty_metrics(self) -> PerformanceMetrics:
@@ -597,7 +570,7 @@ class MetricsAggregator:
             tool_calls=0,
             retrievals=0,
             by_event_type={},
-            latency_percentiles={"p50": 0.0, "p90": 0.0, "p99": 0.0}
+            latency_percentiles={"p50": 0.0, "p90": 0.0, "p99": 0.0},
         )
 
 
@@ -624,15 +597,13 @@ class SessionExporter:
         conversation = []
         for event in session.events:
             if event.event_type == EventType.INPUT:
-                conversation.append({
-                    "role": "user",
-                    "content": event.data.get("text", "")
-                })
+                conversation.append(
+                    {"role": "user", "content": event.data.get("text", "")}
+                )
             elif event.event_type == EventType.OUTPUT:
-                conversation.append({
-                    "role": "assistant",
-                    "content": event.data.get("text", "")
-                })
+                conversation.append(
+                    {"role": "assistant", "content": event.data.get("text", "")}
+                )
 
         return conversation
 
@@ -644,12 +615,14 @@ class SessionExporter:
 
         trace = []
         for event in session.events:
-            trace.append({
-                "timestamp": event.timestamp.isoformat(),
-                "type": event.event_type.value,
-                "data": event.data,
-                "duration_ms": event.duration_ms
-            })
+            trace.append(
+                {
+                    "timestamp": event.timestamp.isoformat(),
+                    "type": event.event_type.value,
+                    "data": event.data,
+                    "duration_ms": event.duration_ms,
+                }
+            )
 
         return trace
 
@@ -662,15 +635,10 @@ class DebugHelper:
 
     def find_errors(self, session_id: str) -> List[TelemetryEvent]:
         """Find all errors in a session."""
-        return self.store.query(
-            session_id=session_id,
-            event_type=EventType.ERROR
-        )
+        return self.store.query(session_id=session_id, event_type=EventType.ERROR)
 
     def get_slow_operations(
-        self,
-        session_id: str,
-        threshold_ms: float = 1000.0
+        self, session_id: str, threshold_ms: float = 1000.0
     ) -> List[TelemetryEvent]:
         """Find slow operations."""
         session = self.store.get_session(session_id)
@@ -678,16 +646,12 @@ class DebugHelper:
             return []
 
         return [
-            e for e in session.events
-            if e.duration_ms and e.duration_ms > threshold_ms
+            e for e in session.events if e.duration_ms and e.duration_ms > threshold_ms
         ]
 
     def get_tool_usage(self, session_id: str) -> Dict[str, int]:
         """Get tool usage counts."""
-        events = self.store.query(
-            session_id=session_id,
-            event_type=EventType.TOOL_CALL
-        )
+        events = self.store.query(session_id=session_id, event_type=EventType.TOOL_CALL)
 
         usage: Dict[str, int] = {}
         for event in events:
@@ -696,11 +660,7 @@ class DebugHelper:
 
         return usage
 
-    def diff_sessions(
-        self,
-        session_id_1: str,
-        session_id_2: str
-    ) -> Dict[str, Any]:
+    def diff_sessions(self, session_id_1: str, session_id_2: str) -> Dict[str, Any]:
         """Compare two sessions."""
         session1 = self.store.get_session(session_id_1)
         session2 = self.store.get_session(session_id_2)
@@ -711,17 +671,13 @@ class DebugHelper:
         return {
             "event_count_diff": len(session1.events) - len(session2.events),
             "duration_diff": (
-                (session1.duration.total_seconds() if session1.duration else 0) -
-                (session2.duration.total_seconds() if session2.duration else 0)
+                (session1.duration.total_seconds() if session1.duration else 0)
+                - (session2.duration.total_seconds() if session2.duration else 0)
             ),
-            "event_type_diff": self._diff_event_types(session1, session2)
+            "event_type_diff": self._diff_event_types(session1, session2),
         }
 
-    def _diff_event_types(
-        self,
-        session1: Session,
-        session2: Session
-    ) -> Dict[str, int]:
+    def _diff_event_types(self, session1: Session, session2: Session) -> Dict[str, int]:
         """Diff event type counts."""
         types1: Dict[str, int] = {}
         types2: Dict[str, int] = {}
@@ -733,16 +689,11 @@ class DebugHelper:
             types2[e.event_type.value] = types2.get(e.event_type.value, 0) + 1
 
         all_types = set(types1.keys()) | set(types2.keys())
-        return {
-            t: types1.get(t, 0) - types2.get(t, 0)
-            for t in all_types
-        }
+        return {t: types1.get(t, 0) - types2.get(t, 0) for t in all_types}
 
 
 # Factory functions
-def create_telemetry_logger(
-    max_events: int = 10000
-) -> TelemetryLogger:
+def create_telemetry_logger(max_events: int = 10000) -> TelemetryLogger:
     """Create a telemetry logger."""
     store = InMemoryEventStore(max_events=max_events)
     return TelemetryLogger(store=store)

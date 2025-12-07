@@ -20,6 +20,7 @@ import threading
 
 class EventType(Enum):
     """Types of observable events."""
+
     # Lifecycle events
     START = "start"
     END = "end"
@@ -50,6 +51,7 @@ class EventType(Enum):
 
 class LogLevel(Enum):
     """Log levels for events."""
+
     DEBUG = 10
     INFO = 20
     WARNING = 30
@@ -60,6 +62,7 @@ class LogLevel(Enum):
 @dataclass
 class TraceEvent:
     """A single trace event."""
+
     event_id: str
     event_type: EventType
     timestamp: str
@@ -82,7 +85,7 @@ class TraceEvent:
             "name": self.name,
             "data": self.data,
             "duration_ms": self.duration_ms,
-            "level": self.level.name
+            "level": self.level.name,
         }
 
     def to_json(self) -> str:
@@ -92,6 +95,7 @@ class TraceEvent:
 @dataclass
 class Span:
     """A span representing a unit of work."""
+
     trace_id: str
     span_id: str
     parent_span_id: Optional[str]
@@ -115,6 +119,7 @@ class Span:
 @dataclass
 class Trace:
     """A complete trace of an operation."""
+
     trace_id: str
     root_span: Span
     spans: List[Span] = field(default_factory=list)
@@ -153,10 +158,7 @@ class Histogram:
     """Simple histogram for latency tracking."""
 
     def __init__(
-        self,
-        name: str,
-        buckets: Optional[List[float]] = None,
-        description: str = ""
+        self, name: str, buckets: Optional[List[float]] = None, description: str = ""
     ):
         self.name = name
         self.description = description
@@ -178,6 +180,7 @@ class Histogram:
                 return {"count": 0, "sum": 0, "avg": 0, "min": 0, "max": 0}
 
             import statistics
+
             return {
                 "count": len(self._values),
                 "sum": sum(self._values),
@@ -186,7 +189,7 @@ class Histogram:
                 "max": max(self._values),
                 "median": statistics.median(self._values),
                 "p95": self._percentile(95),
-                "p99": self._percentile(99)
+                "p99": self._percentile(99),
             }
 
     def _percentile(self, p: float) -> float:
@@ -243,10 +246,7 @@ class MetricsRegistry:
             return self.counters[name]
 
     def histogram(
-        self,
-        name: str,
-        buckets: Optional[List[float]] = None,
-        description: str = ""
+        self, name: str, buckets: Optional[List[float]] = None, description: str = ""
     ) -> Histogram:
         with self._lock:
             if name not in self.histograms:
@@ -263,7 +263,7 @@ class MetricsRegistry:
         return {
             "counters": {name: c.get() for name, c in self.counters.items()},
             "histograms": {name: h.get_stats() for name, h in self.histograms.items()},
-            "gauges": {name: g.get() for name, g in self.gauges.items()}
+            "gauges": {name: g.get() for name, g in self.gauges.items()},
         }
 
 
@@ -273,7 +273,7 @@ class EventLogger:
     def __init__(
         self,
         min_level: LogLevel = LogLevel.INFO,
-        handlers: Optional[List[Callable[[TraceEvent], None]]] = None
+        handlers: Optional[List[Callable[[TraceEvent], None]]] = None,
     ):
         self.min_level = min_level
         self.handlers = handlers or []
@@ -293,7 +293,7 @@ class EventLogger:
         span_id: str = "",
         parent_span_id: Optional[str] = None,
         level: LogLevel = LogLevel.INFO,
-        duration_ms: Optional[float] = None
+        duration_ms: Optional[float] = None,
     ) -> TraceEvent:
         if level.value < self.min_level.value:
             return None  # type: ignore
@@ -312,7 +312,7 @@ class EventLogger:
             name=name,
             data=data,
             duration_ms=duration_ms,
-            level=level
+            level=level,
         )
 
         with self._lock:
@@ -334,7 +334,7 @@ class EventLogger:
         self,
         trace_id: Optional[str] = None,
         event_type: Optional[EventType] = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[TraceEvent]:
         with self._lock:
             events = self.events.copy()
@@ -370,9 +370,7 @@ class Tracer:
                 return f"span_{self._span_counter:08d}"
 
     def start_trace(
-        self,
-        name: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, name: str, metadata: Optional[Dict[str, Any]] = None
     ) -> Trace:
         """Start a new trace."""
         trace_id = self._generate_id("trace")
@@ -383,14 +381,10 @@ class Tracer:
             span_id=span_id,
             parent_span_id=None,
             name=name,
-            start_time=time.time()
+            start_time=time.time(),
         )
 
-        trace = Trace(
-            trace_id=trace_id,
-            root_span=root_span,
-            metadata=metadata or {}
-        )
+        trace = Trace(trace_id=trace_id, root_span=root_span, metadata=metadata or {})
 
         self.active_traces[trace_id] = trace
 
@@ -399,16 +393,13 @@ class Tracer:
             name,
             {"metadata": metadata or {}},
             trace_id=trace_id,
-            span_id=span_id
+            span_id=span_id,
         )
 
         return trace
 
     def start_span(
-        self,
-        trace: Trace,
-        name: str,
-        parent_span_id: Optional[str] = None
+        self, trace: Trace, name: str, parent_span_id: Optional[str] = None
     ) -> Span:
         """Start a new span within a trace."""
         span_id = self._generate_id("span")
@@ -418,7 +409,7 @@ class Tracer:
             span_id=span_id,
             parent_span_id=parent_span_id or trace.root_span.span_id,
             name=name,
-            start_time=time.time()
+            start_time=time.time(),
         )
 
         trace.add_span(span)
@@ -429,7 +420,7 @@ class Tracer:
             {},
             trace_id=trace.trace_id,
             span_id=span_id,
-            parent_span_id=span.parent_span_id
+            parent_span_id=span.parent_span_id,
         )
 
         return span
@@ -445,7 +436,7 @@ class Tracer:
             trace_id=span.trace_id,
             span_id=span.span_id,
             parent_span_id=span.parent_span_id,
-            duration_ms=span.duration_ms
+            duration_ms=span.duration_ms,
         )
 
     def end_trace(self, trace: Trace) -> None:
@@ -458,7 +449,7 @@ class Tracer:
             {"total_spans": len(trace.spans)},
             trace_id=trace.trace_id,
             span_id=trace.root_span.span_id,
-            duration_ms=trace.get_total_duration()
+            duration_ms=trace.get_total_duration(),
         )
 
         if trace.trace_id in self.active_traces:
@@ -478,7 +469,7 @@ class Tracer:
                 {"error": str(e)},
                 trace_id=trace_obj.trace_id,
                 span_id=trace_obj.root_span.span_id,
-                level=LogLevel.ERROR
+                level=LogLevel.ERROR,
             )
             raise
         finally:
@@ -498,7 +489,7 @@ class Tracer:
                 {"error": str(e)},
                 trace_id=span_obj.trace_id,
                 span_id=span_obj.span_id,
-                level=LogLevel.ERROR
+                level=LogLevel.ERROR,
             )
             raise
         finally:
@@ -515,10 +506,7 @@ class TokenCounter:
         self.total_tokens = metrics.counter("tokens_total", "Total tokens used")
 
     def count(
-        self,
-        input_tokens: int,
-        output_tokens: int,
-        trace_id: Optional[str] = None
+        self, input_tokens: int, output_tokens: int, trace_id: Optional[str] = None
     ) -> Dict[str, int]:
         self.input_tokens.inc(input_tokens)
         self.output_tokens.inc(output_tokens)
@@ -527,14 +515,14 @@ class TokenCounter:
         return {
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
-            "total_tokens": input_tokens + output_tokens
+            "total_tokens": input_tokens + output_tokens,
         }
 
     def get_usage(self) -> Dict[str, int]:
         return {
             "input_tokens": self.input_tokens.get(),
             "output_tokens": self.output_tokens.get(),
-            "total_tokens": self.total_tokens.get()
+            "total_tokens": self.total_tokens.get(),
         }
 
 
@@ -557,32 +545,32 @@ class ObservabilitySystem:
         # Counters
         self.requests = self.metrics.counter("requests_total", "Total requests")
         self.errors = self.metrics.counter("errors_total", "Total errors")
-        self.reasoning_steps = self.metrics.counter("reasoning_steps", "Reasoning steps taken")
+        self.reasoning_steps = self.metrics.counter(
+            "reasoning_steps", "Reasoning steps taken"
+        )
         self.tool_calls = self.metrics.counter("tool_calls", "Tool calls made")
 
         # Histograms
         self.request_latency = self.metrics.histogram(
-            "request_latency_ms",
-            description="Request latency in milliseconds"
+            "request_latency_ms", description="Request latency in milliseconds"
         )
         self.reasoning_latency = self.metrics.histogram(
-            "reasoning_latency_ms",
-            description="Reasoning step latency in milliseconds"
+            "reasoning_latency_ms", description="Reasoning step latency in milliseconds"
         )
         self.tool_latency = self.metrics.histogram(
-            "tool_latency_ms",
-            description="Tool call latency in milliseconds"
+            "tool_latency_ms", description="Tool call latency in milliseconds"
         )
 
         # Gauges
-        self.active_requests = self.metrics.gauge("active_requests", "Currently active requests")
-        self.memory_entries = self.metrics.gauge("memory_entries", "Number of memory entries")
+        self.active_requests = self.metrics.gauge(
+            "active_requests", "Currently active requests"
+        )
+        self.memory_entries = self.metrics.gauge(
+            "memory_entries", "Number of memory entries"
+        )
 
     def log_request(
-        self,
-        query: str,
-        trace_id: str = "",
-        metadata: Optional[Dict[str, Any]] = None
+        self, query: str, trace_id: str = "", metadata: Optional[Dict[str, Any]] = None
     ) -> None:
         """Log an incoming request."""
         self.requests.inc()
@@ -592,15 +580,11 @@ class ObservabilitySystem:
             EventType.START,
             "request",
             {"query": query[:200], "metadata": metadata or {}},
-            trace_id=trace_id
+            trace_id=trace_id,
         )
 
     def log_response(
-        self,
-        response: str,
-        latency_ms: float,
-        trace_id: str = "",
-        success: bool = True
+        self, response: str, latency_ms: float, trace_id: str = "", success: bool = True
     ) -> None:
         """Log a response."""
         self.active_requests.dec()
@@ -615,7 +599,7 @@ class ObservabilitySystem:
             {"response_length": len(response), "success": success},
             trace_id=trace_id,
             duration_ms=latency_ms,
-            level=LogLevel.INFO if success else LogLevel.ERROR
+            level=LogLevel.INFO if success else LogLevel.ERROR,
         )
 
     def log_reasoning_step(
@@ -623,7 +607,7 @@ class ObservabilitySystem:
         step_name: str,
         step_data: Dict[str, Any],
         latency_ms: float,
-        trace_id: str = ""
+        trace_id: str = "",
     ) -> None:
         """Log a reasoning step."""
         self.reasoning_steps.inc()
@@ -634,7 +618,7 @@ class ObservabilitySystem:
             step_name,
             step_data,
             trace_id=trace_id,
-            duration_ms=latency_ms
+            duration_ms=latency_ms,
         )
 
     def log_tool_call(
@@ -644,7 +628,7 @@ class ObservabilitySystem:
         result: Any,
         latency_ms: float,
         success: bool = True,
-        trace_id: str = ""
+        trace_id: str = "",
     ) -> None:
         """Log a tool call."""
         self.tool_calls.inc()
@@ -659,24 +643,16 @@ class ObservabilitySystem:
             {"args": args, "result": str(result)[:500], "success": success},
             trace_id=trace_id,
             duration_ms=latency_ms,
-            level=LogLevel.INFO if success else LogLevel.ERROR
+            level=LogLevel.INFO if success else LogLevel.ERROR,
         )
 
     def log_tokens(
-        self,
-        input_tokens: int,
-        output_tokens: int,
-        trace_id: str = ""
+        self, input_tokens: int, output_tokens: int, trace_id: str = ""
     ) -> None:
         """Log token usage."""
         usage = self.token_counter.count(input_tokens, output_tokens, trace_id)
 
-        self.logger.log(
-            EventType.TOKEN_COUNT,
-            "tokens",
-            usage,
-            trace_id=trace_id
-        )
+        self.logger.log(EventType.TOKEN_COUNT, "tokens", usage, trace_id=trace_id)
 
     def get_summary(self) -> Dict[str, Any]:
         """Get observability summary."""
@@ -684,13 +660,11 @@ class ObservabilitySystem:
             "metrics": self.metrics.get_all_metrics(),
             "token_usage": self.token_counter.get_usage(),
             "recent_events": len(self.logger.events),
-            "active_traces": len(self.tracer.active_traces)
+            "active_traces": len(self.tracer.active_traces),
         }
 
     def export_events(
-        self,
-        trace_id: Optional[str] = None,
-        format_type: str = "json"
+        self, trace_id: Optional[str] = None, format_type: str = "json"
     ) -> str:
         """Export events for external consumption."""
         events = self.logger.get_events(trace_id=trace_id)

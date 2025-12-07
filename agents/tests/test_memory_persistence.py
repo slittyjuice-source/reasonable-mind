@@ -40,7 +40,7 @@ class TestInMemoryBackend:
             "id": "entry_001",
             "content": "Test memory",
             "memory_type": "semantic",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         # Save entry
@@ -71,11 +71,13 @@ class TestInMemoryBackend:
         """Test listing entries with filters."""
         # Add multiple entries
         for i in range(5):
-            backend.save_entry({
-                "id": f"entry_{i}",
-                "content": f"Memory {i}",
-                "memory_type": "semantic" if i % 2 == 0 else "episodic"
-            })
+            backend.save_entry(
+                {
+                    "id": f"entry_{i}",
+                    "content": f"Memory {i}",
+                    "memory_type": "semantic" if i % 2 == 0 else "episodic",
+                }
+            )
 
         # List all
         all_entries = backend.list_entries(limit=10)
@@ -95,11 +97,7 @@ class TestSQLiteBackend:
     @pytest.mark.unit
     def test_save_and_load_entry(self, backend):
         """Test SQLite save and load."""
-        entry = {
-            "id": "sql_001",
-            "content": "SQLite test",
-            "memory_type": "semantic"
-        }
+        entry = {"id": "sql_001", "content": "SQLite test", "memory_type": "semantic"}
 
         result = backend.save_entry(entry)
         assert result is True
@@ -111,10 +109,7 @@ class TestSQLiteBackend:
     @pytest.mark.unit
     def test_persistence_across_operations(self, backend):
         """Test that data persists across multiple operations."""
-        entries = [
-            {"id": f"persist_{i}", "content": f"Data {i}"}
-            for i in range(3)
-        ]
+        entries = [{"id": f"persist_{i}", "content": f"Data {i}"} for i in range(3)]
 
         for entry in entries:
             backend.save_entry(entry)
@@ -138,11 +133,7 @@ class TestJSONFileBackend:
     @pytest.mark.unit
     def test_save_and_load_entry(self, backend):
         """Test JSON file save and load."""
-        entry = {
-            "id": "json_001",
-            "content": "JSON test",
-            "memory_type": "working"
-        }
+        entry = {"id": "json_001", "content": "JSON test", "memory_type": "working"}
 
         result = backend.save_entry(entry)
         assert result is True
@@ -164,8 +155,8 @@ class TestPersistentMemoryManager:
     def test_initialization(self, manager):
         """Test manager initializes properly."""
         assert manager is not None
-        assert hasattr(manager, 'save')
-        assert hasattr(manager, 'load')
+        assert hasattr(manager, "save")
+        assert hasattr(manager, "load")
 
     @pytest.mark.unit
     def test_save_and_retrieve(self, manager):
@@ -194,10 +185,7 @@ class TestConsolidation:
 
     @pytest.fixture
     def manager(self):
-        config = PersistenceConfig(
-            backend=StorageBackend.MEMORY,
-            max_memory_entries=10
-        )
+        config = PersistenceConfig(backend=StorageBackend.MEMORY, max_memory_entries=10)
         return PersistentMemoryManager(config)
 
     @pytest.mark.unit
@@ -210,8 +198,8 @@ class TestConsolidation:
         result = manager.consolidate(ConsolidationStrategy.HYBRID)
 
         assert isinstance(result, ConsolidationResult)
-        assert hasattr(result, 'entries_before')
-        assert hasattr(result, 'entries_after')
+        assert hasattr(result, "entries_before")
+        assert hasattr(result, "entries_after")
 
     @pytest.mark.unit
     def test_consolidation_result_fields(self, manager):
@@ -221,10 +209,10 @@ class TestConsolidation:
 
         result = manager.consolidate(ConsolidationStrategy.HYBRID)
 
-        assert hasattr(result, 'entries_before')
-        assert hasattr(result, 'entries_after')
-        assert hasattr(result, 'entries_removed')
-        assert hasattr(result, 'strategy_used')
+        assert hasattr(result, "entries_before")
+        assert hasattr(result, "entries_after")
+        assert hasattr(result, "entries_removed")
+        assert hasattr(result, "strategy_used")
 
 
 class TestFactoryFunctions:
@@ -282,7 +270,7 @@ class TestPersistenceConfig:
         config = PersistenceConfig(
             backend=StorageBackend.SQLITE,
             db_path="/tmp/test.db",
-            max_memory_entries=5000
+            max_memory_entries=5000,
         )
 
         assert config.backend == StorageBackend.SQLITE
@@ -301,7 +289,7 @@ class TestMemorySnapshot:
             timestamp=datetime.now().isoformat(),
             version=1,
             entry_count=100,
-            episodic_count=50
+            episodic_count=50,
         )
 
         assert snapshot.snapshot_id == "snap_001"

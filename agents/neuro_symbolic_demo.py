@@ -19,11 +19,7 @@ from pathlib import Path
 # Add agents directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from logic import (
-    ReasoningAgent,
-    LogicType,
-    InferenceRule
-)
+from logic import ReasoningAgent, LogicType, InferenceRule
 
 
 def demo_basic_reasoning():
@@ -39,20 +35,16 @@ def demo_basic_reasoning():
         logic_framework=LogicType.FIRST_ORDER,
         reasoning_depth=3,
         logic_weight=0.75,  # Prioritize logic over consensus
-        verbose=True
+        verbose=True,
     )
 
     # Add knowledge to the knowledge base
     print("\n📚 Building Knowledge Base...")
     agent.add_knowledge(
-        "All software engineers write code",
-        source="domain_knowledge",
-        confidence=1.0
+        "All software engineers write code", source="domain_knowledge", confidence=1.0
     )
     agent.add_knowledge(
-        "Alice is a software engineer",
-        source="user_input",
-        confidence=1.0
+        "Alice is a software engineer", source="user_input", confidence=1.0
     )
 
     # Query the agent
@@ -82,7 +74,7 @@ def demo_complex_reasoning():
         system_prompt="Specialized in complex logical deduction",
         logic_framework=LogicType.FIRST_ORDER,
         reasoning_depth=5,
-        verbose=True
+        verbose=True,
     )
 
     # Build a more complex knowledge base
@@ -120,11 +112,7 @@ def demo_logic_types():
     print("DEMO 3: DIFFERENT LOGIC SYSTEMS")
     print("=" * 70)
 
-    logic_types = [
-        LogicType.PROPOSITIONAL,
-        LogicType.FIRST_ORDER,
-        LogicType.MODAL
-    ]
+    logic_types = [LogicType.PROPOSITIONAL, LogicType.FIRST_ORDER, LogicType.MODAL]
 
     for logic_type in logic_types:
         print(f"\n🔷 Testing with {logic_type.value.upper()} logic")
@@ -133,7 +121,7 @@ def demo_logic_types():
             name=f"{logic_type.value.capitalize()} Reasoner",
             system_prompt=f"Agent using {logic_type.value} logic",
             logic_framework=logic_type,
-            verbose=False
+            verbose=False,
         )
 
         agent.add_knowledge("If it rains, the ground is wet")
@@ -156,7 +144,7 @@ def demo_inference_rules():
         name="Inference Demonstrator",
         system_prompt="Demonstrates various inference rules",
         logic_framework=LogicType.FIRST_ORDER,
-        verbose=False
+        verbose=False,
     )
 
     # Modus Ponens: P, P→Q ⊢ Q
@@ -191,7 +179,7 @@ def demo_knowledge_validation():
         name="Validator",
         system_prompt="Validates claims against knowledge base",
         logic_framework=LogicType.FIRST_ORDER,
-        verbose=False
+        verbose=False,
     )
 
     # Add knowledge
@@ -212,7 +200,9 @@ def demo_knowledge_validation():
 
         print(f"  Valid: {validation.valid}")
         print(f"  Confidence: {validation.confidence:.1%}")
-        print(f"  Sources: {', '.join(validation.sources) if validation.sources else 'None'}")
+        print(
+            f"  Sources: {', '.join(validation.sources) if validation.sources else 'None'}"
+        )
 
         if validation.reasoning_chain:
             print(f"  Reasoning:")
@@ -231,7 +221,7 @@ def demo_argument_structure():
         system_prompt="Constructs formal logical arguments",
         logic_framework=LogicType.FIRST_ORDER,
         reasoning_depth=4,
-        verbose=False
+        verbose=False,
     )
 
     # Build knowledge base for complex argument
@@ -296,6 +286,7 @@ def main():
         except Exception as e:
             print(f"\n❌ Error in {name}: {e}")
             import traceback
+
             traceback.print_exc()
 
     print("\n" + "=" * 70)

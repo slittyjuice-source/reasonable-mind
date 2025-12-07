@@ -32,13 +32,15 @@ def _utc_now() -> datetime:
 
 class ExecutionMode(Enum):
     """Proxy execution modes."""
-    LIVE = "live"          # Execute operations
-    DRY_RUN = "dry_run"    # Validate only, don't execute
-    MOCK = "mock"          # Return mock results
+
+    LIVE = "live"  # Execute operations
+    DRY_RUN = "dry_run"  # Validate only, don't execute
+    MOCK = "mock"  # Return mock results
 
 
 class ActionType(Enum):
     """Types of actions the proxy can intercept."""
+
     FILE_READ = "file_read"
     FILE_WRITE = "file_write"
     FILE_DELETE = "file_delete"
@@ -49,6 +51,7 @@ class ActionType(Enum):
 
 class Decision(Enum):
     """Policy decision for an action."""
+
     ALLOW = "allow"
     DENY = "deny"
     ESCALATE = "escalate"
@@ -57,6 +60,7 @@ class Decision(Enum):
 @dataclass
 class ActionRequest:
     """Request for an action to be validated."""
+
     action_type: ActionType
     target: str  # file path or command
     details: Dict[str, Any] = field(default_factory=dict)
@@ -67,6 +71,7 @@ class ActionRequest:
 @dataclass
 class ActionResult:
     """Result of an action request."""
+
     request: ActionRequest
     decision: Decision
     allowed: bool
@@ -80,6 +85,7 @@ class ActionResult:
 @dataclass
 class AuditEntry:
     """Audit log entry for governance."""
+
     correlation_id: str
     timestamp: datetime
     action_type: ActionType
@@ -116,40 +122,81 @@ class ExecutionProxy:
 
     # Read-only commands always allowed
     READONLY_COMMANDS: Set[str] = {
-        "ls", "cat", "head", "tail", "wc", "grep", "find", "pwd",
-        "echo", "date", "which", "type", "file", "stat", "diff"
+        "ls",
+        "cat",
+        "head",
+        "tail",
+        "wc",
+        "grep",
+        "find",
+        "pwd",
+        "echo",
+        "date",
+        "which",
+        "type",
+        "file",
+        "stat",
+        "diff",
     }
 
     # Python tooling allowed
     PYTHON_TOOLING: Set[str] = {
-        "python", "python3", "pytest", "pylint", "flake8", "ruff",
-        "mypy", "black", "isort"
+        "python",
+        "python3",
+        "pytest",
+        "pylint",
+        "flake8",
+        "ruff",
+        "mypy",
+        "black",
+        "isort",
     }
 
     # Commands requiring approval
     APPROVAL_REQUIRED: Set[str] = {
-        "git add", "git commit", "git stash", "git checkout",
-        "git branch", "git merge", "git rebase"
+        "git add",
+        "git commit",
+        "git stash",
+        "git checkout",
+        "git branch",
+        "git merge",
+        "git rebase",
     }
 
     # Always blocked
     BLOCKED_COMMANDS: Set[str] = {
-        "git push", "git pull", "pip install", "pip uninstall",
-        "npm install", "yarn add", "brew install",
-        "curl", "wget", "nc", "netcat", "ssh", "scp", "rsync",
-        "rm -rf", "sudo", "chmod 777", "chown",
-        "shutdown", "reboot", "halt"
+        "git push",
+        "git pull",
+        "pip install",
+        "pip uninstall",
+        "npm install",
+        "yarn add",
+        "brew install",
+        "curl",
+        "wget",
+        "nc",
+        "netcat",
+        "ssh",
+        "scp",
+        "rsync",
+        "rm -rf",
+        "sudo",
+        "chmod 777",
+        "chown",
+        "shutdown",
+        "reboot",
+        "halt",
     }
 
     # Blocked patterns (regex)
     BLOCKED_PATTERNS: List[str] = [
-        r".*\|\s*sh\b",           # pipe to sh
-        r".*\|\s*bash\b",         # pipe to bash
-        r"curl.*\|",              # curl piped
-        r"wget.*\|",              # wget piped
-        r".*>\s*/etc/",           # writes to /etc
-        r".*>\s*/usr/",           # writes to /usr
-        r"rm\s+-[rf]*\s+/",       # rm with absolute path
+        r".*\|\s*sh\b",  # pipe to sh
+        r".*\|\s*bash\b",  # pipe to bash
+        r"curl.*\|",  # curl piped
+        r"wget.*\|",  # wget piped
+        r".*>\s*/etc/",  # writes to /etc
+        r".*>\s*/usr/",  # writes to /usr
+        r"rm\s+-[rf]*\s+/",  # rm with absolute path
     ]
 
     def __init__(
@@ -158,7 +205,7 @@ class ExecutionProxy:
         sandbox_root: Path,
         mode: ExecutionMode = ExecutionMode.LIVE,
         approval_callback: Optional[Callable[[ActionRequest], bool]] = None,
-        log_dir: Optional[Path] = None
+        log_dir: Optional[Path] = None,
     ):
         """
         Initialize execution proxy.
@@ -221,7 +268,11 @@ class ExecutionProxy:
         path_str = str(path)
         # Use resolved paths to handle symlinks
         try:
-            relative_path = str(path.resolve().relative_to(self.sandbox_root.resolve())) if self._is_in_sandbox(path) else path_str
+            relative_path = (
+                str(path.resolve().relative_to(self.sandbox_root.resolve()))
+                if self._is_in_sandbox(path)
+                else path_str
+            )
         except ValueError:
             relative_path = path_str
 
@@ -230,30 +281,40 @@ class ExecutionProxy:
             ActionType.FILE_READ: "read",
             ActionType.FILE_WRITE: "write",
             ActionType.FILE_CREATE: "create",
-            ActionType.FILE_DELETE: "delete"
+            ActionType.FILE_DELETE: "delete",
         }
         action_key = action_map.get(action_type, "read")
 
         # Check deny first (deny takes precedence)
         deny_section = permissions.get("deny", {})
         deny_patterns = deny_section.get(action_key, [])
-        if isinstance(deny_patterns, list) and self._match_patterns(relative_path, deny_patterns):
+        if isinstance(deny_patterns, list) and self._match_patterns(
+            relative_path, deny_patterns
+        ):
             return Decision.DENY
 
         # Check escalate
         escalate_section = permissions.get("escalate", {})
         escalate_patterns = escalate_section.get(action_key, [])
-        if isinstance(escalate_patterns, list) and self._match_patterns(relative_path, escalate_patterns):
+        if isinstance(escalate_patterns, list) and self._match_patterns(
+            relative_path, escalate_patterns
+        ):
             return Decision.ESCALATE
 
         # Check allow
         allow_section = permissions.get("allow", {})
         allow_patterns = allow_section.get(action_key, [])
-        if isinstance(allow_patterns, list) and self._match_patterns(relative_path, allow_patterns):
+        if isinstance(allow_patterns, list) and self._match_patterns(
+            relative_path, allow_patterns
+        ):
             return Decision.ALLOW
 
         # Default: deny for writes, allow for reads
-        if action_type in (ActionType.FILE_WRITE, ActionType.FILE_DELETE, ActionType.FILE_CREATE):
+        if action_type in (
+            ActionType.FILE_WRITE,
+            ActionType.FILE_DELETE,
+            ActionType.FILE_CREATE,
+        ):
             return Decision.DENY
         return Decision.ALLOW
 
@@ -326,7 +387,8 @@ class ExecutionProxy:
         if self.mode == ExecutionMode.LIVE and self.log_dir.exists():
             log_file = self.log_dir / f"audit_{_utc_now().strftime('%Y%m%d')}.jsonl"
             import json
-            with open(log_file, 'a', encoding='utf-8') as f:
+
+            with open(log_file, "a", encoding="utf-8") as f:
                 record = {
                     "correlation_id": entry.correlation_id,
                     "timestamp": entry.timestamp.isoformat(),
@@ -337,7 +399,7 @@ class ExecutionProxy:
                     "policy_hash": entry.policy_hash,
                     "executed": entry.executed,
                     "success": entry.success,
-                    "details": entry.details
+                    "details": entry.details,
                 }
                 f.write(json.dumps(record) + "\n")
 
@@ -346,7 +408,7 @@ class ExecutionProxy:
         request: ActionRequest,
         decision: Decision,
         reason: str,
-        executor: Callable[[], Any]
+        executor: Callable[[], Any],
     ) -> ActionResult:
         """Validate decision and execute if allowed."""
         allowed = decision == Decision.ALLOW
@@ -364,7 +426,7 @@ class ExecutionProxy:
             decision=decision,
             allowed=allowed,
             reason=reason,
-            policy_hash=self.profile.integrity_hash
+            policy_hash=self.profile.integrity_hash,
         )
 
         # Execute if allowed and in LIVE mode
@@ -380,18 +442,20 @@ class ExecutionProxy:
             result.executed = True
 
         # Log audit
-        self._log_audit(AuditEntry(
-            correlation_id=request.correlation_id,
-            timestamp=request.timestamp,
-            action_type=request.action_type,
-            target=request.target,
-            decision=decision,
-            reason=reason,
-            policy_hash=self.profile.integrity_hash,
-            executed=result.executed,
-            success=result.error is None,
-            details=request.details
-        ))
+        self._log_audit(
+            AuditEntry(
+                correlation_id=request.correlation_id,
+                timestamp=request.timestamp,
+                action_type=request.action_type,
+                target=request.target,
+                decision=decision,
+                reason=reason,
+                policy_hash=self.profile.integrity_hash,
+                executed=result.executed,
+                success=result.error is None,
+                details=request.details,
+            )
+        )
 
         return result
 
@@ -411,7 +475,7 @@ class ExecutionProxy:
         request = ActionRequest(
             action_type=ActionType.FILE_READ,
             target=str(path),
-            details={"encoding": encoding}
+            details={"encoding": encoding},
         )
 
         decision = self._check_file_policy(ActionType.FILE_READ, path)
@@ -427,7 +491,7 @@ class ExecutionProxy:
         path: Path,
         content: str,
         encoding: str = "utf-8",
-        create_parents: bool = False
+        create_parents: bool = False,
     ) -> ActionResult:
         """
         Write to a file with governance validation.
@@ -446,21 +510,23 @@ class ExecutionProxy:
             request = ActionRequest(
                 action_type=ActionType.FILE_WRITE,
                 target=str(path),
-                details={"encoding": encoding, "size": len(content)}
+                details={"encoding": encoding, "size": len(content)},
             )
             return ActionResult(
                 request=request,
                 decision=Decision.DENY,
                 allowed=False,
                 reason=f"Write denied: path outside sandbox ({self.sandbox_root})",
-                policy_hash=self.profile.integrity_hash
+                policy_hash=self.profile.integrity_hash,
             )
 
-        action_type = ActionType.FILE_CREATE if not path.exists() else ActionType.FILE_WRITE
+        action_type = (
+            ActionType.FILE_CREATE if not path.exists() else ActionType.FILE_WRITE
+        )
         request = ActionRequest(
             action_type=action_type,
             target=str(path),
-            details={"encoding": encoding, "size": len(content)}
+            details={"encoding": encoding, "size": len(content)},
         )
 
         decision = self._check_file_policy(action_type, path)
@@ -486,21 +552,17 @@ class ExecutionProxy:
         """
         if not self._is_in_sandbox(path):
             request = ActionRequest(
-                action_type=ActionType.FILE_DELETE,
-                target=str(path)
+                action_type=ActionType.FILE_DELETE, target=str(path)
             )
             return ActionResult(
                 request=request,
                 decision=Decision.DENY,
                 allowed=False,
                 reason="Delete denied: path outside sandbox",
-                policy_hash=self.profile.integrity_hash
+                policy_hash=self.profile.integrity_hash,
             )
 
-        request = ActionRequest(
-            action_type=ActionType.FILE_DELETE,
-            target=str(path)
-        )
+        request = ActionRequest(action_type=ActionType.FILE_DELETE, target=str(path))
 
         decision = self._check_file_policy(ActionType.FILE_DELETE, path)
         reason = f"File delete: {path.name}"
@@ -518,7 +580,7 @@ class ExecutionProxy:
         cmd: Union[str, List[str]],
         cwd: Optional[Path] = None,
         timeout: Optional[int] = 60,
-        capture_output: bool = True
+        capture_output: bool = True,
     ) -> ActionResult:
         """
         Run a subprocess command with governance validation.
@@ -539,14 +601,14 @@ class ExecutionProxy:
             request = ActionRequest(
                 action_type=ActionType.SUBPROCESS,
                 target=cmd_str,
-                details={"cwd": str(cwd)}
+                details={"cwd": str(cwd)},
             )
             return ActionResult(
                 request=request,
                 decision=Decision.DENY,
                 allowed=False,
                 reason="Subprocess denied: cwd outside sandbox",
-                policy_hash=self.profile.integrity_hash
+                policy_hash=self.profile.integrity_hash,
             )
 
         request = ActionRequest(
@@ -554,8 +616,8 @@ class ExecutionProxy:
             target=cmd_str,
             details={
                 "cwd": str(cwd) if cwd else str(self.sandbox_root),
-                "timeout": timeout
-            }
+                "timeout": timeout,
+            },
         )
 
         decision = self._check_subprocess_policy(cmd_str)
@@ -568,12 +630,12 @@ class ExecutionProxy:
                 cwd=cwd or self.sandbox_root,
                 timeout=timeout,
                 capture_output=capture_output,
-                text=True
+                text=True,
             )
             return {
                 "returncode": result.returncode,
                 "stdout": result.stdout if capture_output else None,
-                "stderr": result.stderr if capture_output else None
+                "stderr": result.stderr if capture_output else None,
             }
 
         return self._validate_and_execute(request, decision, reason, executor)
@@ -591,11 +653,9 @@ class ExecutionProxy:
         Use this to tune governance policies - high friction on
         legitimate actions suggests policy is too restrictive.
         """
-        return dict(sorted(
-            self._friction_log.items(),
-            key=lambda x: x[1],
-            reverse=True
-        ))
+        return dict(
+            sorted(self._friction_log.items(), key=lambda x: x[1], reverse=True)
+        )
 
     def clear_logs(self) -> None:
         """Clear in-memory audit and friction logs."""

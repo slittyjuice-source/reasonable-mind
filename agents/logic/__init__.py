@@ -10,7 +10,7 @@ from .knowledge_base import (
     ValidationResult,
     LogicalStatement,
     LogicType,
-    InferenceRule
+    InferenceRule,
 )
 
 from .reasoning_agent import (
@@ -18,7 +18,7 @@ from .reasoning_agent import (
     ReasoningStep,
     FormalArgument,
     ArgumentBuilder,
-    ArgumentFormatter
+    ArgumentFormatter,
 )
 
 __all__ = [
@@ -32,5 +32,5 @@ __all__ = [
     "ReasoningStep",
     "FormalArgument",
     "ArgumentBuilder",
-    "ArgumentFormatter"
+    "ArgumentFormatter",
 ]

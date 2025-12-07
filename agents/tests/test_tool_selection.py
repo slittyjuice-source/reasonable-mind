@@ -7,6 +7,7 @@ class FastTool:
 
     async def execute(self, **kwargs):
         from agents.core.planning_system import ToolResult
+
         return ToolResult(success=True, data={"ok": True})
 
 
@@ -16,6 +17,7 @@ class SlowTool:
 
     async def execute(self, **kwargs):
         from agents.core.planning_system import ToolResult
+
         return ToolResult(success=True, data={"ok": True})
 
 

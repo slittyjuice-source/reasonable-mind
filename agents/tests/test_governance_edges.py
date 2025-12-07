@@ -78,7 +78,9 @@ class TestPlanValidatorEdges:
         """Validating action without plan_step_id fails with MISSING_PLAN_CITATION."""
         result = loaded_validator.validate_action("read_file", {}, plan_step_id=None)
         assert not result.is_valid
-        assert result.violations[0].violation_type == ViolationType.MISSING_PLAN_CITATION
+        assert (
+            result.violations[0].violation_type == ViolationType.MISSING_PLAN_CITATION
+        )
 
     def test_validate_action_step_not_found(
         self, loaded_validator: PlanValidator
@@ -111,7 +113,9 @@ class TestPlanValidatorEdges:
         plan_validator.load_plan(plan)
         result = plan_validator.validate_action("delete_file", {}, "del")
         assert not result.is_valid
-        assert result.violations[0].violation_type == ViolationType.DESTRUCTIVE_OPERATION
+        assert (
+            result.violations[0].violation_type == ViolationType.DESTRUCTIVE_OPERATION
+        )
 
     def test_validate_destructive_action_approved(
         self, plan_validator: PlanValidator
@@ -315,12 +319,15 @@ class TestExecutionProxyMockMode:
     def test_mock_no_match_returns_default(self) -> None:
         """When no mock matches, returns default result."""
         proxy = ExecutionProxy(mode=ExecutionMode.MOCK)
-        proxy.register_mock(r"^specific$", ExecutionResult(
-            stdout="won't match",
-            stderr="",
-            mode=ExecutionMode.MOCK,
-            exit_code=0,
-        ))
+        proxy.register_mock(
+            r"^specific$",
+            ExecutionResult(
+                stdout="won't match",
+                stderr="",
+                mode=ExecutionMode.MOCK,
+                exit_code=0,
+            ),
+        )
         result = proxy.execute("different_command")
 
         assert result.mode == ExecutionMode.MOCK
@@ -335,11 +342,14 @@ class TestExecutionProxyMockMode:
 class TestExecutionContextValidation:
     """Test context validation - constraint binding integrity."""
 
-    @pytest.mark.parametrize("field,value", [
-        ("constraint_hash", ""),
-        ("plan_id", ""),
-        ("persona_id", ""),
-    ])
+    @pytest.mark.parametrize(
+        "field,value",
+        [
+            ("constraint_hash", ""),
+            ("plan_id", ""),
+            ("persona_id", ""),
+        ],
+    )
     def test_validate_fails_on_empty_field(self, field: str, value: str) -> None:
         """Validation fails when any required field is empty."""
         kwargs = {

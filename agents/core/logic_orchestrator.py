@@ -53,12 +53,14 @@ from agents.core.fallacy_detector import (
 # Data Structures
 # =============================================================================
 
+
 class ArgumentType(Enum):
     """Classification of argument structure for routing."""
-    CATEGORICAL = "categorical"      # Syllogistic (All A are B, etc.)
+
+    CATEGORICAL = "categorical"  # Syllogistic (All A are B, etc.)
     PROPOSITIONAL = "propositional"  # If-then, and, or, not
-    MIXED = "mixed"                  # Combination of both
-    UNKNOWN = "unknown"              # Requires parsing/classification
+    MIXED = "mixed"  # Combination of both
+    UNKNOWN = "unknown"  # Requires parsing/classification
 
 
 @dataclass
@@ -83,6 +85,7 @@ class StructuredArgument:
         ...     argument_type=ArgumentType.CATEGORICAL
         ... )
     """
+
     premises: List[str]
     conclusion: str
     argument_type: ArgumentType = ArgumentType.UNKNOWN
@@ -117,8 +120,11 @@ class LogicAnalysisResult:
         notes: Explanatory annotations and warnings
         raw_engine_results: Preserved original engine outputs for debugging
     """
+
     is_valid: Optional[bool] = None
-    engine_used: Literal["categorical", "propositional", "mixed", "fallacy_only", "unknown"] = "unknown"
+    engine_used: Literal[
+        "categorical", "propositional", "mixed", "fallacy_only", "unknown"
+    ] = "unknown"
     syllogism_form: Optional[str] = None
     inference_pattern: Optional[str] = None
     fallacies: List[FallacyPattern] = field(default_factory=list)
@@ -152,7 +158,11 @@ class LogicAnalysisResult:
             "syllogism_form": self.syllogism_form,
             "inference_pattern": self.inference_pattern,
             "fallacies": [
-                {"name": f.name, "category": f.category.value, "severity": f.severity.value}
+                {
+                    "name": f.name,
+                    "category": f.category.value,
+                    "severity": f.severity.value,
+                }
                 for f in self.fallacies
             ],
             "violations": self.violations,
@@ -165,6 +175,7 @@ class LogicAnalysisResult:
 # =============================================================================
 # Logic Orchestrator
 # =============================================================================
+
 
 class LogicOrchestrator:
     """
@@ -276,16 +287,16 @@ class LogicOrchestrator:
             notes=[
                 "Text parsing not yet implemented",
                 "Please provide a StructuredArgument via analyze() method",
-                f"Raw text received: {len(raw_text)} characters"
+                f"Raw text received: {len(raw_text)} characters",
             ],
-            violations=["PARSE_NOT_IMPLEMENTED"]
+            violations=["PARSE_NOT_IMPLEMENTED"],
         )
 
     def check_validity(
         self,
         premises: List[str],
         conclusion: str,
-        argument_type: ArgumentType = ArgumentType.UNKNOWN
+        argument_type: ArgumentType = ArgumentType.UNKNOWN,
     ) -> Tuple[bool, float]:
         """
         Convenience method for simple validity checks.
@@ -300,9 +311,7 @@ class LogicOrchestrator:
             if validity cannot be determined
         """
         argument = StructuredArgument(
-            premises=premises,
-            conclusion=conclusion,
-            argument_type=argument_type
+            premises=premises, conclusion=conclusion, argument_type=argument_type
         )
         result = self.analyze(argument)
         return (result.is_valid or False, result.confidence)
@@ -322,16 +331,16 @@ class LogicOrchestrator:
         """
         # FallacyDetector.detect requires premises and conclusion
         # For text-only detection, we treat it as a single premise with empty conclusion
-        return self._fallacy_detector.detect(argument=text, premises=[text], conclusion="")
+        return self._fallacy_detector.detect(
+            argument=text, premises=[text], conclusion=""
+        )
 
     # =========================================================================
     # Internal Routing Methods (Stubs)
     # =========================================================================
 
     def _analyze_categorical(
-        self,
-        argument: StructuredArgument,
-        result: LogicAnalysisResult
+        self, argument: StructuredArgument, result: LogicAnalysisResult
     ) -> LogicAnalysisResult:
         """
         Route categorical arguments to the CategoricalEngine.
@@ -353,7 +362,9 @@ class LogicOrchestrator:
 
             # Use CategoricalEngine to validate the syllogism
             engine = CategoricalEngine()
-            syllogism_result = engine.validate_syllogism(major_premise, minor_premise, conclusion)
+            syllogism_result = engine.validate_syllogism(
+                major_premise, minor_premise, conclusion
+            )
 
             result.is_valid = syllogism_result.valid
             if syllogism_result.form:
@@ -371,9 +382,7 @@ class LogicOrchestrator:
         return result
 
     def _analyze_propositional(
-        self,
-        argument: StructuredArgument,
-        result: LogicAnalysisResult
+        self, argument: StructuredArgument, result: LogicAnalysisResult
     ) -> LogicAnalysisResult:
         """
         Route propositional arguments to the InferenceEngine.
@@ -414,7 +423,7 @@ class LogicOrchestrator:
             result.raw_engine_results["inference"] = {
                 "success": inference_result.success,
                 "patterns": [p.value for p in inference_result.patterns_used],
-                "steps": len(inference_result.steps)
+                "steps": len(inference_result.steps),
             }
 
         except Exception as e:
@@ -424,9 +433,7 @@ class LogicOrchestrator:
         return result
 
     def _analyze_mixed(
-        self,
-        argument: StructuredArgument,
-        result: LogicAnalysisResult
+        self, argument: StructuredArgument, result: LogicAnalysisResult
     ) -> LogicAnalysisResult:
         """
         Handle arguments that mix categorical and propositional forms.
@@ -461,9 +468,7 @@ class LogicOrchestrator:
         return result
 
     def _analyze_unknown(
-        self,
-        argument: StructuredArgument,
-        result: LogicAnalysisResult
+        self, argument: StructuredArgument, result: LogicAnalysisResult
     ) -> LogicAnalysisResult:
         """
         Handle arguments with unknown type.
@@ -488,10 +493,14 @@ class LogicOrchestrator:
         prop_score = sum(1 for ind in propositional_indicators if ind in all_lower)
 
         if cat_score > prop_score:
-            result.notes.append(f"Heuristic classification: categorical (score {cat_score})")
+            result.notes.append(
+                f"Heuristic classification: categorical (score {cat_score})"
+            )
             return self._analyze_categorical(argument, result)
         elif prop_score > cat_score:
-            result.notes.append(f"Heuristic classification: propositional (score {prop_score})")
+            result.notes.append(
+                f"Heuristic classification: propositional (score {prop_score})"
+            )
             return self._analyze_propositional(argument, result)
         else:
             result.notes.append("Could not classify argument type")
@@ -501,9 +510,7 @@ class LogicOrchestrator:
         return result
 
     def _detect_fallacies(
-        self,
-        argument: StructuredArgument,
-        result: LogicAnalysisResult
+        self, argument: StructuredArgument, result: LogicAnalysisResult
     ) -> LogicAnalysisResult:
         """
         Run fallacy detection on the argument.
@@ -515,19 +522,20 @@ class LogicOrchestrator:
         fallacies = self._fallacy_detector.detect(
             argument=" ".join(argument.premises) + " " + argument.conclusion,
             premises=argument.premises,
-            conclusion=argument.conclusion
+            conclusion=argument.conclusion,
         )
         result.fallacies = fallacies
 
         if result.fallacies:
-            result.notes.append(f"Detected {len(fallacies)} potential fallacy/fallacies")
+            result.notes.append(
+                f"Detected {len(fallacies)} potential fallacy/fallacies"
+            )
             # Downgrade validity if serious fallacies found
             from agents.core.fallacy_detector import FallacySeverity
+
             for fallacy in fallacies:
                 if fallacy.severity == FallacySeverity.MAJOR:
-                    result.notes.append(
-                        f"Major fallacy detected: {fallacy.name}"
-                    )
+                    result.notes.append(f"Major fallacy detected: {fallacy.name}")
 
         return result
 
@@ -556,10 +564,11 @@ class LogicOrchestrator:
         # Reduce for fallacies (based on severity)
         if result.fallacies:
             from agents.core.fallacy_detector import FallacySeverity
+
             severity_weights = {
                 FallacySeverity.MAJOR: 0.3,
                 FallacySeverity.MODERATE: 0.15,
-                FallacySeverity.MINOR: 0.05
+                FallacySeverity.MINOR: 0.05,
             }
             fallacy_penalty = sum(
                 severity_weights.get(f.severity, 0.1) for f in result.fallacies
@@ -574,6 +583,7 @@ class LogicOrchestrator:
 # Factory Functions
 # =============================================================================
 
+
 def create_orchestrator() -> LogicOrchestrator:
     """
     Factory function to create a configured LogicOrchestrator.
@@ -585,9 +595,7 @@ def create_orchestrator() -> LogicOrchestrator:
 
 
 def analyze_argument(
-    premises: List[str],
-    conclusion: str,
-    argument_type: str = "unknown"
+    premises: List[str], conclusion: str, argument_type: str = "unknown"
 ) -> LogicAnalysisResult:
     """
     Convenience function for one-off analysis without managing orchestrator lifecycle.
@@ -611,6 +619,6 @@ def analyze_argument(
     argument = StructuredArgument(
         premises=premises,
         conclusion=conclusion,
-        argument_type=type_map.get(argument_type.lower(), ArgumentType.UNKNOWN)
+        argument_type=type_map.get(argument_type.lower(), ArgumentType.UNKNOWN),
     )
     return orchestrator.analyze(argument)

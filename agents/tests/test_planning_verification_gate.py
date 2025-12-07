@@ -1,6 +1,14 @@
 import pytest
 
-from agents.core.planning_system import Plan, Planner, PlanExecutor, PlanStep, PlanStatus, StepType, ToolRegistry
+from agents.core.planning_system import (
+    Plan,
+    Planner,
+    PlanExecutor,
+    PlanStep,
+    PlanStatus,
+    StepType,
+    ToolRegistry,
+)
 
 
 class NoopTool:
@@ -9,6 +17,7 @@ class NoopTool:
 
     async def execute(self, **kwargs):
         from agents.core.planning_system import ToolResult
+
         return ToolResult(success=True, data={"ok": True})
 
     def validate_args(self, args):
@@ -31,7 +40,12 @@ async def test_plan_blocks_when_unverified_required():
             tool_name="noop",
         )
     ]
-    plan = Plan(id="p", goal="g", steps=steps, context={"require_verified": True, "verified": False})
+    plan = Plan(
+        id="p",
+        goal="g",
+        steps=steps,
+        context={"require_verified": True, "verified": False},
+    )
 
     result = await executor.execute_plan(plan)
 

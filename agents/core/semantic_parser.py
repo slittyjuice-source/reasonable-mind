@@ -17,6 +17,7 @@ import re
 
 class QuantifierType(Enum):
     """Types of quantification."""
+
     UNIVERSAL = "∀"  # all, every, each
     EXISTENTIAL = "∃"  # some, there exists
     MOST = "most"  # most, majority
@@ -27,6 +28,7 @@ class QuantifierType(Enum):
 
 class ModalityType(Enum):
     """Types of modality."""
+
     NECESSITY = "□"  # must, necessarily
     POSSIBILITY = "◇"  # might, possibly, could
     OBLIGATION = "O"  # should, ought, must (deontic)
@@ -38,6 +40,7 @@ class ModalityType(Enum):
 
 class ParseConfidence(Enum):
     """Confidence levels for parse results."""
+
     HIGH = 0.9  # Clear pattern match
     MEDIUM = 0.7  # Heuristic match
     LOW = 0.5  # Fallback/guess
@@ -47,6 +50,7 @@ class ParseConfidence(Enum):
 @dataclass
 class SemanticFrame:
     """A semantic frame representing parsed meaning."""
+
     predicate: str
     arguments: Dict[str, str]  # role -> filler
     quantifier: QuantifierType = QuantifierType.NONE
@@ -68,6 +72,7 @@ class SemanticFrame:
 @dataclass
 class ParseResult:
     """Complete parse result with metadata."""
+
     success: bool
     frames: List[SemanticFrame]
     confidence: float
@@ -80,6 +85,7 @@ class ParseResult:
 @dataclass
 class DomainOntology:
     """Domain-specific knowledge for grounding."""
+
     name: str
     concepts: Dict[str, Set[str]]  # concept -> subconcepts
     predicates: Dict[str, List[str]]  # predicate -> argument roles
@@ -93,8 +99,9 @@ class DomainOntology:
     def is_concept(self, term: str) -> bool:
         """Check if term is a known concept."""
         term_lower = term.lower()
-        return (term_lower in self.concepts or
-                any(term_lower in subs for subs in self.concepts.values()))
+        return term_lower in self.concepts or any(
+            term_lower in subs for subs in self.concepts.values()
+        )
 
 
 class EnhancedSemanticParser:
@@ -105,27 +112,33 @@ class EnhancedSemanticParser:
 
     # Quantifier patterns
     QUANTIFIER_PATTERNS = {
-        r'\b(all|every|each)\b': QuantifierType.UNIVERSAL,
-        r'\b(some|there exists?|at least one)\b': QuantifierType.EXISTENTIAL,
-        r'\b(most|majority|usually)\b': QuantifierType.MOST,
-        r'\b(few|minority|rarely)\b': QuantifierType.FEW,
-        r'\b(no|none|nothing|nobody)\b': QuantifierType.NONE,
+        r"\b(all|every|each)\b": QuantifierType.UNIVERSAL,
+        r"\b(some|there exists?|at least one)\b": QuantifierType.EXISTENTIAL,
+        r"\b(most|majority|usually)\b": QuantifierType.MOST,
+        r"\b(few|minority|rarely)\b": QuantifierType.FEW,
+        r"\b(no|none|nothing|nobody)\b": QuantifierType.NONE,
     }
 
     # Modality patterns
     MODALITY_PATTERNS = {
-        r'\b(must|necessarily|has to|have to)\b': ModalityType.NECESSITY,
-        r'\b(might|possibly|could|may)\b': ModalityType.POSSIBILITY,
-        r'\b(should|ought|need to)\b': ModalityType.OBLIGATION,
-        r'\b(can|allowed|permitted)\b': ModalityType.PERMISSION,
-        r'\b(believes?|thinks?|assumes?)\b': ModalityType.BELIEF,
-        r'\b(knows?|understands?)\b': ModalityType.KNOWLEDGE,
+        r"\b(must|necessarily|has to|have to)\b": ModalityType.NECESSITY,
+        r"\b(might|possibly|could|may)\b": ModalityType.POSSIBILITY,
+        r"\b(should|ought|need to)\b": ModalityType.OBLIGATION,
+        r"\b(can|allowed|permitted)\b": ModalityType.PERMISSION,
+        r"\b(believes?|thinks?|assumes?)\b": ModalityType.BELIEF,
+        r"\b(knows?|understands?)\b": ModalityType.KNOWLEDGE,
     }
 
     # Negation patterns
     NEGATION_PATTERNS = [
-        r"\bnot\b", r"\bno\b", r"\bnever\b", r"\bneither\b",
-        r"\bn't\b", r"\bwithout\b", r"\black\b", r"\babsence\b"
+        r"\bnot\b",
+        r"\bno\b",
+        r"\bnever\b",
+        r"\bneither\b",
+        r"\bn't\b",
+        r"\bwithout\b",
+        r"\black\b",
+        r"\babsence\b",
     ]
 
     # Sentence patterns (priority order)
@@ -156,19 +169,16 @@ class EnhancedSemanticParser:
     def _compile_patterns(self) -> None:
         """Compile regex patterns for efficiency."""
         self.compiled_quantifiers = {
-            re.compile(p, re.IGNORECASE): q
-            for p, q in self.QUANTIFIER_PATTERNS.items()
+            re.compile(p, re.IGNORECASE): q for p, q in self.QUANTIFIER_PATTERNS.items()
         }
         self.compiled_modality = {
-            re.compile(p, re.IGNORECASE): m
-            for p, m in self.MODALITY_PATTERNS.items()
+            re.compile(p, re.IGNORECASE): m for p, m in self.MODALITY_PATTERNS.items()
         }
         self.compiled_negation = [
             re.compile(p, re.IGNORECASE) for p in self.NEGATION_PATTERNS
         ]
         self.compiled_sentences = [
-            (re.compile(p, re.IGNORECASE), name)
-            for p, name in self.SENTENCE_PATTERNS
+            (re.compile(p, re.IGNORECASE), name) for p, name in self.SENTENCE_PATTERNS
         ]
 
     def parse(self, text: str) -> ParseResult:
@@ -219,17 +229,10 @@ class EnhancedSemanticParser:
             if match:
                 return self._handle_pattern(pattern_name, match, text)
 
-        return ParseResult(
-            success=False,
-            frames=[],
-            confidence=0.0
-        )
+        return ParseResult(success=False, frames=[], confidence=0.0)
 
     def _handle_pattern(
-        self,
-        pattern_name: str,
-        match: re.Match,
-        original: str
+        self, pattern_name: str, match: re.Match, original: str
     ) -> ParseResult:
         """Handle a matched pattern."""
         quantifier = self._detect_quantifier(original)
@@ -248,12 +251,10 @@ class EnhancedSemanticParser:
                 negated=negated,
                 confidence=ParseConfidence.HIGH.value,
                 source_text=original,
-                parse_method="universal_copula"
+                parse_method="universal_copula",
             )
             return ParseResult(
-                success=True,
-                frames=[frame],
-                confidence=ParseConfidence.HIGH.value
+                success=True, frames=[frame], confidence=ParseConfidence.HIGH.value
             )
 
         elif pattern_name == "existential_copula":
@@ -268,12 +269,10 @@ class EnhancedSemanticParser:
                 negated=negated,
                 confidence=ParseConfidence.HIGH.value,
                 source_text=original,
-                parse_method="existential_copula"
+                parse_method="existential_copula",
             )
             return ParseResult(
-                success=True,
-                frames=[frame],
-                confidence=ParseConfidence.HIGH.value
+                success=True, frames=[frame], confidence=ParseConfidence.HIGH.value
             )
 
         elif pattern_name in ("simple_copula", "plural_copula"):
@@ -288,12 +287,10 @@ class EnhancedSemanticParser:
                 negated=negated,
                 confidence=ParseConfidence.HIGH.value,
                 source_text=original,
-                parse_method=pattern_name
+                parse_method=pattern_name,
             )
             return ParseResult(
-                success=True,
-                frames=[frame],
-                confidence=ParseConfidence.HIGH.value
+                success=True, frames=[frame], confidence=ParseConfidence.HIGH.value
             )
 
         elif pattern_name == "conditional":
@@ -307,20 +304,17 @@ class EnhancedSemanticParser:
 
             frame = SemanticFrame(
                 predicate="Implies",
-                arguments={
-                    "antecedent": antecedent,
-                    "consequent": consequent
-                },
+                arguments={"antecedent": antecedent, "consequent": consequent},
                 quantifier=quantifier,
                 modality=modality,
                 negated=negated,
                 confidence=min(
                     ParseConfidence.HIGH.value,
                     ant_result.confidence * 0.9,
-                    cons_result.confidence * 0.9
+                    cons_result.confidence * 0.9,
                 ),
                 source_text=original,
-                parse_method="conditional"
+                parse_method="conditional",
             )
 
             frames = [frame]
@@ -333,7 +327,7 @@ class EnhancedSemanticParser:
                 success=True,
                 frames=frames,
                 confidence=frame.confidence,
-                assumptions=["Conditional parsed as material implication"]
+                assumptions=["Conditional parsed as material implication"],
             )
 
         elif pattern_name == "causal":
@@ -348,26 +342,22 @@ class EnhancedSemanticParser:
                 negated=negated,
                 confidence=ParseConfidence.HIGH.value,
                 source_text=original,
-                parse_method="causal"
+                parse_method="causal",
             )
             return ParseResult(
                 success=True,
                 frames=[frame],
                 confidence=ParseConfidence.HIGH.value,
-                assumptions=["Causal relationship assumed to be direct"]
+                assumptions=["Causal relationship assumed to be direct"],
             )
 
         # Default fallthrough
-        return ParseResult(
-            success=False,
-            frames=[],
-            confidence=0.0
-        )
+        return ParseResult(success=False, frames=[], confidence=0.0)
 
     def _try_compositional(self, text: str) -> ParseResult:
         """Try compositional parsing by breaking into clauses."""
         # Split on conjunctions
-        conjuncts = re.split(r'\s+(?:and|but|or)\s+', text, flags=re.IGNORECASE)
+        conjuncts = re.split(r"\s+(?:and|but|or)\s+", text, flags=re.IGNORECASE)
 
         if len(conjuncts) > 1:
             frames = []
@@ -384,26 +374,19 @@ class EnhancedSemanticParser:
                     success=True,
                     frames=frames,
                     confidence=min_confidence * 0.9,  # Slight penalty for composition
-                    assumptions=["Conjuncts parsed independently"]
+                    assumptions=["Conjuncts parsed independently"],
                 )
 
-        return ParseResult(
-            success=False,
-            frames=[],
-            confidence=0.0
-        )
+        return ParseResult(success=False, frames=[], confidence=0.0)
 
     def _fallback_parse(self, text: str) -> ParseResult:
         """Fallback parsing when other strategies fail."""
         # Extract key terms
-        words = re.findall(r'\b\w+\b', text)
+        words = re.findall(r"\b\w+\b", text)
 
         if not words:
             return ParseResult(
-                success=False,
-                frames=[],
-                confidence=0.0,
-                unparsed_fragments=[text]
+                success=False, frames=[], confidence=0.0, unparsed_fragments=[text]
             )
 
         # Create a generic predicate from the main verb/noun
@@ -424,13 +407,13 @@ class EnhancedSemanticParser:
                     negated=negated,
                     confidence=ParseConfidence.LOW.value,
                     source_text=text,
-                    parse_method="fallback_ontology"
+                    parse_method="fallback_ontology",
                 )
                 return ParseResult(
                     success=True,
                     frames=[frame],
                     confidence=ParseConfidence.LOW.value,
-                    assumptions=["Extracted known concepts only"]
+                    assumptions=["Extracted known concepts only"],
                 )
 
         # Ultimate fallback: treat as atomic proposition
@@ -442,14 +425,14 @@ class EnhancedSemanticParser:
             negated=negated,
             confidence=ParseConfidence.LOW.value,
             source_text=text,
-            parse_method="fallback_atomic"
+            parse_method="fallback_atomic",
         )
 
         return ParseResult(
             success=True,
             frames=[frame],
             confidence=ParseConfidence.LOW.value,
-            assumptions=["Treated as atomic proposition - structure not analyzed"]
+            assumptions=["Treated as atomic proposition - structure not analyzed"],
         )
 
     def _detect_quantifier(self, text: str) -> QuantifierType:
@@ -509,7 +492,7 @@ def create_logic_ontology() -> DomainOntology:
         constraints=[
             "No proposition can be both true and false",
             "If P implies Q and P is true, then Q must be true",
-        ]
+        ],
     )
 
 
@@ -537,5 +520,5 @@ def create_ml_ontology() -> DomainOntology:
         constraints=[
             "A model must be trained before prediction",
             "Validation should use held-out data",
-        ]
+        ],
     )

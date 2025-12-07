@@ -22,6 +22,7 @@ from enum import Enum
 
 class ArchitecturalLayer(Enum):
     """Architectural layers in the system."""
+
     LOGIC = "logic"  # Skeleton
     AI = "ai"  # Muscles
     USER = "user"  # Heart
@@ -32,6 +33,7 @@ class ArchitecturalLayer(Enum):
 @dataclass
 class ModuleClassification:
     """Classification of a module into architectural layer."""
+
     module_name: str
     layer: ArchitecturalLayer
     allowed_dependencies: List[ArchitecturalLayer]
@@ -45,51 +47,51 @@ MODULE_REGISTRY: Dict[str, ModuleClassification] = {
         module_name="logic_engine",
         layer=ArchitecturalLayer.LOGIC,
         allowed_dependencies=[],
-        description="Propositional logic validation"
+        description="Propositional logic validation",
     ),
     "categorical_engine": ModuleClassification(
         module_name="categorical_engine",
         layer=ArchitecturalLayer.LOGIC,
         allowed_dependencies=[],
-        description="Aristotelian syllogistic reasoning"
+        description="Aristotelian syllogistic reasoning",
     ),
     "inference_engine": ModuleClassification(
         module_name="inference_engine",
         layer=ArchitecturalLayer.LOGIC,
         allowed_dependencies=[],
-        description="Formal inference patterns"
+        description="Formal inference patterns",
     ),
     "fallacy_detector": ModuleClassification(
         module_name="fallacy_detector",
         layer=ArchitecturalLayer.LOGIC,
         allowed_dependencies=[],
-        description="Structural fallacy detection"
+        description="Structural fallacy detection",
     ),
     # AI LAYER (Muscles)
     "debate_system": ModuleClassification(
         module_name="debate_system",
         layer=ArchitecturalLayer.AI,
         allowed_dependencies=[ArchitecturalLayer.LOGIC],
-        description="Multi-perspective adversarial reasoning"
+        description="Multi-perspective adversarial reasoning",
     ),
     "critic_system": ModuleClassification(
         module_name="critic_system",
         layer=ArchitecturalLayer.AI,
         allowed_dependencies=[ArchitecturalLayer.LOGIC],
-        description="Self-critique with multiple lenses"
+        description="Self-critique with multiple lenses",
     ),
     # USER LAYER (Heart)
     "role_system": ModuleClassification(
         module_name="role_system",
         layer=ArchitecturalLayer.USER,
         allowed_dependencies=[ArchitecturalLayer.LOGIC, ArchitecturalLayer.AI],
-        description="Role-based reasoning personas"
+        description="Role-based reasoning personas",
     ),
     "clarification_system": ModuleClassification(
         module_name="clarification_system",
         layer=ArchitecturalLayer.USER,
         allowed_dependencies=[ArchitecturalLayer.AI],
-        description="Ambiguity resolution via user"
+        description="Ambiguity resolution via user",
     ),
     # SYNTHESIS LAYER (Reason)
     "decision_model": ModuleClassification(
@@ -98,9 +100,9 @@ MODULE_REGISTRY: Dict[str, ModuleClassification] = {
         allowed_dependencies=[
             ArchitecturalLayer.LOGIC,
             ArchitecturalLayer.AI,
-            ArchitecturalLayer.USER
+            ArchitecturalLayer.USER,
         ],
-        description="Evidence synthesis and decision"
+        description="Evidence synthesis and decision",
     ),
 }
 
@@ -111,7 +113,12 @@ class TestArchitecturalLayerSeparation:
     @pytest.mark.unit
     def test_logic_modules_do_not_import_ai(self):
         """Logic layer must not import AI layer modules."""
-        logic_modules = ["logic_engine", "categorical_engine", "inference_engine", "fallacy_detector"]
+        logic_modules = [
+            "logic_engine",
+            "categorical_engine",
+            "inference_engine",
+            "fallacy_detector",
+        ]
         ai_modules = ["debate_system", "critic_system", "semantic_parser"]
 
         for logic_mod in logic_modules:
@@ -120,10 +127,12 @@ class TestArchitecturalLayerSeparation:
                 source = inspect.getsource(module)
 
                 for ai_mod in ai_modules:
-                    assert f"from agents.core.{ai_mod}" not in source, \
+                    assert f"from agents.core.{ai_mod}" not in source, (
                         f"Logic module {logic_mod} imports AI module {ai_mod}"
-                    assert f"import agents.core.{ai_mod}" not in source, \
+                    )
+                    assert f"import agents.core.{ai_mod}" not in source, (
                         f"Logic module {logic_mod} imports AI module {ai_mod}"
+                    )
             except Exception:
                 pass  # Module may not exist
 
@@ -139,8 +148,9 @@ class TestArchitecturalLayerSeparation:
                 source = inspect.getsource(module)
 
                 for user_mod in user_modules:
-                    assert f"from agents.core.{user_mod}" not in source, \
+                    assert f"from agents.core.{user_mod}" not in source, (
                         f"Logic module {logic_mod} imports User module {user_mod}"
+                    )
             except Exception:
                 pass
 
@@ -228,7 +238,7 @@ class TestLogicLayerCompliance:
         # Valid structure
         assert result.valid is True
         # Should not claim truth
-        assert not hasattr(result, 'is_true') or result.is_true is None
+        assert not hasattr(result, "is_true") or result.is_true is None
 
     @pytest.mark.unit
     def test_logic_modules_no_moral_judgments(self):
@@ -263,7 +273,7 @@ class TestAILayerCompliance:
         result = critic.review(reasoning, conclusion)
 
         # Should have critiques list (multiple perspectives)
-        assert hasattr(result, 'critiques')
+        assert hasattr(result, "critiques")
         assert isinstance(result.critiques, list)
 
     @pytest.mark.unit
@@ -278,7 +288,7 @@ class TestAILayerCompliance:
         result = critic.review(reasoning, conclusion)
 
         # Should have revised_confidence
-        assert hasattr(result, 'revised_confidence')
+        assert hasattr(result, "revised_confidence")
         assert 0.0 <= result.revised_confidence <= 1.0
 
     @pytest.mark.unit
@@ -290,7 +300,7 @@ class TestAILayerCompliance:
         result = critic.review("Test reasoning", "Test conclusion")
 
         for critique in result.critiques:
-            assert hasattr(critique, 'critique_type')
+            assert hasattr(critique, "critique_type")
 
 
 class TestUserLayerCompliance:
@@ -333,7 +343,9 @@ class TestUserLayerCompliance:
         response = adapter.adapt_response("This is my argument.")
         # The adapter applies user's role vocabulary, not AI defaults
         assert response.role_id == "lawyer"
-        assert "adaptations_made" in dir(response) or hasattr(response, "adaptations_made")
+        assert "adaptations_made" in dir(response) or hasattr(
+            response, "adaptations_made"
+        )
 
     @pytest.mark.unit
     def test_clarification_for_ambiguity(self):
@@ -392,7 +404,7 @@ class TestSynthesisLayerCompliance:
                 option_id="opt_a",
                 name="Option A",
                 description="First option",
-                risk_score=0.2
+                risk_score=0.2,
             )
         ]
         result = model.evaluate_options(options)
@@ -419,6 +431,7 @@ class TestArchitecturalInvariants:
     def test_registry_completeness(self):
         """All core modules should be classified."""
         import os
+
         core_path = Path(__file__).parent.parent / "core"
 
         if core_path.exists():
@@ -448,7 +461,7 @@ class TestSpecificationCompliance:
         # Test with an invalid argument (affirming the consequent)
         result = logic.validate_argument(
             ["If it rains, the ground is wet", "The ground is wet"],
-            "It rained"  # Invalid - affirming the consequent
+            "It rained",  # Invalid - affirming the consequent
         )
 
         # Invalid logic detected
@@ -461,7 +474,7 @@ class TestSpecificationCompliance:
                 option_id="based_on_invalid_logic",
                 name="Conclusion from invalid logic",
                 description="Based on affirming the consequent",
-                risk_score=0.8  # High risk due to invalid logic
+                risk_score=0.8,  # High risk due to invalid logic
             )
         ]
         decision = model.evaluate_options(options)
@@ -479,20 +492,18 @@ class TestSpecificationCompliance:
 
         # Valid modus ponens (using if-then format that LogicEngine expects)
         logic_result = logic.validate_argument(
-            ["If it rains then the ground is wet", "It rains"],
-            "The ground is wet"
+            ["If it rains then the ground is wet", "It rains"], "The ground is wet"
         )
         assert logic_result.valid is True
 
         # AI critique cannot invalidate valid logic
         critique = critic.review(
-            "If it rains, the ground is wet. It rains.",
-            "The ground is wet"
+            "If it rains, the ground is wet. It rains.", "The ground is wet"
         )
         # Critiques are perspectives, not overrides
-        assert hasattr(critique, 'critiques')
+        assert hasattr(critique, "critiques")
         # AI doesn't have authority to mark valid logic as invalid
-        assert not hasattr(critique, 'logic_override')
+        assert not hasattr(critique, "logic_override")
 
     @pytest.mark.unit
     def test_user_determines_meaning(self):
@@ -526,7 +537,7 @@ class TestSpecificationCompliance:
         logic = LogicEngine()
         logic_result = logic.validate_argument(
             ["All experts agree", "If all experts agree, it's likely true"],
-            "It's likely true"
+            "It's likely true",
         )
 
         # AI layer (muscles) - provides perspective
@@ -548,7 +559,7 @@ class TestSpecificationCompliance:
         assert user_context is not None
         # All three must contribute (none should be None/empty)
         assert logic_result.form is not None or logic_result.valid is not None
-        assert hasattr(critique, 'critiques')
+        assert hasattr(critique, "critiques")
         assert user_context["role_id"] == "scientist"
 
 
@@ -579,9 +590,9 @@ class TestMetaphysicalPrinciples:
         result = critic.review("Test", "Test conclusion")
 
         # AI provides critiques (perspectives)
-        assert hasattr(result, 'critiques')
+        assert hasattr(result, "critiques")
         # AI doesn't provide final verdict
-        assert not hasattr(result, 'final_verdict')
+        assert not hasattr(result, "final_verdict")
 
     @pytest.mark.unit
     def test_user_is_heart(self):
@@ -618,9 +629,9 @@ class TestMetaphysicalPrinciples:
         assert registry is not None  # Heart (user's roles)
 
         # No single layer claims to be "reason"
-        assert not hasattr(logic, 'is_reason')
-        assert not hasattr(critic, 'is_reason')
-        assert not hasattr(registry, 'is_reason')
+        assert not hasattr(logic, "is_reason")
+        assert not hasattr(critic, "is_reason")
+        assert not hasattr(registry, "is_reason")
 
     @pytest.mark.unit
     def test_profiles_are_interpretive(self):

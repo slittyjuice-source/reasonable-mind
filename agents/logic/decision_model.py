@@ -15,6 +15,7 @@ from typing import List, Dict, Any, Optional
 @dataclass
 class DecisionOption:
     """A single option to score."""
+
     id: str
     description: str
     value: float = 1.0
@@ -30,6 +31,7 @@ class DecisionOption:
 @dataclass
 class Constraints:
     """Constraints on options."""
+
     required_tags: List[str] = field(default_factory=list)
     forbidden_tags: List[str] = field(default_factory=list)
     soft_penalties: Dict[str, float] = field(default_factory=dict)  # tag -> penalty
@@ -39,6 +41,7 @@ class Constraints:
 @dataclass
 class DecisionConfig:
     """Weighting and policy for scoring."""
+
     value_weight: float = 1.0
     cost_weight: float = 1.0
     risk_weight: float = 1.0
@@ -51,6 +54,7 @@ class DecisionConfig:
 @dataclass
 class DecisionResult:
     """Result of scoring options."""
+
     ranked: List[Dict[str, Any]]
     warnings: List[str]
     blocked: bool
@@ -65,9 +69,7 @@ class DecisionModel:
         self.config = config or DecisionConfig()
 
     def score_options(
-        self,
-        options: List[DecisionOption],
-        constraints: Optional[Constraints] = None
+        self, options: List[DecisionOption], constraints: Optional[Constraints] = None
     ) -> DecisionResult:
         constraints = constraints or Constraints()
         warnings: List[str] = []
@@ -81,7 +83,9 @@ class DecisionModel:
             filtered.append(opt)
 
         if not filtered:
-            return DecisionResult(ranked=[], warnings=warnings, blocked=True, evidence_blocked=True)
+            return DecisionResult(
+                ranked=[], warnings=warnings, blocked=True, evidence_blocked=True
+            )
 
         unverified_penalized = False
         evidence_blocked = False
@@ -93,7 +97,9 @@ class DecisionModel:
             if self.config.citation_required and (not opt.cited and not opt.verified):
                 evidence_blocked = True
             warnings.extend(detail_warnings)
-            scored.append({"id": opt.id, "description": opt.description, "score": score})
+            scored.append(
+                {"id": opt.id, "description": opt.description, "score": score}
+            )
 
         scored.sort(key=lambda x: x["score"], reverse=True)
         if evidence_blocked and all((not o.cited and not o.verified) for o in filtered):
@@ -102,25 +108,31 @@ class DecisionModel:
                 warnings=warnings,
                 blocked=True,
                 unverified_penalized=unverified_penalized,
-                evidence_blocked=True
+                evidence_blocked=True,
             )
         return DecisionResult(
             ranked=scored,
             warnings=warnings,
             blocked=False,
             unverified_penalized=unverified_penalized,
-            evidence_blocked=evidence_blocked
+            evidence_blocked=evidence_blocked,
         )
 
-    def _hard_constraints_ok(self, option: DecisionOption, constraints: Constraints) -> bool:
+    def _hard_constraints_ok(
+        self, option: DecisionOption, constraints: Constraints
+    ) -> bool:
         tags = set(option.tags)
-        if constraints.required_tags and not set(constraints.required_tags).issubset(tags):
+        if constraints.required_tags and not set(constraints.required_tags).issubset(
+            tags
+        ):
             return False
         if constraints.forbidden_tags and set(constraints.forbidden_tags) & tags:
             return False
         return True
 
-    def _score(self, option: DecisionOption, constraints: Constraints) -> (float, List[str]):
+    def _score(
+        self, option: DecisionOption, constraints: Constraints
+    ) -> (float, List[str]):
         c = self.config
         warnings: List[str] = []
 
@@ -134,22 +146,26 @@ class DecisionModel:
             for tag, penalty in constraints.soft_penalties.items():
                 if tag in option.tags:
                     score -= penalty
-                    warnings.append(f"Soft penalty applied to {option.id} for tag '{tag}'.")
+                    warnings.append(
+                        f"Soft penalty applied to {option.id} for tag '{tag}'."
+                    )
 
         if c.citation_required and not option.cited:
-            score *= (1 - c.citation_penalty)
+            score *= 1 - c.citation_penalty
             warnings.append(f"Option {option.id} lacks citations; penalized.")
 
         if option.contradiction_flag:
-            score *= (1 - c.contradiction_penalty)
+            score *= 1 - c.contradiction_penalty
             warnings.append(f"Option {option.id} has contradictions; penalized.")
 
         if not option.verified:
-            score *= (1 - c.citation_penalty)
+            score *= 1 - c.citation_penalty
             warnings.append(f"Option {option.id} is unverified; penalized.")
 
         if option.risk >= c.risk_gate:
-            warnings.append(f"Option {option.id} high risk ({option.risk}); consider extra validation.")
+            warnings.append(
+                f"Option {option.id} high risk ({option.risk}); consider extra validation."
+            )
 
         # Bound score to avoid runaway values
         score = max(-10.0, min(10.0, score))

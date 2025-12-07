@@ -18,6 +18,7 @@ import re
 
 class SourceType(Enum):
     """Types of evidence sources."""
+
     FACT = "fact"
     TOOL_RESULT = "tool_result"
     MEMORY = "memory"
@@ -30,6 +31,7 @@ class SourceType(Enum):
 
 class TrustLevel(Enum):
     """Trust levels for sources."""
+
     HIGH = 0.95
     MEDIUM = 0.75
     LOW = 0.5
@@ -40,6 +42,7 @@ class TrustLevel(Enum):
 @dataclass
 class SourceProfile:
     """Profile for a source with trust metrics."""
+
     source_id: str
     source_type: SourceType
     trust_level: TrustLevel = TrustLevel.MEDIUM
@@ -57,7 +60,9 @@ class SourceProfile:
 
         # Adjust based on track record
         if self.success_count + self.failure_count > 0:
-            success_rate = self.success_count / (self.success_count + self.failure_count)
+            success_rate = self.success_count / (
+                self.success_count + self.failure_count
+            )
             base = 0.7 * base + 0.3 * success_rate
 
         return base * self.recency_weight
@@ -66,6 +71,7 @@ class SourceProfile:
 @dataclass
 class EvidenceItem:
     """A piece of evidence with source and confidence."""
+
     evidence_id: str
     content: str
     source: SourceProfile
@@ -78,13 +84,14 @@ class EvidenceItem:
     @property
     def effective_confidence(self) -> float:
         """Confidence adjusted by source trust and reasoning depth."""
-        depth_decay = 0.95 ** self.reasoning_depth  # 5% decay per step
+        depth_decay = 0.95**self.reasoning_depth  # 5% decay per step
         return self.confidence * self.source.trust_score * depth_decay
 
 
 @dataclass
 class CitationRequirement:
     """Requirements for citations in a context."""
+
     min_citations: int = 1
     min_confidence: float = 0.5
     min_source_trust: float = 0.5
@@ -97,6 +104,7 @@ class CitationRequirement:
 @dataclass
 class EvidenceValidation:
     """Result of validating evidence for a claim."""
+
     is_valid: bool
     confidence: float
     citations: List[EvidenceItem]
@@ -123,32 +131,32 @@ class SourceTrustRegistry:
             SourceProfile(
                 source_id="knowledge_base",
                 source_type=SourceType.FACT,
-                trust_level=TrustLevel.HIGH
+                trust_level=TrustLevel.HIGH,
             ),
             SourceProfile(
                 source_id="tool_execution",
                 source_type=SourceType.TOOL_RESULT,
-                trust_level=TrustLevel.HIGH
+                trust_level=TrustLevel.HIGH,
             ),
             SourceProfile(
                 source_id="memory_system",
                 source_type=SourceType.MEMORY,
-                trust_level=TrustLevel.MEDIUM
+                trust_level=TrustLevel.MEDIUM,
             ),
             SourceProfile(
                 source_id="inference_engine",
                 source_type=SourceType.INFERENCE,
-                trust_level=TrustLevel.MEDIUM
+                trust_level=TrustLevel.MEDIUM,
             ),
             SourceProfile(
                 source_id="user",
                 source_type=SourceType.USER_INPUT,
-                trust_level=TrustLevel.HIGH
+                trust_level=TrustLevel.HIGH,
             ),
             SourceProfile(
                 source_id="llm_base",
                 source_type=SourceType.LLM_GENERATION,
-                trust_level=TrustLevel.LOW
+                trust_level=TrustLevel.LOW,
             ),
         ]
 
@@ -164,10 +172,7 @@ class SourceTrustRegistry:
         self.sources[profile.source_id] = profile
 
     def update_trust(
-        self,
-        source_id: str,
-        success: bool,
-        learning_rate: float = 0.1
+        self, source_id: str, success: bool, learning_rate: float = 0.1
     ) -> None:
         """Update source trust based on outcome."""
         source = self.sources.get(source_id)
@@ -182,9 +187,7 @@ class SourceTrustRegistry:
         source.last_used = datetime.now().isoformat()
 
     def apply_recency_decay(
-        self,
-        max_age_days: int = 30,
-        decay_rate: float = 0.01
+        self, max_age_days: int = 30, decay_rate: float = 0.01
     ) -> None:
         """Apply recency decay to all sources."""
         now = datetime.now()
@@ -217,7 +220,7 @@ class ConfidenceChain:
         step_type: str,
         description: str,
         confidence: float,
-        evidence: Optional[List[EvidenceItem]] = None
+        evidence: Optional[List[EvidenceItem]] = None,
     ) -> float:
         """Add a reasoning step and compute resulting confidence."""
         step = {
@@ -226,7 +229,7 @@ class ConfidenceChain:
             "input_confidence": self.current_confidence,
             "step_confidence": confidence,
             "evidence": evidence or [],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         # Propagate confidence using log-odds
@@ -273,9 +276,7 @@ class ConfidenceChain:
 
         weakest = self.get_weakest_link()
         if weakest and weakest["step_confidence"] < 0.5:
-            rationale_parts.append(
-                f"⚠️ Low confidence at: {weakest['description']}"
-            )
+            rationale_parts.append(f"⚠️ Low confidence at: {weakest['description']}")
 
         return "\n".join(rationale_parts)
 
@@ -295,7 +296,7 @@ class HallucinationGuard:
         citation_threshold: float = 0.6,
         uncited_penalty: float = 0.3,
         require_citations_for_facts: bool = True,
-        label_speculative: bool = True
+        label_speculative: bool = True,
     ):
         self.citation_threshold = citation_threshold
         self.uncited_penalty = uncited_penalty
@@ -311,9 +312,7 @@ class HallucinationGuard:
         ]
 
     def check_claim(
-        self,
-        claim: str,
-        evidence: List[EvidenceItem]
+        self, claim: str, evidence: List[EvidenceItem]
     ) -> EvidenceValidation:
         """Check if a claim is properly supported by evidence."""
         warnings = []
@@ -329,7 +328,7 @@ class HallucinationGuard:
                     confidence=0.0,
                     citations=[],
                     missing_requirements=["No evidence provided for factual claim"],
-                    warnings=["Claim appears factual but has no citations"]
+                    warnings=["Claim appears factual but has no citations"],
                 )
             else:
                 # Non-factual claim, lower confidence but allowed
@@ -338,7 +337,7 @@ class HallucinationGuard:
                     confidence=0.5 - self.uncited_penalty,
                     citations=[],
                     warnings=["No citations provided"],
-                    speculative_content=[claim] if self.label_speculative else []
+                    speculative_content=[claim] if self.label_speculative else [],
                 )
 
         # Compute aggregate confidence from evidence
@@ -362,7 +361,7 @@ class HallucinationGuard:
                 confidence=0.0,
                 citations=evidence,
                 missing_requirements=["No evidence meets confidence threshold"],
-                warnings=warnings
+                warnings=warnings,
             )
 
         # Normalize confidence
@@ -370,8 +369,7 @@ class HallucinationGuard:
 
         # Check for LLM-only sources
         llm_only = all(
-            e.source.source_type == SourceType.LLM_GENERATION
-            for e in valid_evidence
+            e.source.source_type == SourceType.LLM_GENERATION for e in valid_evidence
         )
 
         if llm_only:
@@ -385,7 +383,7 @@ class HallucinationGuard:
             confidence=avg_confidence,
             citations=valid_evidence,
             warnings=warnings,
-            speculative_content=speculative
+            speculative_content=speculative,
         )
 
     def _requires_citation(self, claim: str) -> bool:
@@ -400,15 +398,13 @@ class HallucinationGuard:
         return False
 
     def annotate_output(
-        self,
-        output: str,
-        citations: Dict[str, List[EvidenceItem]]
+        self, output: str, citations: Dict[str, List[EvidenceItem]]
     ) -> str:
         """Annotate output with citation markers and speculative labels."""
         annotated = output
 
         # Find uncited spans and mark them
-        for sentence in re.split(r'[.!?]', output):
+        for sentence in re.split(r"[.!?]", output):
             sentence = sentence.strip()
             if not sentence:
                 continue
@@ -423,8 +419,7 @@ class HallucinationGuard:
                 # Mark as speculative
                 if self.label_speculative:
                     annotated = annotated.replace(
-                        sentence,
-                        f"[SPECULATIVE: {sentence}]"
+                        sentence, f"[SPECULATIVE: {sentence}]"
                     )
 
         return annotated
@@ -438,7 +433,7 @@ class EvidenceValidator:
     def __init__(
         self,
         trust_registry: Optional[SourceTrustRegistry] = None,
-        hallucination_guard: Optional[HallucinationGuard] = None
+        hallucination_guard: Optional[HallucinationGuard] = None,
     ):
         self.trust_registry = trust_registry or SourceTrustRegistry()
         self.hallucination_guard = hallucination_guard or HallucinationGuard()
@@ -447,7 +442,7 @@ class EvidenceValidator:
         self,
         claim: str,
         evidence: List[EvidenceItem],
-        requirements: Optional[CitationRequirement] = None
+        requirements: Optional[CitationRequirement] = None,
     ) -> EvidenceValidation:
         """Validate evidence for a claim."""
         requirements = requirements or CitationRequirement()
@@ -511,7 +506,7 @@ class EvidenceValidator:
             citations=valid_evidence,
             missing_requirements=missing + guard_result.missing_requirements,
             warnings=warnings + guard_result.warnings,
-            speculative_content=guard_result.speculative_content
+            speculative_content=guard_result.speculative_content,
         )
 
     def create_evidence(
@@ -520,7 +515,7 @@ class EvidenceValidator:
         source_id: str,
         confidence: float,
         reasoning_depth: int = 0,
-        parent_evidence: Optional[str] = None
+        parent_evidence: Optional[str] = None,
     ) -> EvidenceItem:
         """Create an evidence item with proper source profile."""
         source = self.trust_registry.get_source(source_id)
@@ -529,11 +524,12 @@ class EvidenceValidator:
             source = SourceProfile(
                 source_id=source_id,
                 source_type=SourceType.UNKNOWN,
-                trust_level=TrustLevel.LOW
+                trust_level=TrustLevel.LOW,
             )
             self.trust_registry.register_source(source)
 
         import hashlib
+
         evidence_id = hashlib.sha256(
             f"{content}{datetime.now().isoformat()}".encode()
         ).hexdigest()[:12]
@@ -544,7 +540,7 @@ class EvidenceValidator:
             source=source,
             confidence=confidence,
             reasoning_depth=reasoning_depth,
-            parent_evidence=parent_evidence
+            parent_evidence=parent_evidence,
         )
 
 
@@ -559,9 +555,7 @@ class ConflictResolver:
         self.trust_registry = trust_registry
 
     def resolve(
-        self,
-        evidence_a: EvidenceItem,
-        evidence_b: EvidenceItem
+        self, evidence_a: EvidenceItem, evidence_b: EvidenceItem
     ) -> Tuple[EvidenceItem, str]:
         """
         Resolve conflict between two evidence items.
@@ -601,7 +595,7 @@ class ConflictResolver:
         preferred: EvidenceItem,
         rejected: EvidenceItem,
         pref_score: float,
-        rej_score: float
+        rej_score: float,
     ) -> str:
         """Generate explanation for preference."""
         reasons = []
@@ -616,6 +610,8 @@ class ConflictResolver:
             reasons.append("fewer inference steps")
 
         if not reasons:
-            reasons.append(f"higher overall score ({pref_score:.2f} vs {rej_score:.2f})")
+            reasons.append(
+                f"higher overall score ({pref_score:.2f} vs {rej_score:.2f})"
+            )
 
         return f"Preferred due to: {', '.join(reasons)}"

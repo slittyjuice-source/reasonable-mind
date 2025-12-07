@@ -24,7 +24,7 @@ class TestStructuredArgument:
         arg = StructuredArgument(
             premises=["All mammals are animals", "All dogs are mammals"],
             conclusion="All dogs are animals",
-            argument_type=ArgumentType.CATEGORICAL
+            argument_type=ArgumentType.CATEGORICAL,
         )
 
         assert len(arg.premises) == 2
@@ -34,25 +34,16 @@ class TestStructuredArgument:
     def test_argument_requires_premises(self):
         """Test that argument must have at least one premise."""
         with pytest.raises(ValueError, match="at least one premise"):
-            StructuredArgument(
-                premises=[],
-                conclusion="Some conclusion"
-            )
+            StructuredArgument(premises=[], conclusion="Some conclusion")
 
     def test_argument_requires_conclusion(self):
         """Test that argument must have a conclusion."""
         with pytest.raises(ValueError, match="must have a conclusion"):
-            StructuredArgument(
-                premises=["Some premise"],
-                conclusion=""
-            )
+            StructuredArgument(premises=["Some premise"], conclusion="")
 
     def test_default_argument_type_is_unknown(self):
         """Test that default argument type is UNKNOWN."""
-        arg = StructuredArgument(
-            premises=["P implies Q", "P"],
-            conclusion="Q"
-        )
+        arg = StructuredArgument(premises=["P implies Q", "P"], conclusion="Q")
         assert arg.argument_type == ArgumentType.UNKNOWN
 
 
@@ -98,7 +89,7 @@ class TestLogicAnalysisResult:
             is_valid=True,
             engine_used="categorical",
             confidence=0.85,
-            notes=["Test note"]
+            notes=["Test note"],
         )
 
         d = result.to_dict()
@@ -119,16 +110,16 @@ class TestLogicOrchestrator:
 
     def test_initialization(self, orchestrator):
         """Test orchestrator initializes with all engines."""
-        assert hasattr(orchestrator, '_categorical_engine')
-        assert hasattr(orchestrator, '_inference_engine')
-        assert hasattr(orchestrator, '_fallacy_detector')
+        assert hasattr(orchestrator, "_categorical_engine")
+        assert hasattr(orchestrator, "_inference_engine")
+        assert hasattr(orchestrator, "_fallacy_detector")
 
     def test_analyze_categorical_argument(self, orchestrator):
         """Test analyzing a categorical argument."""
         arg = StructuredArgument(
             premises=["All mammals are animals", "All dogs are mammals"],
             conclusion="All dogs are animals",
-            argument_type=ArgumentType.CATEGORICAL
+            argument_type=ArgumentType.CATEGORICAL,
         )
 
         result = orchestrator.analyze(arg)
@@ -142,7 +133,7 @@ class TestLogicOrchestrator:
         arg = StructuredArgument(
             premises=["If it rains then ground is wet", "It rains"],
             conclusion="Ground is wet",
-            argument_type=ArgumentType.PROPOSITIONAL
+            argument_type=ArgumentType.PROPOSITIONAL,
         )
 
         result = orchestrator.analyze(arg)
@@ -155,15 +146,17 @@ class TestLogicOrchestrator:
         """Test that unknown type attempts classification."""
         arg = StructuredArgument(
             premises=["All birds can fly", "Penguins are birds"],
-            conclusion="Penguins can fly"
+            conclusion="Penguins can fly",
         )
 
         result = orchestrator.analyze(arg)
 
         assert isinstance(result, LogicAnalysisResult)
         # Should attempt classification
-        assert any("classification" in note.lower() or "heuristic" in note.lower()
-                   for note in result.notes)
+        assert any(
+            "classification" in note.lower() or "heuristic" in note.lower()
+            for note in result.notes
+        )
 
     def test_analyze_text_returns_not_implemented(self, orchestrator):
         """Test that analyze_text returns proper stub response."""
@@ -179,7 +172,7 @@ class TestLogicOrchestrator:
         is_valid, confidence = orchestrator.check_validity(
             premises=["All A are B", "All B are C"],
             conclusion="All A are C",
-            argument_type=ArgumentType.CATEGORICAL
+            argument_type=ArgumentType.CATEGORICAL,
         )
 
         assert isinstance(is_valid, bool)
@@ -202,7 +195,7 @@ class TestLogicOrchestrator:
         arg = StructuredArgument(
             premises=["Everyone believes this is true"],
             conclusion="Therefore it must be true",
-            argument_type=ArgumentType.PROPOSITIONAL
+            argument_type=ArgumentType.PROPOSITIONAL,
         )
 
         result = orchestrator.analyze(arg)
@@ -224,9 +217,7 @@ class TestFactoryFunctions:
     def test_analyze_argument_convenience_function(self):
         """Test convenience function for one-off analysis."""
         result = analyze_argument(
-            premises=["If P then Q", "P"],
-            conclusion="Q",
-            argument_type="propositional"
+            premises=["If P then Q", "P"], conclusion="Q", argument_type="propositional"
         )
 
         assert isinstance(result, LogicAnalysisResult)
@@ -236,7 +227,7 @@ class TestFactoryFunctions:
         result = analyze_argument(
             premises=["Some premise"],
             conclusion="Some conclusion",
-            argument_type="invalid_type"
+            argument_type="invalid_type",
         )
 
         assert isinstance(result, LogicAnalysisResult)

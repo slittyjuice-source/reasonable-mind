@@ -38,10 +38,7 @@ class TestLogicLayerSkeleton:
     @pytest.mark.unit
     def test_logic_is_deterministic(self, logic_engine):
         """Logic must return identical results for identical inputs."""
-        premises = [
-            "If it rains, then the ground is wet",
-            "It rains"
-        ]
+        premises = ["If it rains, then the ground is wet", "It rains"]
         conclusion = "The ground is wet"
 
         result1 = logic_engine.validate_argument(premises, conclusion)
@@ -55,19 +52,14 @@ class TestLogicLayerSkeleton:
     @pytest.mark.unit
     def test_logic_no_user_context_dependency(self, logic_engine):
         """Logic must not depend on user context or preferences."""
-        argument = {
-            "premises": ["P", "P → Q"],
-            "conclusion": "Q"
-        }
+        argument = {"premises": ["P", "P → Q"], "conclusion": "Q"}
 
         # Logic should be universal - same result regardless of user
         result_a = logic_engine.validate_argument(
-            argument["premises"],
-            argument["conclusion"]
+            argument["premises"], argument["conclusion"]
         )
         result_b = logic_engine.validate_argument(
-            argument["premises"],
-            argument["conclusion"]
+            argument["premises"], argument["conclusion"]
         )
 
         assert result_a.valid == result_b.valid
@@ -84,7 +76,7 @@ class TestLogicLayerSkeleton:
         # Valid but unsound argument (false premise) - using modus ponens structure
         premises = [
             "If eating ice cream causes weight loss then diet companies sell ice cream",  # False conditional!
-            "Eating ice cream causes weight loss"  # False premise!
+            "Eating ice cream causes weight loss",  # False premise!
         ]
         conclusion = "Diet companies sell ice cream"
 
@@ -95,8 +87,8 @@ class TestLogicLayerSkeleton:
         assert result.form == ArgumentForm.MODUS_PONENS
 
         # Logic should not have "is_true" or "is_sound" field
-        assert not hasattr(result, 'is_true')
-        assert not hasattr(result, 'is_sound')
+        assert not hasattr(result, "is_true")
+        assert not hasattr(result, "is_sound")
 
     @pytest.mark.unit
     def test_logic_does_not_moralize(self, logic_engine):
@@ -150,7 +142,7 @@ class TestAILayerMuscles:
         result = critic_system.review(reasoning, conclusion)
 
         # AI should express uncertainty
-        assert hasattr(result, 'revised_confidence')
+        assert hasattr(result, "revised_confidence")
         assert result.revised_confidence <= 1.0
 
     @pytest.mark.unit
@@ -160,13 +152,12 @@ class TestAILayerMuscles:
 
         # Use the analyze_argument method which is what EnhancedDebateSystem provides
         result = debate_system.analyze_argument(
-            claim=claim,
-            premises=["Growth leads to prosperity"]
+            claim=claim, premises=["Growth leads to prosperity"]
         )
 
         # The system analyzes and provides quality scores but doesn't select a "best"
-        assert 'quality_scores' in result
-        assert 'claim' in result
+        assert "quality_scores" in result
+        assert "claim" in result
 
     @pytest.mark.unit
     def test_ai_attributes_interpretations(self, critic_system):
@@ -177,8 +168,8 @@ class TestAILayerMuscles:
         result = critic_system.review(reasoning, conclusion)
 
         for critique in result.critiques:
-            assert hasattr(critique, 'critique_type')
-            assert hasattr(critique, 'description')
+            assert hasattr(critique, "critique_type")
+            assert hasattr(critique, "description")
 
 
 class TestUserLayerHeart:
@@ -194,12 +185,14 @@ class TestUserLayerHeart:
     def role_system(self):
         def dummy_reasoning_fn(text: str, context: dict) -> dict:
             return {"result": text}
+
         return RoleBasedReasoner(reasoning_fn=dummy_reasoning_fn)
 
     @pytest.fixture
     def role_registry(self):
         """Separate fixture for role registry."""
         from agents.core.role_system import RoleRegistry
+
         return RoleRegistry()
 
     @pytest.fixture
@@ -223,7 +216,11 @@ class TestUserLayerHeart:
     def test_user_can_override_ai(self, constraint_system):
         """User preferences must override AI suggestions."""
         # Use the actual Constraint API
-        from agents.core.constraint_system import Constraint, ConstraintType, ConstraintPriority
+        from agents.core.constraint_system import (
+            Constraint,
+            ConstraintType,
+            ConstraintPriority,
+        )
 
         user_constraint = Constraint(
             constraint_id="user_override_1",
@@ -231,7 +228,7 @@ class TestUserLayerHeart:
             constraint_type=ConstraintType.HARD,
             condition="'X' not in suggestion",
             description="User constraint to avoid suggesting X",
-            priority=ConstraintPriority.HIGH
+            priority=ConstraintPriority.HIGH,
         )
 
         constraint_system.register_constraint(user_constraint)
@@ -283,20 +280,20 @@ class TestReasonLayerSynthesis:
                 option_id="opt_a",
                 name="Option A",
                 description="First option",
-                inputs={"support": ScoredInput(name="support", value=0.7)}
+                inputs={"support": ScoredInput(name="support", value=0.7)},
             ),
             DecisionOption(
                 option_id="opt_b",
                 name="Option B",
                 description="Second option",
-                inputs={"support": ScoredInput(name="support", value=0.3)}
-            )
+                inputs={"support": ScoredInput(name="support", value=0.3)},
+            ),
         ]
 
         result = decision_model.evaluate_options(options)
 
         assert isinstance(result, DecisionResult)
-        assert hasattr(result, 'selected_option')
+        assert hasattr(result, "selected_option")
 
     @pytest.mark.integration
     def test_logic_blocks_invalid_synthesis(self, decision_model, logic_engine):
@@ -318,14 +315,14 @@ class TestReasonLayerSynthesis:
                 option_id="opt_a",
                 name="Option A",
                 description="First option",
-                inputs={"support": ScoredInput(name="support", value=0.8)}
+                inputs={"support": ScoredInput(name="support", value=0.8)},
             ),
             DecisionOption(
                 option_id="opt_b",
                 name="Option B",
                 description="Second option",
-                inputs={"support": ScoredInput(name="support", value=0.8)}
-            )
+                inputs={"support": ScoredInput(name="support", value=0.8)},
+            ),
         ]
 
         result = decision_model.evaluate_options(options)
@@ -341,14 +338,14 @@ class TestReasonLayerSynthesis:
                 option_id="opt_a",
                 name="Option A",
                 description="First option",
-                inputs={"support": ScoredInput(name="support", value=0.9)}
+                inputs={"support": ScoredInput(name="support", value=0.9)},
             )
         ]
 
         result = decision_model.evaluate_options(options)
 
         # DecisionResult has selection_reason which serves as explanation
-        assert hasattr(result, 'selection_reason')
+        assert hasattr(result, "selection_reason")
         assert result.selection_reason is not None
 
 
@@ -362,13 +359,14 @@ class TestArchitecturalInvariants:
         """Logic modules must not import AI modules."""
         import agents.core.logic_engine as logic_module
         import inspect
+
         source = inspect.getsource(logic_module)
 
         forbidden_imports = [
             "from agents.core.debate_system import",
             "from agents.core.critic_system import",
             "import agents.core.debate_system",
-            "import agents.core.critic_system"
+            "import agents.core.critic_system",
         ]
 
         for forbidden in forbidden_imports:
@@ -379,22 +377,26 @@ class TestArchitecturalInvariants:
         """Logic modules must not import User modules."""
         import agents.core.logic_engine as logic_module
         import inspect
+
         source = inspect.getsource(logic_module)
 
         forbidden_imports = [
             "from agents.core.role_system import",
             "from agents.core.feedback_system import",
-            "from agents.core.clarification_system import"
+            "from agents.core.clarification_system import",
         ]
 
         for forbidden in forbidden_imports:
-            assert forbidden not in source, f"Logic layer imports User layer: {forbidden}"
+            assert forbidden not in source, (
+                f"Logic layer imports User layer: {forbidden}"
+            )
 
     @pytest.mark.unit
     def test_ai_can_import_logic(self):
         """AI modules MAY import Logic modules (allowed dependency)."""
         import agents.core.critic_system as critic_module
         import inspect
+
         source = inspect.getsource(critic_module)
 
     @pytest.mark.unit
@@ -402,6 +404,7 @@ class TestArchitecturalInvariants:
         """Synthesis modules may import Logic + AI + User."""
         import agents.core.decision_model as decision_module
         import inspect
+
         source = inspect.getsource(decision_module)
 
 
@@ -413,6 +416,7 @@ class TestProfileAsInterpretiveForce:
     @pytest.fixture
     def role_registry(self):
         from agents.core.role_system import RoleRegistry
+
         return RoleRegistry()
 
     @pytest.mark.unit
@@ -422,9 +426,9 @@ class TestProfileAsInterpretiveForce:
 
         for role in roles:
             if isinstance(role, dict):
-                assert 'name' in role
+                assert "name" in role
             else:
-                assert hasattr(role, 'name')
+                assert hasattr(role, "name")
 
     @pytest.mark.unit
     def test_profiles_live_in_muscle_layer(self, role_registry):
@@ -471,7 +475,7 @@ class TestAntiPatterns:
         result = critic_system.review(reasoning, conclusion)
 
         assert isinstance(result, CritiqueResult)
-        assert not hasattr(result, 'final_verdict')
+        assert not hasattr(result, "final_verdict")
 
     @pytest.mark.unit
     def test_no_bypass_user_confirmation(self, decision_model):
@@ -484,16 +488,19 @@ class TestAntiPatterns:
                 name="Critical Action",
                 description="A high-risk action",
                 risk_level=RiskLevel.HIGH,
-                inputs={"support": ScoredInput(name="support", value=0.9)}
+                inputs={"support": ScoredInput(name="support", value=0.9)},
             )
         ]
 
         result = decision_model.evaluate_options(options)
 
         # High-risk options may require escalation or user approval
-        if result.selected_option and result.selected_option.risk_level == RiskLevel.HIGH:
+        if (
+            result.selected_option
+            and result.selected_option.risk_level == RiskLevel.HIGH
+        ):
             # The system should at least flag this or have warnings
-            assert hasattr(result, 'warnings') or hasattr(result, 'required_escalation')
+            assert hasattr(result, "warnings") or hasattr(result, "required_escalation")
 
 
 class TestProvenanceTracing:
@@ -515,14 +522,14 @@ class TestProvenanceTracing:
                 option_id="opt_a",
                 name="Option A",
                 description="First option",
-                inputs={"support": ScoredInput(name="support", value=0.8)}
+                inputs={"support": ScoredInput(name="support", value=0.8)},
             )
         ]
 
         result = decision_model.evaluate_options(options)
 
         # Result should have selection_reason which traces to logic
-        assert hasattr(result, 'selection_reason')
+        assert hasattr(result, "selection_reason")
         assert result.selection_reason is not None
 
     @pytest.mark.integration
@@ -535,14 +542,14 @@ class TestProvenanceTracing:
                 option_id="opt_a",
                 name="Option A",
                 description="First option",
-                inputs={"support": ScoredInput(name="support", value=0.8)}
+                inputs={"support": ScoredInput(name="support", value=0.8)},
             )
         ]
 
         result = decision_model.evaluate_options(options)
 
         # Result should track options considered
-        assert hasattr(result, 'all_options')
+        assert hasattr(result, "all_options")
         assert len(result.all_options) > 0
 
     @pytest.mark.integration
@@ -555,7 +562,7 @@ class TestProvenanceTracing:
                 option_id="opt_a",
                 name="Option A",
                 description="First option",
-                inputs={"support": ScoredInput(name="support", value=0.9)}
+                inputs={"support": ScoredInput(name="support", value=0.9)},
             )
         ]
 
@@ -582,7 +589,9 @@ class TestEmergentReason:
         return DecisionModel()
 
     @pytest.mark.integration
-    def test_reason_requires_all_layers(self, logic_engine, critic_system, decision_model):
+    def test_reason_requires_all_layers(
+        self, logic_engine, critic_system, decision_model
+    ):
         """Reason must emerge from skeleton + muscles + heart."""
         # Use modus ponens structure which the logic engine supports
         premises = ["If Socrates is human then Socrates is mortal", "Socrates is human"]
@@ -601,7 +610,7 @@ class TestEmergentReason:
 
         # Synthesis: All layers contribute
         final_confidence = logic_result.confidence
-        if hasattr(critic_result, 'revised_confidence'):
+        if hasattr(critic_result, "revised_confidence"):
             final_confidence = min(final_confidence, critic_result.revised_confidence)
 
         assert final_confidence > 0.0

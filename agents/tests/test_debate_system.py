@@ -32,14 +32,17 @@ class TestArgumentBuilder:
         """Create ArgumentBuilder instance."""
         return ArgumentBuilder(
             structure_id="test_struct_001",
-            main_claim="Climate change is caused by human activities"
+            main_claim="Climate change is caused by human activities",
         )
 
     @pytest.mark.unit
     def test_initialization(self, builder):
         """Test builder initialization."""
         assert builder.structure.structure_id == "test_struct_001"
-        assert builder.structure.main_claim == "Climate change is caused by human activities"
+        assert (
+            builder.structure.main_claim
+            == "Climate change is caused by human activities"
+        )
         assert len(builder.structure.nodes) == 0
 
     @pytest.mark.unit
@@ -60,7 +63,7 @@ class TestArgumentBuilder:
         premise_id = builder.add_premise(
             "Global average temperature has risen 1°C since 1900",
             supports=claim_id,
-            confidence=0.95
+            confidence=0.95,
         )
 
         premise_node = builder.structure.nodes[premise_id]
@@ -76,7 +79,7 @@ class TestArgumentBuilder:
             "Satellite data shows 3mm/year rise",
             supports=claim_id,
             source="NASA, 2023",
-            confidence=0.98
+            confidence=0.98,
         )
 
         evidence_node = builder.structure.nodes[evidence_id]
@@ -91,7 +94,7 @@ class TestArgumentBuilder:
         rebuttal_id = builder.add_rebuttal(
             "Solar activity has decreased while temperatures rise",
             attacks=claim_id,
-            confidence=0.85
+            confidence=0.85,
         )
 
         rebuttal_node = builder.structure.nodes[rebuttal_id]
@@ -156,14 +159,17 @@ class TestArgumentQualityScorer:
         builder = ArgumentBuilder("test", "Main claim")
         claim_id = builder.add_claim("The sky is blue")
         builder.add_premise("Light scattering makes it blue", supports=claim_id)
-        builder.add_evidence("Physics experiments confirm", supports=claim_id, source="Physics 101")
+        builder.add_evidence(
+            "Physics experiments confirm", supports=claim_id, source="Physics 101"
+        )
         return builder.build()
 
     @pytest.mark.unit
     def test_score_node_with_support(self, scorer, simple_structure):
         """Test scoring a node with supporting evidence."""
         claim_node = next(
-            n for n in simple_structure.nodes.values()
+            n
+            for n in simple_structure.nodes.values()
             if n.argument_type == ArgumentType.CLAIM
         )
 
@@ -180,7 +186,7 @@ class TestArgumentQualityScorer:
             node_id="solo",
             argument_type=ArgumentType.CLAIM,
             content="Unsupported claim",
-            confidence=0.5
+            confidence=0.5,
         )
         structure.add_node(node)
 
@@ -194,7 +200,9 @@ class TestArgumentQualityScorer:
         """Test that evidence increases quality score."""
         builder = ArgumentBuilder("test", "Main")
         claim_id = builder.add_claim("Claim with evidence")
-        builder.add_evidence("Strong evidence", supports=claim_id, confidence=0.95, source="Journal")
+        builder.add_evidence(
+            "Strong evidence", supports=claim_id, confidence=0.95, source="Journal"
+        )
 
         structure = builder.build()
         claim_node = structure.nodes[claim_id]
@@ -229,7 +237,9 @@ class TestArgumentQualityScorer:
         claim_id = builder.add_claim("Claim")
 
         # Node with source
-        with_source = builder.add_evidence("Evidence A", supports=claim_id, source="Nature 2023")
+        with_source = builder.add_evidence(
+            "Evidence A", supports=claim_id, source="Nature 2023"
+        )
 
         # Node without source
         builder2 = ArgumentBuilder("test2", "Main")
@@ -264,7 +274,7 @@ class TestAdversarialGenerator:
     @pytest.mark.unit
     def test_initialization(self, generator):
         """Test generator initialization."""
-        assert hasattr(generator, '_attack_templates')
+        assert hasattr(generator, "_attack_templates")
         assert len(generator._attack_templates) > 0
 
     @pytest.mark.unit
@@ -279,8 +289,7 @@ class TestAdversarialGenerator:
     def test_generate_specific_attack_type(self, generator, target_structure):
         """Test generating specific attack type."""
         attacks = generator.generate_attacks(
-            target_structure,
-            attack_types=[AttackType.COUNTEREXAMPLE]
+            target_structure, attack_types=[AttackType.COUNTEREXAMPLE]
         )
 
         assert all(a.attack_type == AttackType.COUNTEREXAMPLE for a in attacks)
@@ -290,8 +299,7 @@ class TestAdversarialGenerator:
         """Test attacking a specific node."""
         claim_node_id = target_structure.root_nodes[0]
         attacks = generator.generate_attacks(
-            target_structure,
-            target_node_id=claim_node_id
+            target_structure, target_node_id=claim_node_id
         )
 
         assert all(a.target_node_id == claim_node_id for a in attacks)
@@ -318,7 +326,7 @@ class TestAdversarialGenerator:
             AttackType.UNDERCUT,
             AttackType.REBUT,
             AttackType.PREMISE_ATTACK,
-            AttackType.ALTERNATIVE
+            AttackType.ALTERNATIVE,
         ]
 
         for attack_type in attack_types:
@@ -341,28 +349,28 @@ class TestMultiPerspectiveDebate:
                 agent_id="advocate",
                 name="Advocate",
                 perspective="advocate",
-                expertise_areas=["logic"]
+                expertise_areas=["logic"],
             ),
             DebateAgent(
                 agent_id="skeptic",
                 name="Skeptic",
                 perspective="skeptic",
-                expertise_areas=["critical_thinking"]
+                expertise_areas=["critical_thinking"],
             ),
             DebateAgent(
                 agent_id="neutral",
                 name="Neutral Judge",
                 perspective="neutral",
-                expertise_areas=["fairness"]
-            )
+                expertise_areas=["fairness"],
+            ),
         ]
 
     @pytest.mark.unit
     def test_initialization(self, debate):
         """Test debate initialization."""
         assert len(debate.agents) == 0
-        assert hasattr(debate, '_positions')
-        assert hasattr(debate, '_votes')
+        assert hasattr(debate, "_positions")
+        assert hasattr(debate, "_votes")
 
     @pytest.mark.unit
     def test_add_agent(self, debate, agents):
@@ -410,20 +418,20 @@ class TestConsensusMethod:
                 agent_id="agent_1",
                 position_id="pos_a",
                 confidence=0.9,
-                reasoning="Strong evidence"
+                reasoning="Strong evidence",
             ),
             DebateVote(
                 agent_id="agent_2",
                 position_id="pos_a",
                 confidence=0.8,
-                reasoning="Logical argument"
+                reasoning="Logical argument",
             ),
             DebateVote(
                 agent_id="agent_3",
                 position_id="pos_b",
                 confidence=0.6,
-                reasoning="Some doubts"
-            )
+                reasoning="Some doubts",
+            ),
         ]
 
     @pytest.mark.unit
@@ -483,7 +491,7 @@ class TestDebateVote:
             agent_id="agent_001",
             position_id="pos_a",
             confidence=0.85,
-            reasoning="Well-supported argument"
+            reasoning="Well-supported argument",
         )
 
         assert vote.agent_id == "agent_001"
@@ -498,7 +506,7 @@ class TestDebateVote:
             agent_id="agent_002",
             position_id="pos_b",
             confidence=0.5,
-            reasoning="Uncertain"
+            reasoning="Uncertain",
         )
 
         assert 0.0 <= vote.confidence <= 1.0
@@ -515,7 +523,7 @@ class TestDebateAgent:
             name="Devil's Advocate",
             perspective="skeptic",
             expertise_areas=["logic", "fallacies"],
-            confidence_bias=-0.1
+            confidence_bias=-0.1,
         )
 
         assert agent.agent_id == "devil_advocate"
@@ -527,9 +535,7 @@ class TestDebateAgent:
     def test_agent_default_bias(self):
         """Test agent with default confidence bias."""
         agent = DebateAgent(
-            agent_id="neutral",
-            name="Neutral Judge",
-            perspective="neutral"
+            agent_id="neutral", name="Neutral Judge", perspective="neutral"
         )
 
         assert agent.confidence_bias == 0.0
@@ -554,7 +560,7 @@ class TestArgumentStructure:
             node_id="claim_1",
             argument_type=ArgumentType.CLAIM,
             content="Root claim",
-            confidence=0.8
+            confidence=0.8,
         )
 
         structure.add_node(claim)
@@ -571,7 +577,7 @@ class TestArgumentStructure:
             node_id="root",
             argument_type=ArgumentType.CLAIM,
             content="Root",
-            confidence=0.8
+            confidence=0.8,
         )
         structure.add_node(root_claim)
 
@@ -581,7 +587,7 @@ class TestArgumentStructure:
             argument_type=ArgumentType.CLAIM,
             content="Supporting claim",
             confidence=0.8,
-            supports=["root"]
+            supports=["root"],
         )
         structure.add_node(supporting_claim)
 
@@ -644,10 +650,7 @@ class TestEdgeCases:
         generator = AdversarialGenerator()
         structure = ArgumentStructure("test", "Main")
 
-        attacks = generator.generate_attacks(
-            structure,
-            target_node_id="nonexistent"
-        )
+        attacks = generator.generate_attacks(structure, target_node_id="nonexistent")
 
         # Should handle gracefully
         assert isinstance(attacks, list)
@@ -661,14 +664,14 @@ class TestEdgeCases:
             argument_type=ArgumentType.CLAIM,
             content="A supports B",
             confidence=0.8,
-            supports=["b"]
+            supports=["b"],
         )
         node_b = ArgumentNode(
             node_id="b",
             argument_type=ArgumentType.CLAIM,
             content="B supports A",
             confidence=0.8,
-            supports=["a"]
+            supports=["a"],
         )
         structure.add_node(node_a)
         structure.add_node(node_b)

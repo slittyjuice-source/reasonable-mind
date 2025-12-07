@@ -17,6 +17,7 @@ from datetime import datetime
 
 class ProofStatus(Enum):
     """Status of a proof attempt."""
+
     PROVEN = "proven"
     DISPROVEN = "disproven"
     UNKNOWN = "unknown"
@@ -27,6 +28,7 @@ class ProofStatus(Enum):
 @dataclass
 class Predicate:
     """A structured predicate representation."""
+
     name: str
     arguments: List[str]
     negated: bool = False
@@ -42,9 +44,11 @@ class Predicate:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Predicate):
             return False
-        return (self.name == other.name and
-                self.arguments == other.arguments and
-                self.negated == other.negated)
+        return (
+            self.name == other.name
+            and self.arguments == other.arguments
+            and self.negated == other.negated
+        )
 
     def negate(self) -> "Predicate":
         """Return negation of this predicate."""
@@ -59,6 +63,7 @@ class Predicate:
 @dataclass
 class Rule:
     """An inference rule with antecedents and consequent."""
+
     name: str
     antecedents: List[Predicate]  # If these are true...
     consequent: Predicate  # ...then this is true
@@ -73,6 +78,7 @@ class Rule:
 @dataclass
 class ProofStep:
     """A single step in a proof."""
+
     step_number: int
     predicate: Predicate
     justification: str
@@ -84,6 +90,7 @@ class ProofStep:
 @dataclass
 class ProofResult:
     """Result of a proof attempt."""
+
     status: ProofStatus
     goal: Predicate
     steps: List[ProofStep]
@@ -100,7 +107,7 @@ class PredicateParser:
     """Parse natural language and logical notation into predicates."""
 
     # Patterns for parsing
-    PREDICATE_PATTERN = re.compile(r'(\w+)\s*\(\s*([^)]+)\s*\)')
+    PREDICATE_PATTERN = re.compile(r"(\w+)\s*\(\s*([^)]+)\s*\)")
     NEGATION_PATTERNS = ["not", "no", "isn't", "aren't", "doesn't", "don't", "¬"]
     QUANTIFIER_PATTERNS = {
         "all": "∀",
@@ -108,7 +115,7 @@ class PredicateParser:
         "each": "∀",
         "some": "∃",
         "there exists": "∃",
-        "any": "∀"
+        "any": "∀",
     }
 
     def parse(self, statement: str) -> Optional[Predicate]:
@@ -120,7 +127,9 @@ class PredicateParser:
         if match:
             name = match.group(1)
             args = [a.strip() for a in match.group(2).split(",")]
-            negated = any(neg in statement.lower() for neg in self.NEGATION_PATTERNS[:6])
+            negated = any(
+                neg in statement.lower() for neg in self.NEGATION_PATTERNS[:6]
+            )
             return Predicate(name, args, negated)
 
         # Parse natural language patterns
@@ -156,10 +165,12 @@ class PredicateParser:
         name = self._to_predicate_name(statement)
         return Predicate(name, [], negated)
 
-    def _parse_quantified(self, statement: str, quant: str, symbol: str) -> Optional[Predicate]:
+    def _parse_quantified(
+        self, statement: str, quant: str, symbol: str
+    ) -> Optional[Predicate]:
         """Parse quantified statement."""
         # Remove quantifier
-        rest = statement[len(quant):].strip()
+        rest = statement[len(quant) :].strip()
 
         if " are " in rest.lower():
             parts = rest.split(" are ", 1)
@@ -181,7 +192,7 @@ class PredicateParser:
     def _to_predicate_name(self, text: str) -> str:
         """Convert text to valid predicate name."""
         # Remove articles and punctuation
-        text = re.sub(r'[^\w\s]', '', text)
+        text = re.sub(r"[^\w\s]", "", text)
         articles = ["the", "a", "an", "is", "are", "not", "no"]
         words = [w for w in text.strip().split() if w.lower() not in articles]
         if not words:
@@ -226,7 +237,7 @@ class RuleEngine:
         name: str,
         if_predicates: List[str],
         then_predicate: str,
-        confidence: float = 1.0
+        confidence: float = 1.0,
     ) -> Optional[Rule]:
         """Create and add a rule from natural language."""
         antecedents = []
@@ -265,14 +276,16 @@ class RuleEngine:
 
                     if new_fact not in self.facts and new_fact not in new_facts:
                         new_facts.append(new_fact)
-                        self.inference_trace.append(ProofStep(
-                            step_number=len(self.inference_trace) + 1,
-                            predicate=new_fact,
-                            justification="Derived by forward chaining",
-                            rule_applied=rule.name,
-                            bindings=binding,
-                            confidence=rule.confidence
-                        ))
+                        self.inference_trace.append(
+                            ProofStep(
+                                step_number=len(self.inference_trace) + 1,
+                                predicate=new_fact,
+                                justification="Derived by forward chaining",
+                                rule_applied=rule.name,
+                                bindings=binding,
+                                confidence=rule.confidence,
+                            )
+                        )
 
             if not new_facts:
                 break
@@ -301,24 +314,26 @@ class RuleEngine:
                 goal=goal,
                 steps=steps,
                 confidence=0.0,
-                time_ms=0
+                time_ms=0,
             )
 
         # Check if goal is a known fact
         if goal in self.facts:
-            steps.append(ProofStep(
-                step_number=1,
-                predicate=goal,
-                justification="Known fact",
-                confidence=1.0
-            ))
+            steps.append(
+                ProofStep(
+                    step_number=1,
+                    predicate=goal,
+                    justification="Known fact",
+                    confidence=1.0,
+                )
+            )
             elapsed = (datetime.now() - start_time).total_seconds() * 1000
             return ProofResult(
                 status=ProofStatus.PROVEN,
                 goal=goal,
                 steps=steps,
                 confidence=1.0,
-                time_ms=elapsed
+                time_ms=elapsed,
             )
 
         # Check for contradiction
@@ -330,7 +345,7 @@ class RuleEngine:
                 steps=steps,
                 confidence=1.0,
                 time_ms=elapsed,
-                contradictions=[f"Negation of {goal} is a known fact"]
+                contradictions=[f"Negation of {goal} is a known fact"],
             )
 
         # Try to prove via rules
@@ -356,14 +371,16 @@ class RuleEngine:
 
                 if all_proven:
                     steps.extend(antecedent_steps)
-                    steps.append(ProofStep(
-                        step_number=len(steps) + 1,
-                        predicate=goal,
-                        justification=f"Derived via {rule.name}",
-                        rule_applied=rule.name,
-                        bindings=bindings,
-                        confidence=combined_confidence
-                    ))
+                    steps.append(
+                        ProofStep(
+                            step_number=len(steps) + 1,
+                            predicate=goal,
+                            justification=f"Derived via {rule.name}",
+                            rule_applied=rule.name,
+                            bindings=bindings,
+                            confidence=combined_confidence,
+                        )
+                    )
 
                     elapsed = (datetime.now() - start_time).total_seconds() * 1000
                     return ProofResult(
@@ -371,7 +388,7 @@ class RuleEngine:
                         goal=goal,
                         steps=steps,
                         confidence=combined_confidence,
-                        time_ms=elapsed
+                        time_ms=elapsed,
                     )
 
         # Could not prove
@@ -381,14 +398,11 @@ class RuleEngine:
             goal=goal,
             steps=steps,
             confidence=0.0,
-            time_ms=elapsed
+            time_ms=elapsed,
         )
 
     def verify_llm_step(
-        self,
-        premise: str,
-        conclusion: str,
-        claimed_rule: Optional[str] = None
+        self, premise: str, conclusion: str, claimed_rule: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Cross-check an LLM reasoning step against symbolic proof.
@@ -403,7 +417,7 @@ class RuleEngine:
                 "verified": False,
                 "reason": "Could not parse premise or conclusion",
                 "confidence": 0.0,
-                "symbolic_support": False
+                "symbolic_support": False,
             }
 
         # Temporarily add premise as fact
@@ -421,7 +435,7 @@ class RuleEngine:
             "confidence": proof.confidence,
             "symbolic_support": proof.is_proven,
             "proof_steps": len(proof.steps),
-            "time_ms": proof.time_ms
+            "time_ms": proof.time_ms,
         }
 
         if proof.status == ProofStatus.DISPROVEN:
@@ -449,9 +463,7 @@ class RuleEngine:
         return contradictions
 
     def _match_antecedents(
-        self,
-        antecedents: List[Predicate],
-        bindings: Dict[str, str]
+        self, antecedents: List[Predicate], bindings: Dict[str, str]
     ) -> List[Dict[str, str]]:
         """Find all binding combinations that satisfy antecedents."""
         if not antecedents:
@@ -469,11 +481,7 @@ class RuleEngine:
 
         return results
 
-    def _unify(
-        self,
-        p1: Predicate,
-        p2: Predicate
-    ) -> Optional[Dict[str, str]]:
+    def _unify(self, p1: Predicate, p2: Predicate) -> Optional[Dict[str, str]]:
         """
         Attempt to unify two predicates.
 
@@ -511,10 +519,7 @@ class RuleEngine:
         """Get formatted proof trace."""
         lines = ["Inference Trace:", "=" * 50]
         for step in self.inference_trace:
-            lines.append(
-                f"{step.step_number}. {step.predicate} "
-                f"[{step.justification}]"
-            )
+            lines.append(f"{step.step_number}. {step.predicate} [{step.justification}]")
         return "\n".join(lines)
 
     def clear_trace(self) -> None:

@@ -19,6 +19,7 @@ from pathlib import Path
 
 class LogicForm(Enum):
     """Known logical argument forms."""
+
     # Valid forms
     MODUS_PONENS = "modus_ponens"
     MODUS_TOLLENS = "modus_tollens"
@@ -38,6 +39,7 @@ class LogicForm(Enum):
 
 class TruthValue(Enum):
     """Truth values for propositions."""
+
     TRUE = True
     FALSE = False
     UNKNOWN = None
@@ -46,6 +48,7 @@ class TruthValue(Enum):
 @dataclass
 class Proposition:
     """A logical proposition with a truth value."""
+
     symbol: str
     statement: str
     truth_value: TruthValue = TruthValue.UNKNOWN
@@ -60,6 +63,7 @@ class Proposition:
 @dataclass
 class LogicalArgument:
     """A formal logical argument."""
+
     premises: List[str]  # Formal notation (e.g., "P → Q")
     conclusion: str  # Formal notation
     propositions: Set[Proposition]  # Atomic propositions
@@ -70,6 +74,7 @@ class LogicalArgument:
 @dataclass
 class ValidationResult:
     """Result of logic validation."""
+
     is_valid: bool
     form_identified: Optional[LogicForm]
     truth_table_valid: Optional[bool]  # None if too many variables
@@ -113,7 +118,7 @@ class LogicEngine:
             self._init_hardcoded_forms()
             return
 
-        with open(forms_file, 'r', encoding='utf-8') as f:
+        with open(forms_file, "r", encoding="utf-8") as f:
             data = json.load(f)
             self.valid_forms = data.get("valid_forms", {})
             self.invalid_forms = data.get("invalid_forms", {})
@@ -121,33 +126,24 @@ class LogicEngine:
     def _init_hardcoded_forms(self):
         """Fallback hardcoded forms if JSON not available."""
         self.valid_forms = {
-            "modus_ponens": {
-                "pattern": ["P → Q", "P"],
-                "conclusion": "Q"
-            },
-            "modus_tollens": {
-                "pattern": ["P → Q", "¬Q"],
-                "conclusion": "¬P"
-            },
+            "modus_ponens": {"pattern": ["P → Q", "P"], "conclusion": "Q"},
+            "modus_tollens": {"pattern": ["P → Q", "¬Q"], "conclusion": "¬P"},
             "hypothetical_syllogism": {
                 "pattern": ["P → Q", "Q → R"],
-                "conclusion": "P → R"
+                "conclusion": "P → R",
             },
-            "disjunctive_syllogism": {
-                "pattern": ["P ∨ Q", "¬P"],
-                "conclusion": "Q"
-            }
+            "disjunctive_syllogism": {"pattern": ["P ∨ Q", "¬P"], "conclusion": "Q"},
         }
 
         self.invalid_forms = {
             "affirming_consequent": {
                 "pattern": ["P → Q", "Q"],
-                "fallacy": "Cannot conclude P"
+                "fallacy": "Cannot conclude P",
             },
             "denying_antecedent": {
                 "pattern": ["P → Q", "¬P"],
-                "fallacy": "Cannot conclude ¬Q"
-            }
+                "fallacy": "Cannot conclude ¬Q",
+            },
         }
 
     def validate(self, argument: LogicalArgument) -> ValidationResult:
@@ -242,7 +238,9 @@ class LogicEngine:
             pattern = sorted([p.strip() for p in form_data["pattern"]])
             expected_conclusion = form_data["conclusion"].strip()
 
-            if self._patterns_match(premises_str, pattern, conclusion_str, expected_conclusion):
+            if self._patterns_match(
+                premises_str, pattern, conclusion_str, expected_conclusion
+            ):
                 return ValidationResult(
                     is_valid=True,
                     form_identified=LogicForm(form_name),
@@ -251,7 +249,7 @@ class LogicEngine:
                     confidence=1.0,
                     method="pattern_match",
                     explanation=f"Matches valid form: {form_name}",
-                    warnings=[]
+                    warnings=[],
                 )
 
         # Check invalid forms
@@ -262,13 +260,15 @@ class LogicEngine:
             if self._patterns_match(premises_str, pattern):
                 return ValidationResult(
                     is_valid=False,
-                    form_identified=LogicForm(form_name) if form_name in [f.value for f in LogicForm] else None,
+                    form_identified=LogicForm(form_name)
+                    if form_name in [f.value for f in LogicForm]
+                    else None,
                     truth_table_valid=None,
                     counterexample=None,
                     confidence=1.0,
                     method="pattern_match",
                     explanation=f"Matches invalid form (fallacy): {form_name} - {form_data.get('fallacy', '')}",
-                    warnings=[]
+                    warnings=[],
                 )
 
         return None  # No pattern match
@@ -278,7 +278,7 @@ class LogicEngine:
         premises: List[str],
         pattern: List[str],
         conclusion: Optional[str] = None,
-        expected_conclusion: Optional[str] = None
+        expected_conclusion: Optional[str] = None,
     ) -> bool:
         """
         Check if premises/conclusion match a pattern.
@@ -302,7 +302,9 @@ class LogicEngine:
 
         return True
 
-    def _match_with_vars(self, statement: str, pattern: str, var_map: Dict[str, str]) -> bool:
+    def _match_with_vars(
+        self, statement: str, pattern: str, var_map: Dict[str, str]
+    ) -> bool:
         """
         Match statement against pattern, building/checking variable mapping.
 
@@ -370,7 +372,9 @@ class LogicEngine:
                                 break
                         i += 1
                 else:
-                    while i < len(expression) and (expression[i].isalnum() or expression[i] == "_"):
+                    while i < len(expression) and (
+                        expression[i].isalnum() or expression[i] == "_"
+                    ):
                         var += expression[i]
                         i += 1
 
@@ -382,7 +386,9 @@ class LogicEngine:
         token_pattern = r"(→|∧|∨|¬|↔|\(|\)|[A-Za-z][A-Za-z0-9_]*(?:\([^()]*\))?)"
         return [match.group(0) for match in re.finditer(token_pattern, expression)]
 
-    def _truth_table_validate(self, argument: LogicalArgument) -> Optional[ValidationResult]:
+    def _truth_table_validate(
+        self, argument: LogicalArgument
+    ) -> Optional[ValidationResult]:
         """
         Validate using truth table (brute force all combinations).
 
@@ -395,7 +401,7 @@ class LogicEngine:
             return None  # Too expensive
 
         # Generate all 2^n truth assignments
-        for i in range(2 ** n):
+        for i in range(2**n):
             assignment = {}
             for j, prop in enumerate(props):
                 assignment[prop.symbol] = bool((i >> j) & 1)
@@ -407,7 +413,9 @@ class LogicEngine:
             )
 
             # Evaluate conclusion
-            conclusion_value = self._evaluate_expression(argument.conclusion, assignment)
+            conclusion_value = self._evaluate_expression(
+                argument.conclusion, assignment
+            )
 
             # Check: if all premises true, conclusion must be true
             if premises_true and not conclusion_value:
@@ -420,7 +428,7 @@ class LogicEngine:
                     confidence=1.0,
                     method="truth_table",
                     explanation=f"Counterexample found: {assignment}",
-                    warnings=[]
+                    warnings=[],
                 )
 
         # No counterexample - valid!
@@ -432,7 +440,7 @@ class LogicEngine:
             confidence=1.0,
             method="truth_table",
             explanation="Truth table exhaustively verified (no counterexamples)",
-            warnings=[]
+            warnings=[],
         )
 
     def _evaluate_expression(self, expr: str, assignment: Dict[str, bool]) -> bool:
@@ -495,7 +503,9 @@ class LogicEngine:
 
         return expr
 
-    def _heuristic_validate(self, argument: LogicalArgument, warnings: List[str]) -> ValidationResult:
+    def _heuristic_validate(
+        self, argument: LogicalArgument, warnings: List[str]
+    ) -> ValidationResult:
         """
         Heuristic validation (fallback when pattern match and truth table fail).
 
@@ -518,7 +528,7 @@ class LogicEngine:
                 confidence=0.8,  # High confidence in this heuristic
                 method="heuristic",
                 explanation=f"Conclusion introduces new terms not in premises: {extra_terms}",
-                warnings=warnings
+                warnings=warnings,
             )
 
         # Default: uncertain
@@ -530,7 +540,7 @@ class LogicEngine:
             confidence=0.3,
             method="heuristic",
             explanation="Unable to determine validity with available methods",
-            warnings=warnings + ["Low confidence - recommend AI-enhanced analysis"]
+            warnings=warnings + ["Low confidence - recommend AI-enhanced analysis"],
         )
 
     def _extract_terms(self, expression: str) -> Set[str]:
@@ -544,7 +554,7 @@ def parse_argument(
     premises: List[str],
     conclusion: str,
     nl_premises: Optional[List[str]] = None,
-    nl_conclusion: Optional[str] = None
+    nl_conclusion: Optional[str] = None,
 ) -> LogicalArgument:
     """
     Parse argument into LogicalArgument structure.
@@ -563,45 +573,37 @@ def parse_argument(
     engine = LogicEngine()
     terms = engine._extract_terms(all_text)
 
-    propositions = {
-        Proposition(symbol=term, statement=term)
-        for term in terms
-    }
+    propositions = {Proposition(symbol=term, statement=term) for term in terms}
 
     return LogicalArgument(
         premises=premises,
         conclusion=conclusion,
         propositions=propositions,
         natural_language_premises=nl_premises,
-        natural_language_conclusion=nl_conclusion
+        natural_language_conclusion=nl_conclusion,
     )
 
 
 # Convenience functions for common use cases
 
+
 def validate_modus_ponens(
-    conditional: str,
-    antecedent: str,
-    expected_conclusion: str
+    conditional: str, antecedent: str, expected_conclusion: str
 ) -> ValidationResult:
     """Quick validation of modus ponens form."""
     arg = parse_argument(
-        premises=[conditional, antecedent],
-        conclusion=expected_conclusion
+        premises=[conditional, antecedent], conclusion=expected_conclusion
     )
     engine = LogicEngine()
     return engine.validate(arg)
 
 
 def validate_modus_tollens(
-    conditional: str,
-    negated_consequent: str,
-    expected_conclusion: str
+    conditional: str, negated_consequent: str, expected_conclusion: str
 ) -> ValidationResult:
     """Quick validation of modus tollens form."""
     arg = parse_argument(
-        premises=[conditional, negated_consequent],
-        conclusion=expected_conclusion
+        premises=[conditional, negated_consequent], conclusion=expected_conclusion
     )
     engine = LogicEngine()
     return engine.validate(arg)

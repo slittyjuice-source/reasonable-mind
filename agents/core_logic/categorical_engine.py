@@ -18,23 +18,26 @@ from collections import Counter
 
 class StatementType(Enum):
     """Categorical statement types (A, E, I, O)."""
+
     UNIVERSAL_AFFIRMATIVE = "A"  # All S are P
-    UNIVERSAL_NEGATIVE = "E"     # No S are P
+    UNIVERSAL_NEGATIVE = "E"  # No S are P
     PARTICULAR_AFFIRMATIVE = "I"  # Some S are P
-    PARTICULAR_NEGATIVE = "O"     # Some S are not P
+    PARTICULAR_NEGATIVE = "O"  # Some S are not P
 
 
 class Figure(Enum):
     """Syllogistic figures based on middle term position."""
-    FIRST = 1   # M-P, S-M ⊢ S-P
+
+    FIRST = 1  # M-P, S-M ⊢ S-P
     SECOND = 2  # P-M, S-M ⊢ S-P
-    THIRD = 3   # M-P, M-S ⊢ S-P
+    THIRD = 3  # M-P, M-S ⊢ S-P
     FOURTH = 4  # P-M, M-S ⊢ S-P
 
 
 @dataclass
 class CategoricalStatement:
     """A categorical proposition."""
+
     type: StatementType
     subject: str
     predicate: str
@@ -50,7 +53,10 @@ class CategoricalStatement:
         # E: No S are P - S distributed
         # I: Some S are P - S not distributed
         # O: Some S are not P - S not distributed
-        return self.type in [StatementType.UNIVERSAL_AFFIRMATIVE, StatementType.UNIVERSAL_NEGATIVE]
+        return self.type in [
+            StatementType.UNIVERSAL_AFFIRMATIVE,
+            StatementType.UNIVERSAL_NEGATIVE,
+        ]
 
     @property
     def predicate_distributed(self) -> bool:
@@ -60,12 +66,16 @@ class CategoricalStatement:
         # E: No S are P - P distributed
         # I: Some S are P - P not distributed
         # O: Some S are not P - P distributed
-        return self.type in [StatementType.UNIVERSAL_NEGATIVE, StatementType.PARTICULAR_NEGATIVE]
+        return self.type in [
+            StatementType.UNIVERSAL_NEGATIVE,
+            StatementType.PARTICULAR_NEGATIVE,
+        ]
 
 
 @dataclass
 class Syllogism:
     """A categorical syllogism."""
+
     major_premise: CategoricalStatement
     minor_premise: CategoricalStatement
     conclusion: CategoricalStatement
@@ -81,6 +91,7 @@ class Syllogism:
 @dataclass
 class SyllogismValidation:
     """Result of syllogism validation."""
+
     is_valid: bool
     mood: str
     figure: Figure
@@ -149,7 +160,9 @@ class CategoricalEngine:
 
         # Rule 2: Middle term must be distributed at least once
         if not self._middle_term_distributed(syllogism):
-            violations.append("Undistributed middle: middle term not distributed in either premise")
+            violations.append(
+                "Undistributed middle: middle term not distributed in either premise"
+            )
 
         # Rule 3: Illicit major/minor
         major_illicit = self._check_illicit_major(syllogism)
@@ -161,23 +174,35 @@ class CategoricalEngine:
             violations.append(f"Illicit minor: {minor_illicit}")
 
         # Rule 4: Two negative premises
-        if self._is_negative(syllogism.major_premise) and self._is_negative(syllogism.minor_premise):
+        if self._is_negative(syllogism.major_premise) and self._is_negative(
+            syllogism.minor_premise
+        ):
             violations.append("Two negative premises yield no valid conclusion")
 
         # Rule 5: Negative premise requires negative conclusion
-        if (self._is_negative(syllogism.major_premise) or self._is_negative(syllogism.minor_premise)):
+        if self._is_negative(syllogism.major_premise) or self._is_negative(
+            syllogism.minor_premise
+        ):
             if not self._is_negative(syllogism.conclusion):
                 violations.append("Negative premise requires negative conclusion")
 
         # Rule 6: Two particular premises
-        if self._is_particular(syllogism.major_premise) and self._is_particular(syllogism.minor_premise):
+        if self._is_particular(syllogism.major_premise) and self._is_particular(
+            syllogism.minor_premise
+        ):
             violations.append("Two particular premises yield no valid conclusion")
 
         # Rule 7: Particular premise requires particular conclusion (with negative premise)
-        if (self._is_particular(syllogism.major_premise) or self._is_particular(syllogism.minor_premise)):
-            if self._is_negative(syllogism.major_premise) or self._is_negative(syllogism.minor_premise):
+        if self._is_particular(syllogism.major_premise) or self._is_particular(
+            syllogism.minor_premise
+        ):
+            if self._is_negative(syllogism.major_premise) or self._is_negative(
+                syllogism.minor_premise
+            ):
                 if not self._is_particular(syllogism.conclusion):
-                    violations.append("Particular premise with negative premise requires particular conclusion")
+                    violations.append(
+                        "Particular premise with negative premise requires particular conclusion"
+                    )
 
         # Check against known valid forms
         form_name = self.VALID_FORMS.get((syllogism.figure, syllogism.mood))
@@ -198,7 +223,7 @@ class CategoricalEngine:
             form_name=form_name,
             violations=violations,
             confidence=1.0,  # Deterministic
-            explanation=explanation
+            explanation=explanation,
         )
 
     def _middle_term_distributed(self, syl: Syllogism) -> bool:
@@ -207,22 +232,20 @@ class CategoricalEngine:
         major_prem = syl.major_premise
         minor_prem = syl.minor_premise
 
-        middle_in_major_subject = (major_prem.subject == syl.middle_term)
-        middle_in_major_predicate = (major_prem.predicate == syl.middle_term)
+        middle_in_major_subject = major_prem.subject == syl.middle_term
+        middle_in_major_predicate = major_prem.predicate == syl.middle_term
 
-        middle_in_minor_subject = (minor_prem.subject == syl.middle_term)
-        middle_in_minor_predicate = (minor_prem.predicate == syl.middle_term)
+        middle_in_minor_subject = minor_prem.subject == syl.middle_term
+        middle_in_minor_predicate = minor_prem.predicate == syl.middle_term
 
         # Check distribution
         major_distributed = (
-            (middle_in_major_subject and major_prem.subject_distributed) or
-            (middle_in_major_predicate and major_prem.predicate_distributed)
-        )
+            middle_in_major_subject and major_prem.subject_distributed
+        ) or (middle_in_major_predicate and major_prem.predicate_distributed)
 
         minor_distributed = (
-            (middle_in_minor_subject and minor_prem.subject_distributed) or
-            (middle_in_minor_predicate and minor_prem.predicate_distributed)
-        )
+            middle_in_minor_subject and minor_prem.subject_distributed
+        ) or (middle_in_minor_predicate and minor_prem.predicate_distributed)
 
         return major_distributed or minor_distributed
 
@@ -232,7 +255,8 @@ class CategoricalEngine:
 
         # Is major term distributed in conclusion?
         conclusion_distributed = (
-            (syl.conclusion.predicate == major_term and syl.conclusion.predicate_distributed)
+            syl.conclusion.predicate == major_term
+            and syl.conclusion.predicate_distributed
         )
 
         if not conclusion_distributed:
@@ -241,9 +265,8 @@ class CategoricalEngine:
         # Check if distributed in major premise
         major_prem = syl.major_premise
         premise_distributed = (
-            (major_prem.subject == major_term and major_prem.subject_distributed) or
-            (major_prem.predicate == major_term and major_prem.predicate_distributed)
-        )
+            major_prem.subject == major_term and major_prem.subject_distributed
+        ) or (major_prem.predicate == major_term and major_prem.predicate_distributed)
 
         if not premise_distributed:
             return f"Major term '{major_term}' distributed in conclusion but not in major premise"
@@ -256,7 +279,7 @@ class CategoricalEngine:
 
         # Is minor term distributed in conclusion?
         conclusion_distributed = (
-            (syl.conclusion.subject == minor_term and syl.conclusion.subject_distributed)
+            syl.conclusion.subject == minor_term and syl.conclusion.subject_distributed
         )
 
         if not conclusion_distributed:
@@ -265,9 +288,8 @@ class CategoricalEngine:
         # Check if distributed in minor premise
         minor_prem = syl.minor_premise
         premise_distributed = (
-            (minor_prem.subject == minor_term and minor_prem.subject_distributed) or
-            (minor_prem.predicate == minor_term and minor_prem.predicate_distributed)
-        )
+            minor_prem.subject == minor_term and minor_prem.subject_distributed
+        ) or (minor_prem.predicate == minor_term and minor_prem.predicate_distributed)
 
         if not premise_distributed:
             return f"Minor term '{minor_term}' distributed in conclusion but not in minor premise"
@@ -276,11 +298,17 @@ class CategoricalEngine:
 
     def _is_negative(self, statement: CategoricalStatement) -> bool:
         """Check if statement is negative (E or O)."""
-        return statement.type in [StatementType.UNIVERSAL_NEGATIVE, StatementType.PARTICULAR_NEGATIVE]
+        return statement.type in [
+            StatementType.UNIVERSAL_NEGATIVE,
+            StatementType.PARTICULAR_NEGATIVE,
+        ]
 
     def _is_particular(self, statement: CategoricalStatement) -> bool:
         """Check if statement is particular (I or O)."""
-        return statement.type in [StatementType.PARTICULAR_AFFIRMATIVE, StatementType.PARTICULAR_NEGATIVE]
+        return statement.type in [
+            StatementType.PARTICULAR_AFFIRMATIVE,
+            StatementType.PARTICULAR_NEGATIVE,
+        ]
 
 
 def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
@@ -323,7 +351,7 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
                 predicate=_normalize_term(parts[1]),
                 quantifier="all",
                 copula="are",
-                original_text=text
+                original_text=text,
             )
         else:
             # Handle patterns like "all planets orbit stars" (missing "are")
@@ -337,7 +365,7 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
                     predicate=predicate,
                     quantifier="all",
                     copula="are",
-                    original_text=text
+                    original_text=text,
                 )
 
     # Type E: No S are P
@@ -350,7 +378,7 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
                 predicate=_normalize_term(parts[1]),
                 quantifier="no",
                 copula="are",
-                original_text=text
+                original_text=text,
             )
 
     # Type I: Some S are P
@@ -363,7 +391,7 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
                 predicate=_normalize_term(parts[1]),
                 quantifier="some",
                 copula="are",
-                original_text=text
+                original_text=text,
             )
 
     # Type O: Some S are not P
@@ -376,7 +404,7 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
                 predicate=_normalize_term(parts[1]),
                 quantifier="some",
                 copula="are not",
-                original_text=text
+                original_text=text,
             )
 
     # Fallback: allow simple verb phrases beyond "are"/"are not"
@@ -387,7 +415,7 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
     ]:
         prefix = f"{quantifier} "
         if text.startswith(prefix):
-            remainder = text[len(prefix):].strip()
+            remainder = text[len(prefix) :].strip()
             tokens = remainder.split()
 
             if len(tokens) >= 2:
@@ -396,7 +424,11 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
                 # Handle "not" appearing in free-form phrasing
                 if tokens[1] == "not" and len(tokens) >= 3:
                     predicate_tokens = tokens[2:]
-                    stmt_type = StatementType.PARTICULAR_NEGATIVE if quantifier == "some" else StatementType.UNIVERSAL_NEGATIVE
+                    stmt_type = (
+                        StatementType.PARTICULAR_NEGATIVE
+                        if quantifier == "some"
+                        else StatementType.UNIVERSAL_NEGATIVE
+                    )
                     copula = "not"
                 else:
                     predicate_tokens = tokens[1:]
@@ -417,9 +449,7 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
 
 
 def parse_syllogism(
-    major_premise: str,
-    minor_premise: str,
-    conclusion: str
+    major_premise: str, minor_premise: str, conclusion: str
 ) -> Optional[Syllogism]:
     """
     Parse a syllogism from natural language statements.
@@ -451,8 +481,10 @@ def parse_syllogism(
         """Pick a middle term with simple heuristics."""
 
         premise_terms = [
-            maj_stmt.subject, maj_stmt.predicate,
-            min_stmt.subject, min_stmt.predicate
+            maj_stmt.subject,
+            maj_stmt.predicate,
+            min_stmt.subject,
+            min_stmt.predicate,
         ]
         conclusion_terms = {con_stmt.subject, con_stmt.predicate}
 
@@ -467,7 +499,9 @@ def parse_syllogism(
     conclusion_terms = {con_stmt.subject, con_stmt.predicate}
 
     shared_premise_terms = premise_terms_major.intersection(premise_terms_minor)
-    candidate_middle = [term for term in shared_premise_terms if term not in conclusion_terms]
+    candidate_middle = [
+        term for term in shared_premise_terms if term not in conclusion_terms
+    ]
 
     if len(candidate_middle) == 1:
         middle_term = candidate_middle[0]
@@ -481,11 +515,7 @@ def parse_syllogism(
         middle_term = middle_terms.pop()
 
     # Determine mood (e.g., AAA, EAE, AII)
-    mood = (
-        maj_stmt.type.value +
-        min_stmt.type.value +
-        con_stmt.type.value
-    )
+    mood = maj_stmt.type.value + min_stmt.type.value + con_stmt.type.value
 
     # Determine figure (based on middle term position)
     # Figure 1: M-P, S-M
@@ -493,8 +523,8 @@ def parse_syllogism(
     # Figure 3: M-P, M-S
     # Figure 4: P-M, M-S
 
-    maj_middle_subject = (maj_stmt.subject == middle_term)
-    min_middle_subject = (min_stmt.subject == middle_term)
+    maj_middle_subject = maj_stmt.subject == middle_term
+    min_middle_subject = min_stmt.subject == middle_term
 
     if maj_middle_subject and not min_middle_subject:
         figure = Figure.FIRST
@@ -513,17 +543,14 @@ def parse_syllogism(
         minor_term=minor_term,
         middle_term=middle_term,
         mood=mood,
-        figure=figure
+        figure=figure,
     )
 
 
 # Convenience functions
 
-def validate_barbara(
-    major: str,
-    minor: str,
-    conclusion: str
-) -> SyllogismValidation:
+
+def validate_barbara(major: str, minor: str, conclusion: str) -> SyllogismValidation:
     """Quick validation expecting Barbara (AAA-1) form."""
     syl = parse_syllogism(major, minor, conclusion)
     if not syl:
@@ -534,7 +561,7 @@ def validate_barbara(
             form_name=None,
             violations=["Parse error"],
             confidence=1.0,
-            explanation="Failed to parse statements"
+            explanation="Failed to parse statements",
         )
 
     engine = CategoricalEngine()

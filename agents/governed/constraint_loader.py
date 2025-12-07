@@ -16,31 +16,37 @@ from enum import Enum
 
 class LoaderError(Exception):
     """Base exception for constraint loader errors."""
+
     pass
 
 
 class ProfileNotFoundError(LoaderError):
     """Raised when a profile file cannot be found."""
+
     pass
 
 
 class ProfileValidationError(LoaderError):
     """Raised when a profile fails validation."""
+
     pass
 
 
 class InheritanceError(LoaderError):
     """Raised when inheritance chain is invalid or circular."""
+
     pass
 
 
 class ProfileConflictError(LoaderError):
     """Raised when merged profiles have conflicting rules."""
+
     pass
 
 
 class ActionPolicy(Enum):
     """Policy decisions for actions."""
+
     ALLOW = "allow"
     DENY = "deny"
     ESCALATE = "escalate"
@@ -54,6 +60,7 @@ def _utc_now() -> datetime:
 @dataclass
 class LoadedProfile:
     """A loaded and validated constraint profile with integrity hash."""
+
     profile_id: str
     version: str
     resolved_permissions: Dict[str, Any]
@@ -69,7 +76,7 @@ class LoadedProfile:
             "version": self.version,
             "integrity_hash": self.integrity_hash,
             "inheritance_chain": self.inheritance_chain,
-            "loaded_at": self.loaded_at.isoformat()
+            "loaded_at": self.loaded_at.isoformat(),
         }
 
 
@@ -97,7 +104,9 @@ class ConstraintLoader:
             ProfileNotFoundError: If governance directory doesn't exist.
         """
         if not governance_dir.exists():
-            raise ProfileNotFoundError(f"Governance directory not found: {governance_dir}")
+            raise ProfileNotFoundError(
+                f"Governance directory not found: {governance_dir}"
+            )
         if not governance_dir.is_dir():
             raise ProfileNotFoundError(f"Path is not a directory: {governance_dir}")
 
@@ -134,7 +143,7 @@ class ConstraintLoader:
             raise ProfileNotFoundError(f"Profile not found: {file_path}")
 
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except json.JSONDecodeError as e:
             raise ProfileValidationError(f"Invalid JSON in {file_path}: {e}")
@@ -146,7 +155,9 @@ class ConstraintLoader:
             raise ProfileValidationError(f"Profile must be a JSON object: {profile_id}")
 
         if "metadata" not in data:
-            raise ProfileValidationError(f"Profile missing 'metadata' section: {profile_id}")
+            raise ProfileValidationError(
+                f"Profile missing 'metadata' section: {profile_id}"
+            )
 
         metadata = data["metadata"]
         missing_keys = self.REQUIRED_METADATA_KEYS - set(metadata.keys())
@@ -158,7 +169,9 @@ class ConstraintLoader:
         self._cache[profile_id] = data
         return data
 
-    def _resolve_inheritance(self, profile_id: str, visited: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    def _resolve_inheritance(
+        self, profile_id: str, visited: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
         """
         Resolve inheritance chain for a profile.
 
@@ -197,7 +210,9 @@ class ConstraintLoader:
             # Base profile - no parent
             return [profile_data]
 
-    def _deep_merge(self, base: Dict[str, Any], overlay: Dict[str, Any]) -> Dict[str, Any]:
+    def _deep_merge(
+        self, base: Dict[str, Any], overlay: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Deep merge overlay onto base, with overlay taking precedence.
 
@@ -211,7 +226,11 @@ class ConstraintLoader:
         result = base.copy()
 
         for key, value in overlay.items():
-            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            if (
+                key in result
+                and isinstance(result[key], dict)
+                and isinstance(value, dict)
+            ):
                 result[key] = self._deep_merge(result[key], value)
             else:
                 result[key] = value
@@ -219,10 +238,7 @@ class ConstraintLoader:
         return result
 
     def _detect_conflicts(
-        self,
-        base: Dict[str, Any],
-        overlay: Dict[str, Any],
-        path: str = ""
+        self, base: Dict[str, Any], overlay: Dict[str, Any], path: str = ""
     ) -> List[str]:
         """
         Detect conflicting rules between profiles.
@@ -253,7 +269,9 @@ class ConstraintLoader:
             if key in base and key in overlay:
                 if isinstance(base[key], dict) and isinstance(overlay[key], dict):
                     nested_path = f"{path}.{key}" if path else key
-                    conflicts.extend(self._detect_conflicts(base[key], overlay[key], nested_path))
+                    conflicts.extend(
+                        self._detect_conflicts(base[key], overlay[key], nested_path)
+                    )
 
         return conflicts
 
@@ -284,8 +302,8 @@ class ConstraintLoader:
         Returns:
             Hex-encoded SHA-256 hash.
         """
-        canonical = json.dumps(data, sort_keys=True, separators=(',', ':'))
-        return hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+        canonical = json.dumps(data, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
     def load(self, profile_id: str, check_conflicts: bool = True) -> LoadedProfile:
         """
@@ -336,7 +354,7 @@ class ConstraintLoader:
             "version": version,
             "inheritance_chain": chain_ids,
             "permissions": merged_permissions,
-            "constraints": merged_constraints
+            "constraints": merged_constraints,
         }
 
         integrity_hash = self._compute_hash(resolved_data)
@@ -347,7 +365,7 @@ class ConstraintLoader:
             resolved_permissions=merged_permissions,
             resolved_constraints=merged_constraints,
             inheritance_chain=chain_ids,
-            integrity_hash=integrity_hash
+            integrity_hash=integrity_hash,
         )
 
         self._active_profile = loaded

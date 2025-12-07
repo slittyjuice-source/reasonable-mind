@@ -29,10 +29,10 @@ class TestInferenceEngine:
     @pytest.mark.unit
     def test_initialization(self, engine):
         """Test engine initializes properly."""
-        assert hasattr(engine, 'parser')
-        assert hasattr(engine, 'facts')
-        assert hasattr(engine, 'rules')
-        assert hasattr(engine, 'infer')
+        assert hasattr(engine, "parser")
+        assert hasattr(engine, "facts")
+        assert hasattr(engine, "rules")
+        assert hasattr(engine, "infer")
 
     @pytest.mark.unit
     def test_add_fact(self, engine):
@@ -59,9 +59,9 @@ class TestInferenceEngine:
         result = engine.infer("Socrates is mortal")
 
         assert isinstance(result, InferenceResult)
-        assert hasattr(result, 'success')
-        assert hasattr(result, 'confidence')
-        assert hasattr(result, 'steps')
+        assert hasattr(result, "success")
+        assert hasattr(result, "confidence")
+        assert hasattr(result, "steps")
 
     @pytest.mark.unit
     def test_modus_ponens_pattern(self, engine):
@@ -73,7 +73,7 @@ class TestInferenceEngine:
 
         # Check result structure - patterns_used may or may not contain MODUS_PONENS
         assert isinstance(result, InferenceResult)
-        assert hasattr(result, 'patterns_used')
+        assert hasattr(result, "patterns_used")
 
     @pytest.mark.unit
     def test_modus_tollens_pattern(self, engine):
@@ -85,7 +85,7 @@ class TestInferenceEngine:
 
         # Check result structure
         assert isinstance(result, InferenceResult)
-        assert hasattr(result, 'patterns_used')
+        assert hasattr(result, "patterns_used")
 
     @pytest.mark.unit
     def test_inference_result_structure(self, engine):
@@ -95,13 +95,13 @@ class TestInferenceEngine:
 
         result = engine.infer("Tweety flies")
 
-        assert hasattr(result, 'success')
-        assert hasattr(result, 'conclusion')
-        assert hasattr(result, 'confidence')
-        assert hasattr(result, 'steps')
-        assert hasattr(result, 'patterns_used')
-        assert hasattr(result, 'proof_found')
-        assert hasattr(result, 'needs_flag')
+        assert hasattr(result, "success")
+        assert hasattr(result, "conclusion")
+        assert hasattr(result, "confidence")
+        assert hasattr(result, "steps")
+        assert hasattr(result, "patterns_used")
+        assert hasattr(result, "proof_found")
+        assert hasattr(result, "needs_flag")
 
     @pytest.mark.unit
     def test_proof_or_flag_mechanism(self, engine):
@@ -216,7 +216,7 @@ class TestQuantifiedPredicate:
             quantifier=QuantifierType.UNIVERSAL,
             variable="x",
             predicate_name="Mortal",
-            arguments=[LogicalTerm("x", is_variable=True)]
+            arguments=[LogicalTerm("x", is_variable=True)],
         )
 
         assert pred.quantifier == QuantifierType.UNIVERSAL
@@ -231,7 +231,7 @@ class TestQuantifiedPredicate:
             variable=None,
             predicate_name="Fly",
             arguments=[LogicalTerm("penguin", is_constant=True)],
-            negated=True
+            negated=True,
         )
 
         assert pred.negated is True
@@ -250,7 +250,7 @@ class TestInferenceStep:
             conclusion="Q",
             pattern_used=InferencePattern.MODUS_PONENS,
             confidence=0.95,
-            justification="Applied modus ponens"
+            justification="Applied modus ponens",
         )
 
         assert step.step_id == 1

@@ -220,10 +220,7 @@ class FileWriteTool(Tool):
             def write_sync():
                 with open(file_path, "w", encoding="utf-8") as f:
                     f.write(content)
-                return (
-                    f"Successfully wrote {len(content)} "
-                    f"characters to {path}"
-                )
+                return f"Successfully wrote {len(content)} characters to {path}"
 
             return await asyncio.to_thread(write_sync)
         except Exception as e:
@@ -241,16 +238,11 @@ class FileWriteTool(Tool):
 
             def edit_sync():
                 try:
-                    with open(
-                        file_path, encoding="utf-8", errors="replace"
-                    ) as f:
+                    with open(file_path, encoding="utf-8", errors="replace") as f:
                         content = f.read()
 
                     if old_text not in content:
-                        return (
-                            f"Error: The specified text was not "
-                            f"found in {path}"
-                        )
+                        return f"Error: The specified text was not found in {path}"
 
                     # Count occurrences to warn about multiple matches
                     count = content.count(old_text)

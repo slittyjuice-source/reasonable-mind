@@ -54,9 +54,7 @@ class MCPConnection(ABC):
         response = await self.session.list_tools()
         return response.tools
 
-    async def call_tool(
-        self, tool_name: str, arguments: dict[str, Any]
-    ) -> Any:
+    async def call_tool(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         """Call a tool on the MCP server with provided arguments."""
         return await self.session.call_tool(tool_name, arguments=arguments)
 
@@ -64,9 +62,7 @@ class MCPConnection(ABC):
 class MCPConnectionStdio(MCPConnection):
     """MCP connection using standard input/output."""
 
-    def __init__(
-        self, command: str, args: list[str] = [], env: dict[str, str] = None
-    ):
+    def __init__(self, command: str, args: list[str] = [], env: dict[str, str] = None):
         super().__init__()
         self.command = command
         self.args = args
@@ -74,9 +70,7 @@ class MCPConnectionStdio(MCPConnection):
 
     async def _create_rw_context(self):
         return stdio_client(
-            StdioServerParameters(
-                command=self.command, args=self.args, env=self.env
-            )
+            StdioServerParameters(command=self.command, args=self.args, env=self.env)
         )
 
 
@@ -108,9 +102,7 @@ def create_mcp_connection(config: dict[str, Any]) -> MCPConnection:
     elif conn_type == "sse":
         if not config.get("url"):
             raise ValueError("URL is required for SSE connections")
-        return MCPConnectionSSE(
-            url=config["url"], headers=config.get("headers")
-        )
+        return MCPConnectionSSE(url=config["url"], headers=config.get("headers"))
 
     else:
         raise ValueError(f"Unsupported connection type: {conn_type}")
@@ -148,7 +140,5 @@ async def setup_mcp_connections(
         except Exception as e:
             print(f"Error setting up MCP server {config}: {e}")
 
-    print(
-        f"Loaded {len(mcp_tools)} MCP tools from {len(mcp_servers)} servers."
-    )
+    print(f"Loaded {len(mcp_tools)} MCP tools from {len(mcp_servers)} servers.")
     return mcp_tools

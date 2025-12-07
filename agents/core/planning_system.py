@@ -8,9 +8,7 @@ Implements:
 - Progress tracking and replanning
 """
 
-from typing import (
-    List, Dict, Any, Optional, Callable, TypeVar, Set
-)
+from typing import List, Dict, Any, Optional, Callable, TypeVar, Set
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -20,11 +18,12 @@ import ast
 import operator
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class PlanStatus(Enum):
     """Status of a plan or step."""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -35,6 +34,7 @@ class PlanStatus(Enum):
 
 class StepType(Enum):
     """Types of plan steps."""
+
     TOOL = "tool"  # Execute a tool
     REASONING = "reasoning"  # Perform reasoning
     DECISION = "decision"  # Make a decision
@@ -47,6 +47,7 @@ class StepType(Enum):
 @dataclass
 class ToolResult:
     """Result from a tool execution."""
+
     success: bool
     data: Any
     error: Optional[str] = None
@@ -57,6 +58,7 @@ class ToolResult:
 @dataclass
 class PlanStep:
     """A single step in a plan."""
+
     id: str
     name: str
     description: str
@@ -82,6 +84,7 @@ class PlanStep:
 @dataclass
 class Plan:
     """A complete execution plan."""
+
     id: str
     goal: str
     steps: List[PlanStep]
@@ -102,15 +105,15 @@ class Plan:
     def is_complete(self) -> bool:
         """Check if plan is complete."""
         return all(
-            s.status in (PlanStatus.COMPLETED, PlanStatus.SKIPPED)
-            for s in self.steps
+            s.status in (PlanStatus.COMPLETED, PlanStatus.SKIPPED) for s in self.steps
         )
 
     def get_next_steps(self) -> List[PlanStep]:
         """Get steps that are ready to execute."""
         completed = {s.id for s in self.steps if s.status == PlanStatus.COMPLETED}
         ready = [
-            s for s in self.steps
+            s
+            for s in self.steps
             if s.status == PlanStatus.PENDING and s.is_ready(completed)
         ]
         return sorted(ready, key=lambda s: s.priority, reverse=True)
@@ -162,7 +165,7 @@ class ToolRegistry:
             "calls": 0,
             "successes": 0,
             "failures": 0,
-            "total_time_ms": 0.0
+            "total_time_ms": 0.0,
         }
 
         if aliases:
@@ -183,16 +186,13 @@ class ToolRegistry:
             {
                 "name": tool.name,
                 "description": tool.description,
-                "parameters": tool.parameters
+                "parameters": tool.parameters,
             }
             for tool in self.tools.values()
         ]
 
     def record_usage(
-        self,
-        tool_name: str,
-        success: bool,
-        execution_time_ms: float
+        self, tool_name: str, success: bool, execution_time_ms: float
     ) -> None:
         """Record tool usage for statistics."""
         if tool_name in self.usage_stats:
@@ -255,6 +255,7 @@ class ToolRegistry:
 
 # Built-in Tools
 
+
 class LogicValidationTool(Tool):
     """Tool for validating logical arguments."""
 
@@ -274,14 +275,14 @@ class LogicValidationTool(Tool):
                 "premises": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "List of premise statements"
+                    "description": "List of premise statements",
                 },
                 "conclusion": {
                     "type": "string",
-                    "description": "The conclusion to validate"
-                }
+                    "description": "The conclusion to validate",
+                },
             },
-            "required": ["premises", "conclusion"]
+            "required": ["premises", "conclusion"],
         }
 
     async def execute(self, **kwargs) -> ToolResult:
@@ -296,8 +297,8 @@ class LogicValidationTool(Tool):
             data={
                 "valid": is_valid,
                 "premise_count": len(premises),
-                "analysis": "Basic structural validation complete"
-            }
+                "analysis": "Basic structural validation complete",
+            },
         )
 
 
@@ -320,16 +321,13 @@ class FactCheckTool(Tool):
         return {
             "type": "object",
             "properties": {
-                "claim": {
-                    "type": "string",
-                    "description": "The claim to verify"
-                },
+                "claim": {"type": "string", "description": "The claim to verify"},
                 "domain": {
                     "type": "string",
-                    "description": "Optional domain to search within"
-                }
+                    "description": "Optional domain to search within",
+                },
             },
-            "required": ["claim"]
+            "required": ["claim"],
         }
 
     async def execute(self, **kwargs) -> ToolResult:
@@ -345,8 +343,8 @@ class FactCheckTool(Tool):
                 "sources": [],
                 "claim_searched": claim,
                 "domain": domain,
-                "note": "Knowledge base search placeholder"
-            }
+                "note": "Knowledge base search placeholder",
+            },
         )
 
 
@@ -368,10 +366,10 @@ class CalculationTool(Tool):
             "properties": {
                 "expression": {
                     "type": "string",
-                    "description": "Mathematical expression to evaluate"
+                    "description": "Mathematical expression to evaluate",
                 }
             },
-            "required": ["expression"]
+            "required": ["expression"],
         }
 
     async def execute(self, **kwargs) -> ToolResult:
@@ -380,7 +378,7 @@ class CalculationTool(Tool):
         # Safe evaluation using AST parsing
         try:
             # Parse the expression into an AST
-            node = ast.parse(expression, mode='eval')
+            node = ast.parse(expression, mode="eval")
 
             # Define safe operations
             safe_operators = {
@@ -407,13 +405,17 @@ class CalculationTool(Tool):
                     raise ValueError("Only numeric constants allowed")
                 elif isinstance(node, ast.BinOp):  # Binary operations
                     if type(node.op) not in safe_operators:
-                        raise ValueError(f"Operator {type(node.op).__name__} not allowed")
+                        raise ValueError(
+                            f"Operator {type(node.op).__name__} not allowed"
+                        )
                     left = eval_node(node.left)
                     right = eval_node(node.right)
                     return safe_operators[type(node.op)](left, right)
                 elif isinstance(node, ast.UnaryOp):  # Unary operations
                     if type(node.op) not in safe_operators:
-                        raise ValueError(f"Operator {type(node.op).__name__} not allowed")
+                        raise ValueError(
+                            f"Operator {type(node.op).__name__} not allowed"
+                        )
                     operand = eval_node(node.operand)
                     return safe_operators[type(node.op)](operand)
                 else:
@@ -421,20 +423,15 @@ class CalculationTool(Tool):
 
             result = eval_node(node)
             return ToolResult(
-                success=True,
-                data={"result": result, "expression": expression}
+                success=True, data={"result": result, "expression": expression}
             )
         except (SyntaxError, ValueError, ZeroDivisionError) as e:
             return ToolResult(
-                success=False,
-                data=None,
-                error=f"Calculation error: {str(e)}"
+                success=False, data=None, error=f"Calculation error: {str(e)}"
             )
         except Exception as e:
             return ToolResult(
-                success=False,
-                data=None,
-                error=f"Unexpected error: {str(e)}"
+                success=False, data=None, error=f"Unexpected error: {str(e)}"
             )
 
 
@@ -491,36 +488,32 @@ class Planner:
         self,
         goal: str,
         strategy: str = "linear",
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> Plan:
         """Create a plan for achieving a goal."""
         import hashlib
+
         plan_id = hashlib.sha256(
             f"{goal}{datetime.now().isoformat()}".encode()
         ).hexdigest()[:12]
 
         # Use decomposition strategy
-        decomposer = self.decomposition_strategies.get(strategy, self._linear_decomposition)
+        decomposer = self.decomposition_strategies.get(
+            strategy, self._linear_decomposition
+        )
         steps = decomposer(goal, context or {})
 
         # Score steps (higher priority first)
         for step in steps:
             step.priority = self._score_step(step, context or {})
 
-        plan = Plan(
-            id=plan_id,
-            goal=goal,
-            steps=steps,
-            context=context or {}
-        )
+        plan = Plan(id=plan_id, goal=goal, steps=steps, context=context or {})
 
         self.plans[plan_id] = plan
         return plan
 
     def _linear_decomposition(
-        self,
-        goal: str,
-        context: Dict[str, Any]
+        self, goal: str, context: Dict[str, Any]
     ) -> List[PlanStep]:
         """Decompose goal into linear sequence of steps."""
         # This is a template - would be enhanced with LLM
@@ -530,7 +523,7 @@ class Planner:
                 name="Understand",
                 description=f"Understand the goal: {goal}",
                 step_type=StepType.REASONING,
-                effects=["goal_understood"]
+                effects=["goal_understood"],
             ),
             PlanStep(
                 id="step_2",
@@ -539,7 +532,7 @@ class Planner:
                 step_type=StepType.REASONING,
                 dependencies=["step_1"],
                 preconditions=["goal_understood"],
-                effects=["requirements_analyzed"]
+                effects=["requirements_analyzed"],
             ),
             PlanStep(
                 id="step_3",
@@ -548,7 +541,7 @@ class Planner:
                 step_type=StepType.TOOL,
                 dependencies=["step_2"],
                 preconditions=["requirements_analyzed"],
-                effects=["task_executed"]
+                effects=["task_executed"],
             ),
             PlanStep(
                 id="step_4",
@@ -556,23 +549,19 @@ class Planner:
                 description="Verify the result",
                 step_type=StepType.REASONING,
                 dependencies=["step_3"],
-                preconditions=["task_executed"]
-            )
+                preconditions=["task_executed"],
+            ),
         ]
 
     def _hierarchical_decomposition(
-        self,
-        goal: str,
-        context: Dict[str, Any]
+        self, goal: str, context: Dict[str, Any]
     ) -> List[PlanStep]:
         """Decompose goal into hierarchical subtasks."""
         # Placeholder for more complex decomposition
         return self._linear_decomposition(goal, context)
 
     def _parallel_decomposition(
-        self,
-        goal: str,
-        context: Dict[str, Any]
+        self, goal: str, context: Dict[str, Any]
     ) -> List[PlanStep]:
         """Decompose goal into parallelizable steps."""
         return [
@@ -581,7 +570,7 @@ class Planner:
                 name="Setup",
                 description="Initialize parallel execution",
                 step_type=StepType.REASONING,
-                effects=["parallel_ready"]
+                effects=["parallel_ready"],
             ),
             PlanStep(
                 id="step_2a",
@@ -590,7 +579,7 @@ class Planner:
                 step_type=StepType.TOOL,
                 dependencies=["step_1"],
                 preconditions=["parallel_ready"],
-                effects=["branch_a_done"]
+                effects=["branch_a_done"],
             ),
             PlanStep(
                 id="step_2b",
@@ -599,7 +588,7 @@ class Planner:
                 step_type=StepType.TOOL,
                 dependencies=["step_1"],
                 preconditions=["parallel_ready"],
-                effects=["branch_b_done"]
+                effects=["branch_b_done"],
             ),
             PlanStep(
                 id="step_3",
@@ -607,16 +596,11 @@ class Planner:
                 description="Merge parallel results",
                 step_type=StepType.REASONING,
                 dependencies=["step_2a", "step_2b"],
-                preconditions=["branch_a_done", "branch_b_done"]
-            )
+                preconditions=["branch_a_done", "branch_b_done"],
+            ),
         ]
 
-    def replan(
-        self,
-        plan: Plan,
-        failed_step: PlanStep,
-        error: str
-    ) -> Plan:
+    def replan(self, plan: Plan, failed_step: PlanStep, error: str) -> Plan:
         """Create a new plan after a failure."""
         # Mark failed step
         failed_step.status = PlanStatus.FAILED
@@ -628,14 +612,11 @@ class Planner:
             name=f"Recover from {failed_step.name}",
             description=f"Alternative approach after failure: {error}",
             step_type=StepType.REASONING,
-            dependencies=[s.id for s in plan.steps if s.status == PlanStatus.COMPLETED]
+            dependencies=[s.id for s in plan.steps if s.status == PlanStatus.COMPLETED],
         )
 
         # Create new plan with recovery
-        new_steps = [
-            s for s in plan.steps
-            if s.status == PlanStatus.COMPLETED
-        ]
+        new_steps = [s for s in plan.steps if s.status == PlanStatus.COMPLETED]
         new_steps.append(recovery_step)
 
         # Add remaining steps with updated dependencies
@@ -651,7 +632,7 @@ class Planner:
             id=f"{plan.id}_recovery",
             goal=plan.goal,
             steps=new_steps,
-            context={**plan.context, "recovery_from": plan.id}
+            context={**plan.context, "recovery_from": plan.id},
         )
 
 
@@ -661,10 +642,7 @@ class PlanExecutor:
     """
 
     def __init__(
-        self,
-        tool_registry: ToolRegistry,
-        planner: Planner,
-        max_concurrent: int = 3
+        self, tool_registry: ToolRegistry, planner: Planner, max_concurrent: int = 3
     ):
         self.tools = tool_registry
         self.planner = planner
@@ -674,9 +652,7 @@ class PlanExecutor:
         self.state: Set[str] = set()
 
     async def execute_plan(
-        self,
-        plan: Plan,
-        on_step_complete: Optional[Callable[[PlanStep], None]] = None
+        self, plan: Plan, on_step_complete: Optional[Callable[[PlanStep], None]] = None
     ) -> Dict[str, Any]:
         """Execute a plan to completion."""
         plan.status = PlanStatus.IN_PROGRESS
@@ -686,7 +662,9 @@ class PlanExecutor:
         self.state = set(plan.context.get("state", set()))
 
         # Evidence gate: if plan requires verification and context is unverified, block
-        if plan.context.get("require_verified") and not plan.context.get("verified", True):
+        if plan.context.get("require_verified") and not plan.context.get(
+            "verified", True
+        ):
             plan.status = PlanStatus.BLOCKED
             msg = "Plan blocked: upstream reasoning unverified."
             self.warnings.append(msg)
@@ -694,7 +672,7 @@ class PlanExecutor:
                 "success": False,
                 "error": msg,
                 "completed": 0.0,
-                "warnings": self.warnings
+                "warnings": self.warnings,
             }
 
         while not plan.is_complete:
@@ -708,7 +686,7 @@ class PlanExecutor:
                     return {
                         "success": False,
                         "error": "Plan blocked - no steps can execute",
-                        "completed": plan.progress
+                        "completed": plan.progress,
                     }
                 break
 
@@ -721,14 +699,14 @@ class PlanExecutor:
                     "success": False,
                     "error": "Plan blocked - preconditions unmet",
                     "completed": plan.progress,
-                    "warnings": self.warnings
+                    "warnings": self.warnings,
                 }
 
             # Execute ready steps (up to max_concurrent)
-            batch = runnable[:self.max_concurrent]
-            results = await asyncio.gather(*[
-                self._execute_step(step) for step in batch
-            ], return_exceptions=True)
+            batch = runnable[: self.max_concurrent]
+            results = await asyncio.gather(
+                *[self._execute_step(step) for step in batch], return_exceptions=True
+            )
 
             # Process results
             for step, result in zip(batch, results):
@@ -764,10 +742,12 @@ class PlanExecutor:
             "goal": plan.goal,
             "success": plan.status == PlanStatus.COMPLETED,
             "duration_ms": elapsed,
-            "steps_completed": sum(1 for s in plan.steps if s.status == PlanStatus.COMPLETED),
+            "steps_completed": sum(
+                1 for s in plan.steps if s.status == PlanStatus.COMPLETED
+            ),
             "total_steps": len(plan.steps),
             "warnings": self.warnings,
-            "state": list(self.state)
+            "state": list(self.state),
         }
         self.execution_history.append(execution_record)
 
@@ -787,11 +767,12 @@ class PlanExecutor:
 
                 validation_error = tool.validate_args(step.tool_args)
                 if validation_error:
-                    raise ValueError(f"Invalid arguments for {tool.name}: {validation_error}")
+                    raise ValueError(
+                        f"Invalid arguments for {tool.name}: {validation_error}"
+                    )
 
                 result = await asyncio.wait_for(
-                    tool.execute(**step.tool_args),
-                    timeout=step.timeout_seconds
+                    tool.execute(**step.tool_args), timeout=step.timeout_seconds
                 )
 
                 elapsed = (datetime.now() - start_time).total_seconds() * 1000
@@ -844,11 +825,7 @@ class PlanningSystem:
         self.tool_registry.register(FactCheckTool(), ["fact_check", "verify"])
         self.tool_registry.register(CalculationTool(), ["calc", "math"])
 
-    def register_tool(
-        self,
-        tool: Tool,
-        aliases: Optional[List[str]] = None
-    ) -> None:
+    def register_tool(self, tool: Tool, aliases: Optional[List[str]] = None) -> None:
         """Register a custom tool."""
         self.tool_registry.register(tool, aliases)
 
@@ -857,7 +834,7 @@ class PlanningSystem:
         goal: str,
         strategy: str = "linear",
         context: Optional[Dict[str, Any]] = None,
-        on_progress: Optional[Callable[[float], None]] = None
+        on_progress: Optional[Callable[[float], None]] = None,
     ) -> Dict[str, Any]:
         """Plan and execute a goal."""
         # Create plan
@@ -875,15 +852,11 @@ class PlanningSystem:
                 "id": plan.id,
                 "goal": plan.goal,
                 "steps": [
-                    {
-                        "name": s.name,
-                        "status": s.status.value,
-                        "result": s.result
-                    }
+                    {"name": s.name, "status": s.status.value, "result": s.result}
                     for s in plan.steps
-                ]
+                ],
             },
-            "execution": result
+            "execution": result,
         }
 
     def list_tools(self) -> List[Dict[str, Any]]:
@@ -895,5 +868,5 @@ class PlanningSystem:
         return {
             "tool_usage": self.tool_registry.usage_stats,
             "plans_executed": len(self.executor.execution_history),
-            "execution_history": self.executor.execution_history[-10:]  # Last 10
+            "execution_history": self.executor.execution_history[-10:],  # Last 10
         }

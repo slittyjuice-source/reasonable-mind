@@ -67,7 +67,9 @@ def test_reasoning_result_flags_missing_citations():
     fake_result["warnings"] = guard["warnings"]
 
     if not fake_result["knowledge_used"]:
-        fake_result["warnings"].append("Conclusion has no cited facts; treat as ungrounded.")
+        fake_result["warnings"].append(
+            "Conclusion has no cited facts; treat as ungrounded."
+        )
         fake_result["confidence"] *= 0.8
 
     assert any("no cited facts" in w.lower() for w in fake_result["warnings"])

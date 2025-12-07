@@ -18,6 +18,7 @@ import statistics
 
 class DifficultyLevel(Enum):
     """Difficulty levels for curriculum."""
+
     EASY = 1
     MEDIUM = 2
     HARD = 3
@@ -26,6 +27,7 @@ class DifficultyLevel(Enum):
 
 class EvalMetric(Enum):
     """Evaluation metrics."""
+
     ACCURACY = "accuracy"
     VALIDITY = "validity"  # Logical validity
     SOUNDNESS = "soundness"  # Soundness of reasoning
@@ -38,6 +40,7 @@ class EvalMetric(Enum):
 @dataclass
 class EvalExample:
     """A single evaluation example."""
+
     example_id: str
     difficulty: DifficultyLevel
     input_text: str
@@ -50,6 +53,7 @@ class EvalExample:
 @dataclass
 class EvalResult:
     """Result of evaluating one example."""
+
     example_id: str
     predicted: Any
     expected: Any
@@ -63,6 +67,7 @@ class EvalResult:
 @dataclass
 class EvalReport:
     """Complete evaluation report."""
+
     run_id: str
     timestamp: str
     total_examples: int
@@ -89,9 +94,7 @@ class Dataset(ABC):
 
     @abstractmethod
     def get_examples(
-        self,
-        difficulty: Optional[DifficultyLevel] = None,
-        limit: Optional[int] = None
+        self, difficulty: Optional[DifficultyLevel] = None, limit: Optional[int] = None
     ) -> List[EvalExample]:
         """Get examples from the dataset."""
         ...
@@ -124,9 +127,7 @@ class LogicDataset(Dataset):
         return "logic"
 
     def get_examples(
-        self,
-        difficulty: Optional[DifficultyLevel] = None,
-        limit: Optional[int] = None
+        self, difficulty: Optional[DifficultyLevel] = None, limit: Optional[int] = None
     ) -> List[EvalExample]:
         examples = self._examples
 
@@ -148,7 +149,7 @@ class LogicDataset(Dataset):
                 input_text="If it rains, the ground is wet. It is raining. Is the ground wet?",
                 expected_output={"valid": True, "conclusion": "The ground is wet"},
                 domain="logic",
-                tags=["modus_ponens", "basic"]
+                tags=["modus_ponens", "basic"],
             ),
             EvalExample(
                 example_id="logic_e2",
@@ -156,7 +157,7 @@ class LogicDataset(Dataset):
                 input_text="All dogs are animals. Fido is a dog. Is Fido an animal?",
                 expected_output={"valid": True, "conclusion": "Fido is an animal"},
                 domain="logic",
-                tags=["syllogism", "basic"]
+                tags=["syllogism", "basic"],
             ),
             # Medium - Chain reasoning
             EvalExample(
@@ -165,7 +166,7 @@ class LogicDataset(Dataset):
                 input_text="If A then B. If B then C. If C then D. A is true. What follows?",
                 expected_output={"valid": True, "conclusion": "D is true"},
                 domain="logic",
-                tags=["chain_reasoning", "hypothetical_syllogism"]
+                tags=["chain_reasoning", "hypothetical_syllogism"],
             ),
             EvalExample(
                 example_id="logic_m2",
@@ -173,7 +174,7 @@ class LogicDataset(Dataset):
                 input_text="Either it's Monday or it's a holiday. It's not Monday. Is it a holiday?",
                 expected_output={"valid": True, "conclusion": "It is a holiday"},
                 domain="logic",
-                tags=["disjunctive_syllogism"]
+                tags=["disjunctive_syllogism"],
             ),
             # Hard - Fallacy detection
             EvalExample(
@@ -182,16 +183,16 @@ class LogicDataset(Dataset):
                 input_text="If I study, I'll pass. I passed. Therefore, I studied. Is this valid?",
                 expected_output={"valid": False, "fallacy": "affirming_the_consequent"},
                 domain="logic",
-                tags=["fallacy", "affirming_consequent"]
+                tags=["fallacy", "affirming_consequent"],
             ),
             EvalExample(
                 example_id="logic_h2",
                 difficulty=DifficultyLevel.HARD,
                 input_text="All philosophers are thinkers. Some thinkers are writers. "
-                          "Therefore, some philosophers are writers. Valid?",
+                "Therefore, some philosophers are writers. Valid?",
                 expected_output={"valid": False, "fallacy": "undistributed_middle"},
                 domain="logic",
-                tags=["fallacy", "syllogism"]
+                tags=["fallacy", "syllogism"],
             ),
             # Expert - Complex modal logic
             EvalExample(
@@ -200,16 +201,19 @@ class LogicDataset(Dataset):
                 input_text="Necessarily, if P then Q. Possibly P. Does it follow that possibly Q?",
                 expected_output={"valid": True, "modal": "K_axiom"},
                 domain="logic",
-                tags=["modal_logic", "necessity", "possibility"]
+                tags=["modal_logic", "necessity", "possibility"],
             ),
             EvalExample(
                 example_id="logic_x2",
                 difficulty=DifficultyLevel.EXPERT,
                 input_text="If it's known that P, then P is true. P is known. But is it "
-                          "known that it's known that P?",
-                expected_output={"valid": "depends", "note": "Requires KK principle assumption"},
+                "known that it's known that P?",
+                expected_output={
+                    "valid": "depends",
+                    "note": "Requires KK principle assumption",
+                },
                 domain="logic",
-                tags=["epistemic_logic", "KK_principle"]
+                tags=["epistemic_logic", "KK_principle"],
             ),
         ]
 
@@ -229,9 +233,7 @@ class ArgumentDataset(Dataset):
         return "argumentation"
 
     def get_examples(
-        self,
-        difficulty: Optional[DifficultyLevel] = None,
-        limit: Optional[int] = None
+        self, difficulty: Optional[DifficultyLevel] = None, limit: Optional[int] = None
     ) -> List[EvalExample]:
         examples = self._examples
 
@@ -251,52 +253,52 @@ class ArgumentDataset(Dataset):
                 example_id="arg_e1",
                 difficulty=DifficultyLevel.EASY,
                 input_text="Premise: Regular exercise improves health. "
-                          "Conclusion: You should exercise regularly.",
+                "Conclusion: You should exercise regularly.",
                 expected_output={"strength": "strong", "type": "practical"},
                 domain="argumentation",
-                tags=["practical_reasoning"]
+                tags=["practical_reasoning"],
             ),
             # Medium
             EvalExample(
                 example_id="arg_m1",
                 difficulty=DifficultyLevel.MEDIUM,
                 input_text="Studies show 70% of experts agree on climate change. "
-                          "Therefore, climate change is real.",
+                "Therefore, climate change is real.",
                 expected_output={
                     "strength": "moderate",
                     "type": "appeal_to_authority",
-                    "weakness": "percentage_appeal"
+                    "weakness": "percentage_appeal",
                 },
                 domain="argumentation",
-                tags=["inductive", "authority"]
+                tags=["inductive", "authority"],
             ),
             # Hard
             EvalExample(
                 example_id="arg_h1",
                 difficulty=DifficultyLevel.HARD,
                 input_text="Einstein believed in God. Einstein was a genius. "
-                          "Therefore, believing in God is rational.",
+                "Therefore, believing in God is rational.",
                 expected_output={
                     "valid": False,
                     "fallacy": "appeal_to_authority",
-                    "note": "Expertise doesn't transfer between domains"
+                    "note": "Expertise doesn't transfer between domains",
                 },
                 domain="argumentation",
-                tags=["fallacy", "authority"]
+                tags=["fallacy", "authority"],
             ),
             # Expert
             EvalExample(
                 example_id="arg_x1",
                 difficulty=DifficultyLevel.EXPERT,
                 input_text="Consider Gettier cases: Smith has a justified true belief "
-                          "but arrived at it through false premises. Is this knowledge?",
+                "but arrived at it through false premises. Is this knowledge?",
                 expected_output={
                     "analysis": "No by standard JTB+",
                     "frameworks": ["JTB", "reliabilism", "virtue_epistemology"],
-                    "note": "Requires philosophical analysis"
+                    "note": "Requires philosophical analysis",
                 },
                 domain="argumentation",
-                tags=["epistemology", "gettier", "knowledge"]
+                tags=["epistemology", "gettier", "knowledge"],
             ),
         ]
 
@@ -318,7 +320,7 @@ class Evaluator:
         self,
         model_fn: Callable[[str], Dict[str, Any]],
         examples: List[EvalExample],
-        scoring_method: str = "exact_match"
+        scoring_method: str = "exact_match",
     ) -> List[EvalResult]:
         """Evaluate model on examples."""
         results = []
@@ -336,26 +338,30 @@ class Evaluator:
 
                 correct, score = scorer(predicted, example.expected_output)
 
-                results.append(EvalResult(
-                    example_id=example.example_id,
-                    predicted=predicted,
-                    expected=example.expected_output,
-                    correct=correct,
-                    confidence=confidence,
-                    latency_ms=elapsed,
-                    metrics={"score": score}
-                ))
+                results.append(
+                    EvalResult(
+                        example_id=example.example_id,
+                        predicted=predicted,
+                        expected=example.expected_output,
+                        correct=correct,
+                        confidence=confidence,
+                        latency_ms=elapsed,
+                        metrics={"score": score},
+                    )
+                )
 
             except Exception as e:
-                results.append(EvalResult(
-                    example_id=example.example_id,
-                    predicted=None,
-                    expected=example.expected_output,
-                    correct=False,
-                    confidence=0.0,
-                    latency_ms=0.0,
-                    error=str(e)
-                ))
+                results.append(
+                    EvalResult(
+                        example_id=example.example_id,
+                        predicted=None,
+                        expected=example.expected_output,
+                        correct=False,
+                        confidence=0.0,
+                        latency_ms=0.0,
+                        error=str(e),
+                    )
+                )
 
         return results
 
@@ -365,7 +371,8 @@ class Evaluator:
             # For dict expected, check key fields
             if isinstance(predicted, dict):
                 matches = sum(
-                    1 for k, v in expected.items()
+                    1
+                    for k, v in expected.items()
                     if k in predicted and predicted[k] == v
                 )
                 score = matches / len(expected) if expected else 0
@@ -448,7 +455,7 @@ class EvalHarness:
         model_fn: Callable[[str], Dict[str, Any]],
         dataset_name: str,
         difficulty: Optional[DifficultyLevel] = None,
-        scoring_method: str = "validity"
+        scoring_method: str = "validity",
     ) -> EvalReport:
         """Run evaluation on a dataset."""
         import hashlib
@@ -478,7 +485,7 @@ class EvalHarness:
             results=results,
             aggregate_metrics=aggregate,
             by_difficulty=by_difficulty,
-            by_domain=by_domain
+            by_domain=by_domain,
         )
 
         self.run_history.append(report)
@@ -488,7 +495,7 @@ class EvalHarness:
         self,
         model_fn: Callable[[str], Dict[str, Any]],
         dataset_name: str,
-        passing_threshold: float = 0.7
+        passing_threshold: float = 0.7,
     ) -> Dict[str, Any]:
         """Run curriculum-based evaluation with progression."""
         if dataset_name not in self.datasets:
@@ -509,7 +516,7 @@ class EvalHarness:
                 "difficulty": difficulty.name,
                 "accuracy": accuracy,
                 "passed": accuracy >= passing_threshold,
-                "examples_tested": len(examples)
+                "examples_tested": len(examples),
             }
             progression.append(level_result)
 
@@ -525,14 +532,10 @@ class EvalHarness:
         return {
             "progression": progression,
             "max_level_passed": max_level,
-            "curriculum_complete": len(progression) == len(DifficultyLevel)
+            "curriculum_complete": len(progression) == len(DifficultyLevel),
         }
 
-    def compare_runs(
-        self,
-        run_id_1: str,
-        run_id_2: str
-    ) -> Dict[str, Any]:
+    def compare_runs(self, run_id_1: str, run_id_2: str) -> Dict[str, Any]:
         """Compare two evaluation runs."""
         run1 = next((r for r in self.run_history if r.run_id == run_id_1), None)
         run2 = next((r for r in self.run_history if r.run_id == run_id_2), None)
@@ -544,7 +547,7 @@ class EvalHarness:
             "run_1": run_id_1,
             "run_2": run_id_2,
             "metric_changes": {},
-            "by_difficulty_changes": {}
+            "by_difficulty_changes": {},
         }
 
         # Compare aggregate metrics
@@ -555,7 +558,7 @@ class EvalHarness:
                     "run_1": run1.aggregate_metrics[metric],
                     "run_2": run2.aggregate_metrics[metric],
                     "delta": delta,
-                    "improved": delta > 0
+                    "improved": delta > 0,
                 }
 
         # Compare by difficulty
@@ -566,15 +569,12 @@ class EvalHarness:
                 comparison["by_difficulty_changes"][diff] = {
                     "run_1": acc1,
                     "run_2": acc2,
-                    "delta": acc2 - acc1
+                    "delta": acc2 - acc1,
                 }
 
         return comparison
 
-    def _calculate_aggregates(
-        self,
-        results: List[EvalResult]
-    ) -> Dict[str, float]:
+    def _calculate_aggregates(self, results: List[EvalResult]) -> Dict[str, float]:
         """Calculate aggregate metrics."""
         if not results:
             return {}
@@ -600,13 +600,11 @@ class EvalHarness:
             "avg_latency_ms": statistics.mean(latencies) if latencies else 0,
             "median_latency_ms": statistics.median(latencies) if latencies else 0,
             "avg_confidence": statistics.mean(confidences) if confidences else 0,
-            "calibration_error": ece
+            "calibration_error": ece,
         }
 
     def _group_by_difficulty(
-        self,
-        results: List[EvalResult],
-        examples: List[EvalExample]
+        self, results: List[EvalResult], examples: List[EvalExample]
     ) -> Dict[str, Dict[str, float]]:
         """Group results by difficulty level."""
         example_map = {e.example_id: e for e in examples}
@@ -626,9 +624,7 @@ class EvalHarness:
         }
 
     def _group_by_domain(
-        self,
-        results: List[EvalResult],
-        examples: List[EvalExample]
+        self, results: List[EvalResult], examples: List[EvalExample]
     ) -> Dict[str, Dict[str, float]]:
         """Group results by domain."""
         example_map = {e.example_id: e for e in examples}
@@ -662,11 +658,7 @@ class CurriculumLearner:
         self.demotion_threshold = 0.5
         self.min_examples_for_change = 10
 
-    def get_next_examples(
-        self,
-        dataset_name: str,
-        count: int = 5
-    ) -> List[EvalExample]:
+    def get_next_examples(self, dataset_name: str, count: int = 5) -> List[EvalExample]:
         """Get next examples based on current curriculum level."""
         if dataset_name not in self.harness.datasets:
             raise ValueError(f"Unknown dataset: {dataset_name}")
@@ -677,11 +669,7 @@ class CurriculumLearner:
         examples = dataset.get_examples(difficulty=current, limit=count)
         return examples
 
-    def record_performance(
-        self,
-        dataset_name: str,
-        accuracy: float
-    ) -> Dict[str, Any]:
+    def record_performance(self, dataset_name: str, accuracy: float) -> Dict[str, Any]:
         """Record performance and adjust curriculum."""
         if dataset_name not in self.performance_history:
             self.performance_history[dataset_name] = []
@@ -692,12 +680,14 @@ class CurriculumLearner:
         history = self.performance_history[dataset_name]
         if len(history) < self.min_examples_for_change:
             return {
-                "level": self.current_level.get(dataset_name, DifficultyLevel.EASY).name,
+                "level": self.current_level.get(
+                    dataset_name, DifficultyLevel.EASY
+                ).name,
                 "action": "continue",
-                "recent_avg": statistics.mean(history)
+                "recent_avg": statistics.mean(history),
             }
 
-        recent_avg = statistics.mean(history[-self.min_examples_for_change:])
+        recent_avg = statistics.mean(history[-self.min_examples_for_change :])
         current = self.current_level.get(dataset_name, DifficultyLevel.EASY)
 
         action = "continue"
@@ -721,14 +711,16 @@ class CurriculumLearner:
         return {
             "level": self.current_level.get(dataset_name, DifficultyLevel.EASY).name,
             "action": action,
-            "recent_avg": recent_avg
+            "recent_avg": recent_avg,
         }
 
     def get_status(self, dataset_name: str) -> Dict[str, Any]:
         """Get current curriculum status."""
         return {
             "dataset": dataset_name,
-            "current_level": self.current_level.get(dataset_name, DifficultyLevel.EASY).name,
+            "current_level": self.current_level.get(
+                dataset_name, DifficultyLevel.EASY
+            ).name,
             "examples_at_level": len(self.performance_history.get(dataset_name, [])),
-            "recent_performance": self.performance_history.get(dataset_name, [])[-10:]
+            "recent_performance": self.performance_history.get(dataset_name, [])[-10:],
         }

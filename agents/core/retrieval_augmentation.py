@@ -18,6 +18,7 @@ import math
 
 class ChunkingStrategy(Enum):
     """Strategies for document chunking."""
+
     FIXED_SIZE = "fixed_size"  # Fixed token/character count
     SENTENCE = "sentence"  # Split on sentences
     PARAGRAPH = "paragraph"  # Split on paragraphs
@@ -27,6 +28,7 @@ class ChunkingStrategy(Enum):
 
 class RetrievalMode(Enum):
     """Retrieval modes."""
+
     DENSE = "dense"  # Vector similarity only
     SPARSE = "sparse"  # Keyword/BM25 only
     HYBRID = "hybrid"  # Combination of dense and sparse
@@ -35,6 +37,7 @@ class RetrievalMode(Enum):
 @dataclass
 class Chunk:
     """A chunk of text with metadata."""
+
     chunk_id: str
     content: str
     source_id: str
@@ -60,6 +63,7 @@ class Chunk:
 @dataclass
 class RetrievedDocument:
     """A retrieved document with relevance info."""
+
     doc_id: str
     content: str
     score: float
@@ -72,6 +76,7 @@ class RetrievedDocument:
 @dataclass
 class QueryExpansion:
     """Expanded query with variants."""
+
     original_query: str
     expanded_terms: List[str]
     synonyms: Dict[str, List[str]]
@@ -89,6 +94,7 @@ class QueryExpansion:
 @dataclass
 class RetrievalResult:
     """Result of a retrieval operation."""
+
     query: str
     documents: List[RetrievedDocument]
     total_candidates: int
@@ -120,7 +126,7 @@ class TextChunker:
         strategy: ChunkingStrategy = ChunkingStrategy.SEMANTIC,
         chunk_size: int = 512,
         chunk_overlap: int = 50,
-        min_chunk_size: int = 100
+        min_chunk_size: int = 100,
     ):
         self.strategy = strategy
         self.chunk_size = chunk_size
@@ -128,27 +134,22 @@ class TextChunker:
         self.min_chunk_size = min_chunk_size
 
         # Sentence boundary patterns
-        self._sentence_pattern = re.compile(
-            r'(?<=[.!?])\s+(?=[A-Z])|(?<=[.!?])\s*\n'
-        )
+        self._sentence_pattern = re.compile(r"(?<=[.!?])\s+(?=[A-Z])|(?<=[.!?])\s*\n")
 
         # Paragraph boundary
-        self._paragraph_pattern = re.compile(r'\n\s*\n')
+        self._paragraph_pattern = re.compile(r"\n\s*\n")
 
         # Semantic boundary indicators
         self._semantic_markers = [
-            r'^#{1,6}\s+',  # Markdown headers
-            r'^(?:def|class|function)\s+',  # Code definitions
-            r'^\d+\.\s+',  # Numbered lists
-            r'^[-*]\s+',  # Bullet points
-            r'^```',  # Code blocks
+            r"^#{1,6}\s+",  # Markdown headers
+            r"^(?:def|class|function)\s+",  # Code definitions
+            r"^\d+\.\s+",  # Numbered lists
+            r"^[-*]\s+",  # Bullet points
+            r"^```",  # Code blocks
         ]
 
     def chunk(
-        self,
-        text: str,
-        source_id: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, text: str, source_id: str, metadata: Optional[Dict[str, Any]] = None
     ) -> List[Chunk]:
         """Chunk text using the configured strategy."""
         if self.strategy == ChunkingStrategy.FIXED_SIZE:
@@ -163,10 +164,7 @@ class TextChunker:
             return self._chunk_recursive(text, source_id, metadata)
 
     def _chunk_fixed(
-        self,
-        text: str,
-        source_id: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, text: str, source_id: str, metadata: Optional[Dict[str, Any]] = None
     ) -> List[Chunk]:
         """Split into fixed-size chunks with overlap."""
         chunks = []
@@ -178,7 +176,7 @@ class TextChunker:
 
             # Try to break at word boundary
             if end < len(text):
-                while end > start and text[end] not in ' \n\t':
+                while end > start and text[end] not in " \n\t":
                     end -= 1
                 if end == start:
                     end = start + self.chunk_size
@@ -186,15 +184,17 @@ class TextChunker:
             content = text[start:end].strip()
 
             if len(content) >= self.min_chunk_size:
-                chunks.append(Chunk(
-                    chunk_id=f"{source_id}_chunk_{chunk_idx}",
-                    content=content,
-                    source_id=source_id,
-                    start_offset=start,
-                    end_offset=end,
-                    metadata=metadata or {},
-                    token_count=len(content.split())
-                ))
+                chunks.append(
+                    Chunk(
+                        chunk_id=f"{source_id}_chunk_{chunk_idx}",
+                        content=content,
+                        source_id=source_id,
+                        start_offset=start,
+                        end_offset=end,
+                        metadata=metadata or {},
+                        token_count=len(content.split()),
+                    )
+                )
                 chunk_idx += 1
 
             start = end - self.chunk_overlap
@@ -204,10 +204,7 @@ class TextChunker:
         return chunks
 
     def _chunk_sentences(
-        self,
-        text: str,
-        source_id: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, text: str, source_id: str, metadata: Optional[Dict[str, Any]] = None
     ) -> List[Chunk]:
         """Split on sentence boundaries."""
         sentences = self._sentence_pattern.split(text)
@@ -225,15 +222,17 @@ class TextChunker:
                 current_chunk += (" " if current_chunk else "") + sentence
             else:
                 if len(current_chunk) >= self.min_chunk_size:
-                    chunks.append(Chunk(
-                        chunk_id=f"{source_id}_chunk_{chunk_idx}",
-                        content=current_chunk,
-                        source_id=source_id,
-                        start_offset=start_offset,
-                        end_offset=start_offset + len(current_chunk),
-                        metadata=metadata or {},
-                        token_count=len(current_chunk.split())
-                    ))
+                    chunks.append(
+                        Chunk(
+                            chunk_id=f"{source_id}_chunk_{chunk_idx}",
+                            content=current_chunk,
+                            source_id=source_id,
+                            start_offset=start_offset,
+                            end_offset=start_offset + len(current_chunk),
+                            metadata=metadata or {},
+                            token_count=len(current_chunk.split()),
+                        )
+                    )
                     chunk_idx += 1
                     start_offset += len(current_chunk)
 
@@ -241,23 +240,22 @@ class TextChunker:
 
         # Don't forget the last chunk
         if current_chunk and len(current_chunk) >= self.min_chunk_size:
-            chunks.append(Chunk(
-                chunk_id=f"{source_id}_chunk_{chunk_idx}",
-                content=current_chunk,
-                source_id=source_id,
-                start_offset=start_offset,
-                end_offset=start_offset + len(current_chunk),
-                metadata=metadata or {},
-                token_count=len(current_chunk.split())
-            ))
+            chunks.append(
+                Chunk(
+                    chunk_id=f"{source_id}_chunk_{chunk_idx}",
+                    content=current_chunk,
+                    source_id=source_id,
+                    start_offset=start_offset,
+                    end_offset=start_offset + len(current_chunk),
+                    metadata=metadata or {},
+                    token_count=len(current_chunk.split()),
+                )
+            )
 
         return chunks
 
     def _chunk_paragraphs(
-        self,
-        text: str,
-        source_id: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, text: str, source_id: str, metadata: Optional[Dict[str, Any]] = None
     ) -> List[Chunk]:
         """Split on paragraph boundaries."""
         paragraphs = self._paragraph_pattern.split(text)
@@ -275,38 +273,39 @@ class TextChunker:
                 current_chunk += ("\n\n" if current_chunk else "") + paragraph
             else:
                 if len(current_chunk) >= self.min_chunk_size:
-                    chunks.append(Chunk(
-                        chunk_id=f"{source_id}_chunk_{chunk_idx}",
-                        content=current_chunk,
-                        source_id=source_id,
-                        start_offset=start_offset,
-                        end_offset=start_offset + len(current_chunk),
-                        metadata=metadata or {},
-                        token_count=len(current_chunk.split())
-                    ))
+                    chunks.append(
+                        Chunk(
+                            chunk_id=f"{source_id}_chunk_{chunk_idx}",
+                            content=current_chunk,
+                            source_id=source_id,
+                            start_offset=start_offset,
+                            end_offset=start_offset + len(current_chunk),
+                            metadata=metadata or {},
+                            token_count=len(current_chunk.split()),
+                        )
+                    )
                     chunk_idx += 1
                     start_offset += len(current_chunk)
 
                 current_chunk = paragraph
 
         if current_chunk and len(current_chunk) >= self.min_chunk_size:
-            chunks.append(Chunk(
-                chunk_id=f"{source_id}_chunk_{chunk_idx}",
-                content=current_chunk,
-                source_id=source_id,
-                start_offset=start_offset,
-                end_offset=start_offset + len(current_chunk),
-                metadata=metadata or {},
-                token_count=len(current_chunk.split())
-            ))
+            chunks.append(
+                Chunk(
+                    chunk_id=f"{source_id}_chunk_{chunk_idx}",
+                    content=current_chunk,
+                    source_id=source_id,
+                    start_offset=start_offset,
+                    end_offset=start_offset + len(current_chunk),
+                    metadata=metadata or {},
+                    token_count=len(current_chunk.split()),
+                )
+            )
 
         return chunks
 
     def _chunk_semantic(
-        self,
-        text: str,
-        source_id: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, text: str, source_id: str, metadata: Optional[Dict[str, Any]] = None
     ) -> List[Chunk]:
         """Split on semantic boundaries (headers, code blocks, etc.)."""
         # Find all semantic boundary positions
@@ -332,7 +331,9 @@ class TextChunker:
             if len(content) >= self.min_chunk_size:
                 # If chunk is too large, split further
                 if len(content) > self.chunk_size:
-                    sub_chunks = self._chunk_fixed(content, f"{source_id}_sub", metadata)
+                    sub_chunks = self._chunk_fixed(
+                        content, f"{source_id}_sub", metadata
+                    )
                     for sub in sub_chunks:
                         sub.chunk_id = f"{source_id}_chunk_{chunk_idx}"
                         sub.start_offset += start
@@ -340,24 +341,23 @@ class TextChunker:
                         chunks.append(sub)
                         chunk_idx += 1
                 else:
-                    chunks.append(Chunk(
-                        chunk_id=f"{source_id}_chunk_{chunk_idx}",
-                        content=content,
-                        source_id=source_id,
-                        start_offset=start,
-                        end_offset=end,
-                        metadata=metadata or {},
-                        token_count=len(content.split())
-                    ))
+                    chunks.append(
+                        Chunk(
+                            chunk_id=f"{source_id}_chunk_{chunk_idx}",
+                            content=content,
+                            source_id=source_id,
+                            start_offset=start,
+                            end_offset=end,
+                            metadata=metadata or {},
+                            token_count=len(content.split()),
+                        )
+                    )
                     chunk_idx += 1
 
         return chunks
 
     def _chunk_recursive(
-        self,
-        text: str,
-        source_id: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, text: str, source_id: str, metadata: Optional[Dict[str, Any]] = None
     ) -> List[Chunk]:
         """Recursive splitting with fallback to simpler strategies."""
         # Try semantic first
@@ -411,7 +411,7 @@ class QueryExpander:
             original_query=query,
             expanded_terms=expanded_terms,
             synonyms=synonyms_found,
-            reformulations=reformulations
+            reformulations=reformulations,
         )
 
     def _generate_reformulations(self, query: str) -> List[str]:
@@ -421,8 +421,10 @@ class QueryExpander:
         # Question to statement
         if query.lower().startswith(("what", "how", "why", "when", "where")):
             # Remove question word and question mark
-            statement = re.sub(r'^(what|how|why|when|where)\s+', '', query, flags=re.IGNORECASE)
-            statement = statement.rstrip('?')
+            statement = re.sub(
+                r"^(what|how|why|when|where)\s+", "", query, flags=re.IGNORECASE
+            )
+            statement = statement.rstrip("?")
             reformulations.append(statement)
 
         # Add context hints
@@ -441,7 +443,7 @@ class QueryExpander:
         templates = [
             f"The answer to '{query}' is that",
             f"When asked about {query}, the response should explain that",
-            f"Regarding {query}, it is important to note that"
+            f"Regarding {query}, it is important to note that",
         ]
         return templates[0]  # Would use LLM in production
 
@@ -526,14 +528,11 @@ class Reranker:
             "position_bias": 0.1,
             "recency": 0.1,
             "source_quality": 0.2,
-            "semantic_similarity": 0.3
+            "semantic_similarity": 0.3,
         }
 
     def rerank(
-        self,
-        query: str,
-        documents: List[RetrievedDocument],
-        top_k: int = 10
+        self, query: str, documents: List[RetrievedDocument], top_k: int = 10
     ) -> List[RetrievedDocument]:
         """Re-rank documents using multiple signals."""
         if not documents:
@@ -546,8 +545,7 @@ class Reranker:
         for i, doc in enumerate(documents):
             features = self._extract_features(query_words, doc, i, len(documents))
             rerank_score = sum(
-                self._feature_weights.get(f, 0) * v
-                for f, v in features.items()
+                self._feature_weights.get(f, 0) * v for f, v in features.items()
             )
             scored_docs.append((doc, rerank_score))
 
@@ -563,11 +561,7 @@ class Reranker:
         return result
 
     def _extract_features(
-        self,
-        query_words: set,
-        doc: RetrievedDocument,
-        position: int,
-        total: int
+        self, query_words: set, doc: RetrievedDocument, position: int, total: int
     ) -> Dict[str, float]:
         """Extract features for reranking."""
         doc_words = set(doc.content.lower().split())
@@ -595,7 +589,7 @@ class Reranker:
             "position_bias": position_score,
             "recency": recency,
             "source_quality": source_quality,
-            "semantic_similarity": semantic
+            "semantic_similarity": semantic,
         }
 
 
@@ -605,11 +599,7 @@ class ContextCompressor:
     def __init__(self, max_tokens: int = 4000):
         self.max_tokens = max_tokens
 
-    def compress(
-        self,
-        documents: List[RetrievedDocument],
-        query: str
-    ) -> str:
+    def compress(self, documents: List[RetrievedDocument], query: str) -> str:
         """Compress documents into a context string."""
         # Estimate tokens (rough: 1 token ≈ 4 chars)
         total_tokens = 0
@@ -625,24 +615,21 @@ class ContextCompressor:
                 # Truncate this document
                 remaining_tokens = self.max_tokens - total_tokens
                 if remaining_tokens > 50:  # Only include if meaningful
-                    truncated = doc.content[:remaining_tokens * 4]
+                    truncated = doc.content[: remaining_tokens * 4]
                     # Try to break at sentence
-                    last_period = truncated.rfind('.')
+                    last_period = truncated.rfind(".")
                     if last_period > len(truncated) // 2:
-                        truncated = truncated[:last_period + 1]
+                        truncated = truncated[: last_period + 1]
                     selected_content.append(truncated + "...")
                 break
 
         return "\n\n---\n\n".join(selected_content)
 
     def extract_relevant_sentences(
-        self,
-        text: str,
-        query: str,
-        max_sentences: int = 10
+        self, text: str, query: str, max_sentences: int = 10
     ) -> str:
         """Extract most relevant sentences from text."""
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = re.split(r"(?<=[.!?])\s+", text)
         query_words = set(query.lower().split())
 
         # Score sentences by query word overlap
@@ -667,10 +654,7 @@ class HybridRetriever:
     """
 
     def __init__(
-        self,
-        dense_weight: float = 0.6,
-        sparse_weight: float = 0.4,
-        rrf_k: int = 60
+        self, dense_weight: float = 0.6, sparse_weight: float = 0.4, rrf_k: int = 60
     ):
         self.dense_weight = dense_weight
         self.sparse_weight = sparse_weight
@@ -691,7 +675,7 @@ class HybridRetriever:
         doc_id: str,
         content: str,
         embedding: Optional[List[float]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> List[Chunk]:
         """Add a document to the retriever."""
         self._documents[doc_id] = content
@@ -714,10 +698,11 @@ class HybridRetriever:
         top_k: int = 10,
         mode: RetrievalMode = RetrievalMode.HYBRID,
         expand_query: bool = True,
-        rerank: bool = True
+        rerank: bool = True,
     ) -> RetrievalResult:
         """Retrieve relevant documents."""
         import time
+
         start_time = time.time()
 
         # Query expansion
@@ -747,24 +732,17 @@ class HybridRetriever:
             total_candidates=len(self._documents),
             retrieval_time_ms=elapsed_ms,
             mode=mode,
-            query_expansion=expansion
+            query_expansion=expansion,
         )
 
-    def _dense_retrieve(
-        self,
-        query: str,
-        top_k: int
-    ) -> List[RetrievedDocument]:
+    def _dense_retrieve(self, query: str, top_k: int) -> List[RetrievedDocument]:
         """Dense retrieval using embeddings."""
         # In production, would use actual embedding model
         # For now, return empty (placeholder)
         return []
 
     def _sparse_retrieve(
-        self,
-        query: str,
-        expansion: Optional[QueryExpansion],
-        top_k: int
+        self, query: str, expansion: Optional[QueryExpansion], top_k: int
     ) -> List[RetrievedDocument]:
         """Sparse retrieval using BM25."""
         query_tokens = query.lower().split()
@@ -785,21 +763,20 @@ class HybridRetriever:
         # Create retrieved documents
         results = []
         for rank, (doc_id, score) in enumerate(scores[:top_k]):
-            results.append(RetrievedDocument(
-                doc_id=doc_id,
-                content=self._documents[doc_id],
-                score=score,
-                rank=rank + 1,
-                retrieval_method=RetrievalMode.SPARSE
-            ))
+            results.append(
+                RetrievedDocument(
+                    doc_id=doc_id,
+                    content=self._documents[doc_id],
+                    score=score,
+                    rank=rank + 1,
+                    retrieval_method=RetrievalMode.SPARSE,
+                )
+            )
 
         return results
 
     def _hybrid_retrieve(
-        self,
-        query: str,
-        expansion: Optional[QueryExpansion],
-        top_k: int
+        self, query: str, expansion: Optional[QueryExpansion], top_k: int
     ) -> List[RetrievedDocument]:
         """Hybrid retrieval with reciprocal rank fusion."""
         # Get results from both methods
@@ -810,35 +787,36 @@ class HybridRetriever:
         rrf_scores: Dict[str, float] = {}
 
         for rank, doc in enumerate(dense_results, 1):
-            rrf_scores[doc.doc_id] = rrf_scores.get(doc.doc_id, 0) + \
-                self.dense_weight / (self.rrf_k + rank)
+            rrf_scores[doc.doc_id] = rrf_scores.get(
+                doc.doc_id, 0
+            ) + self.dense_weight / (self.rrf_k + rank)
 
         for rank, doc in enumerate(sparse_results, 1):
-            rrf_scores[doc.doc_id] = rrf_scores.get(doc.doc_id, 0) + \
-                self.sparse_weight / (self.rrf_k + rank)
+            rrf_scores[doc.doc_id] = rrf_scores.get(
+                doc.doc_id, 0
+            ) + self.sparse_weight / (self.rrf_k + rank)
 
         # Sort by RRF score
-        sorted_ids = sorted(rrf_scores.keys(), key=lambda x: rrf_scores[x], reverse=True)
+        sorted_ids = sorted(
+            rrf_scores.keys(), key=lambda x: rrf_scores[x], reverse=True
+        )
 
         # Create result documents
         results = []
         for rank, doc_id in enumerate(sorted_ids[:top_k]):
-            results.append(RetrievedDocument(
-                doc_id=doc_id,
-                content=self._documents.get(doc_id, ""),
-                score=rrf_scores[doc_id],
-                rank=rank + 1,
-                retrieval_method=RetrievalMode.HYBRID
-            ))
+            results.append(
+                RetrievedDocument(
+                    doc_id=doc_id,
+                    content=self._documents.get(doc_id, ""),
+                    score=rrf_scores[doc_id],
+                    rank=rank + 1,
+                    retrieval_method=RetrievalMode.HYBRID,
+                )
+            )
 
         return results
 
-    def get_context(
-        self,
-        query: str,
-        top_k: int = 5,
-        max_tokens: int = 4000
-    ) -> str:
+    def get_context(self, query: str, top_k: int = 5, max_tokens: int = 4000) -> str:
         """Get compressed context for a query."""
         result = self.retrieve(query, top_k)
         self.compressor.max_tokens = max_tokens
@@ -854,7 +832,7 @@ class RAGPipeline:
         self,
         chunking_strategy: ChunkingStrategy = ChunkingStrategy.SEMANTIC,
         retrieval_mode: RetrievalMode = RetrievalMode.HYBRID,
-        max_context_tokens: int = 4000
+        max_context_tokens: int = 4000,
     ):
         self.retriever = HybridRetriever()
         self.retriever.chunker = TextChunker(strategy=chunking_strategy)
@@ -863,10 +841,7 @@ class RAGPipeline:
 
         self._indexed_count = 0
 
-    def add_documents(
-        self,
-        documents: List[Dict[str, Any]]
-    ) -> int:
+    def add_documents(self, documents: List[Dict[str, Any]]) -> int:
         """
         Add multiple documents to the pipeline.
 
@@ -887,10 +862,7 @@ class RAGPipeline:
         return added
 
     def query(
-        self,
-        query: str,
-        top_k: int = 5,
-        return_context: bool = True
+        self, query: str, top_k: int = 5, return_context: bool = True
     ) -> Dict[str, Any]:
         """
         Query the RAG pipeline.
@@ -898,11 +870,7 @@ class RAGPipeline:
         Returns retrieval results and optionally compressed context.
         """
         result = self.retriever.retrieve(
-            query,
-            top_k,
-            self.retrieval_mode,
-            expand_query=True,
-            rerank=True
+            query, top_k, self.retrieval_mode, expand_query=True, rerank=True
         )
 
         response = {
@@ -910,14 +878,16 @@ class RAGPipeline:
             "documents": [
                 {
                     "id": doc.doc_id,
-                    "content": doc.content[:500] + "..." if len(doc.content) > 500 else doc.content,
+                    "content": doc.content[:500] + "..."
+                    if len(doc.content) > 500
+                    else doc.content,
                     "score": doc.score,
-                    "rank": doc.rank
+                    "rank": doc.rank,
                 }
                 for doc in result.documents
             ],
             "total_candidates": result.total_candidates,
-            "retrieval_time_ms": result.retrieval_time_ms
+            "retrieval_time_ms": result.retrieval_time_ms,
         }
 
         if return_context:
@@ -928,7 +898,7 @@ class RAGPipeline:
         if result.query_expansion:
             response["query_expansion"] = {
                 "expanded_terms": result.query_expansion.expanded_terms,
-                "reformulations": result.query_expansion.reformulations
+                "reformulations": result.query_expansion.reformulations,
             }
 
         return response
@@ -938,18 +908,19 @@ class RAGPipeline:
         return {
             "indexed_documents": self._indexed_count,
             "retrieval_mode": self.retrieval_mode.value,
-            "max_context_tokens": self.max_context_tokens
+            "max_context_tokens": self.max_context_tokens,
         }
 
 
 # Convenience factory functions
+
 
 def create_semantic_rag(max_context_tokens: int = 4000) -> RAGPipeline:
     """Create a RAG pipeline with semantic chunking."""
     return RAGPipeline(
         chunking_strategy=ChunkingStrategy.SEMANTIC,
         retrieval_mode=RetrievalMode.HYBRID,
-        max_context_tokens=max_context_tokens
+        max_context_tokens=max_context_tokens,
     )
 
 
@@ -958,5 +929,5 @@ def create_simple_rag(max_context_tokens: int = 4000) -> RAGPipeline:
     return RAGPipeline(
         chunking_strategy=ChunkingStrategy.FIXED_SIZE,
         retrieval_mode=RetrievalMode.SPARSE,
-        max_context_tokens=max_context_tokens
+        max_context_tokens=max_context_tokens,
     )

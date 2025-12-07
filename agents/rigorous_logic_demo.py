@@ -23,14 +23,14 @@ from logic.grounding import (
     SemanticContext,
     create_ml_context,
     QuantifierType,
-    ModalityType
+    ModalityType,
 )
 from logic.epistemic import (
     EpistemicStatus,
     ConfidenceCalculator,
     ValidityChecker,
     ValidityStatus,
-    SoundnessStatus
+    SoundnessStatus,
 )
 
 
@@ -101,7 +101,9 @@ def demo_quantification_types():
         print(f"\n📝 '{statement}'")
         result = parser.parse(statement)
 
-        print(f"  Quantifier: {result.quantifier.value if result.quantifier else 'none'}")
+        print(
+            f"  Quantifier: {result.quantifier.value if result.quantifier else 'none'}"
+        )
         print(f"  Success: {result.success}")
 
         if result.success:
@@ -141,7 +143,7 @@ def demo_epistemic_vs_validity():
     status1 = checker.check_modus_ponens(
         "If Socrates is a fish, then Socrates can swim",
         "Socrates is a fish",
-        "Socrates can swim"
+        "Socrates can swim",
     )
 
     print(f"\n  Validity: {status1.validity.value}")
@@ -165,10 +167,11 @@ def demo_epistemic_vs_validity():
 
     # Detect the fallacy
     from logic.epistemic import ConfidenceCalculator
+
     fallacy = ConfidenceCalculator.detect_fallacy(
         ["Tech companies are successful", "Google is a tech company"],
         "Google is successful",
-        "modus_ponens"
+        "modus_ponens",
     )
 
     if fallacy:
@@ -206,7 +209,7 @@ def demo_confidence_propagation():
     breakdown = calc.multi_step_chain(
         premise_confidences=[0.7, 0.6],
         rule_confidences=[0.9],
-        rule_types=["universal_instantiation"]
+        rule_types=["universal_instantiation"],
     )
 
     print(f"\n🔬 Confidence Breakdown:")
@@ -285,21 +288,21 @@ def demo_fallacy_detection():
             "premises": ["If it rains, the ground is wet", "The ground is wet"],
             "conclusion": "It rained",
             "claimed_rule": "modus_ponens",
-            "expected_fallacy": "affirming_the_consequent"
+            "expected_fallacy": "affirming_the_consequent",
         },
         {
             "name": "Missing Universal Quantifier",
             "premises": ["Tech companies are successful", "Google is a tech company"],
             "conclusion": "Google is successful",
             "claimed_rule": "modus_ponens",
-            "expected_fallacy": "affirming_the_consequent"
+            "expected_fallacy": "affirming_the_consequent",
         },
         {
             "name": "Hasty Generalization",
             "premises": ["Some swans I've seen are white"],
             "conclusion": "All swans are white",
             "claimed_rule": "universal_generalization",
-            "expected_fallacy": "hasty_generalization"
+            "expected_fallacy": "hasty_generalization",
         },
     ]
 
@@ -310,16 +313,16 @@ def demo_fallacy_detection():
         print(f"  Claimed Rule: {case['claimed_rule']}")
 
         detected = calc.detect_fallacy(
-            case['premises'],
-            case['conclusion'],
-            case['claimed_rule']
+            case["premises"], case["conclusion"], case["claimed_rule"]
         )
 
         if detected:
             print(f"  🚨 FALLACY DETECTED: {detected}")
             print(f"  ✅ Matches expected: {detected == case['expected_fallacy']}")
         else:
-            print(f"  ❌ No fallacy detected (but expected: {case['expected_fallacy']})")
+            print(
+                f"  ❌ No fallacy detected (but expected: {case['expected_fallacy']})"
+            )
 
 
 def main():
@@ -355,6 +358,7 @@ def main():
         except Exception as e:
             print(f"\n❌ Error in {name}: {e}")
             import traceback
+
             traceback.print_exc()
 
     print("\n" + "=" * 70)

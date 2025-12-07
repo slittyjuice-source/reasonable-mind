@@ -25,9 +25,7 @@ class TestBarbaraForm:
     def test_valid_barbara(self):
         """Test valid Barbara syllogism."""
         result = validate_barbara(
-            "All mammals are animals",
-            "All dogs are mammals",
-            "All dogs are animals"
+            "All mammals are animals", "All dogs are mammals", "All dogs are animals"
         )
 
         assert result.is_valid is True
@@ -42,7 +40,7 @@ class TestBarbaraForm:
         result = validate_barbara(
             "All planets orbit stars",
             "All jupiters are planets",
-            "All jupiters orbit stars"
+            "All jupiters orbit stars",
         )
 
         assert result.is_valid is True
@@ -55,9 +53,7 @@ class TestCelarent:
     def test_valid_celarent(self):
         """Test valid Celarent syllogism."""
         syl = parse_syllogism(
-            "No mammals are reptiles",
-            "All dogs are mammals",
-            "No dogs are reptiles"
+            "No mammals are reptiles", "All dogs are mammals", "No dogs are reptiles"
         )
 
         engine = CategoricalEngine()
@@ -75,9 +71,7 @@ class TestDarii:
     def test_valid_darii(self):
         """Test valid Darii syllogism."""
         syl = parse_syllogism(
-            "All mammals are animals",
-            "Some pets are mammals",
-            "Some pets are animals"
+            "All mammals are animals", "Some pets are mammals", "Some pets are animals"
         )
 
         engine = CategoricalEngine()
@@ -96,7 +90,7 @@ class TestFerio:
         syl = parse_syllogism(
             "No reptiles are mammals",
             "Some pets are reptiles",
-            "Some pets are not mammals"
+            "Some pets are not mammals",
         )
 
         engine = CategoricalEngine()
@@ -114,9 +108,7 @@ class TestInvalidForms:
         """Test detection of undistributed middle fallacy."""
         # All dogs are mammals, All cats are mammals ⊢ All dogs are cats (INVALID)
         syl = parse_syllogism(
-            "All dogs are mammals",
-            "All cats are mammals",
-            "All dogs are cats"
+            "All dogs are mammals", "All cats are mammals", "All dogs are cats"
         )
 
         engine = CategoricalEngine()
@@ -129,9 +121,7 @@ class TestInvalidForms:
         """Test detection of illicit major fallacy."""
         # All dogs are animals, No cats are dogs ⊢ No cats are animals (INVALID)
         syl = parse_syllogism(
-            "All dogs are animals",
-            "No cats are dogs",
-            "No cats are animals"
+            "All dogs are animals", "No cats are dogs", "No cats are animals"
         )
 
         engine = CategoricalEngine()
@@ -147,7 +137,7 @@ class TestInvalidForms:
         syl = parse_syllogism(
             "All mammals are animals",
             "All mammals are warm-blooded",
-            "All warm-blooded creatures are animals"
+            "All warm-blooded creatures are animals",
         )
 
         engine = CategoricalEngine()
@@ -159,9 +149,7 @@ class TestInvalidForms:
     def test_two_negative_premises(self):
         """Test rule: two negative premises yield no conclusion."""
         syl = parse_syllogism(
-            "No dogs are cats",
-            "No cats are birds",
-            "No dogs are birds"
+            "No dogs are cats", "No cats are birds", "No dogs are birds"
         )
 
         engine = CategoricalEngine()
@@ -173,9 +161,7 @@ class TestInvalidForms:
     def test_two_particular_premises(self):
         """Test rule: two particular premises yield no conclusion."""
         syl = parse_syllogism(
-            "Some dogs are pets",
-            "Some pets are cats",
-            "Some dogs are cats"
+            "Some dogs are pets", "Some pets are cats", "Some dogs are cats"
         )
 
         engine = CategoricalEngine()
@@ -269,8 +255,8 @@ class TestFigureIdentification:
         """Test Figure 1: M-P, S-M"""
         syl = parse_syllogism(
             "All mammals are animals",  # M-P
-            "All dogs are mammals",      # S-M
-            "All dogs are animals"
+            "All dogs are mammals",  # S-M
+            "All dogs are animals",
         )
 
         assert syl.figure == Figure.FIRST
@@ -280,9 +266,9 @@ class TestFigureIdentification:
         # Cesare (EAE): No P are M, All S are M ⊢ No S are P
         # Example: No reptiles are mammals, All dogs are mammals ⊢ No dogs are reptiles
         syl = parse_syllogism(
-            "No reptiles are mammals",   # P-M (middle as predicate)
-            "All dogs are mammals",       # S-M (middle as predicate)
-            "No dogs are reptiles"
+            "No reptiles are mammals",  # P-M (middle as predicate)
+            "All dogs are mammals",  # S-M (middle as predicate)
+            "No dogs are reptiles",
         )
 
         assert syl is not None
@@ -293,9 +279,9 @@ class TestFigureIdentification:
         # Datisi (AII): All M are P, Some M are S ⊢ Some S are P
         # Example: All poets are artists, Some poets are philosophers ⊢ Some philosophers are artists
         syl = parse_syllogism(
-            "All poets are artists",         # M-P (middle as subject)
-            "Some poets are philosophers",   # M-S (middle as subject)
-            "Some philosophers are artists"
+            "All poets are artists",  # M-P (middle as subject)
+            "Some poets are philosophers",  # M-S (middle as subject)
+            "Some philosophers are artists",
         )
 
         assert syl is not None
@@ -306,9 +292,9 @@ class TestFigureIdentification:
         # Dimaris (IAI): Some P are M, All M are S ⊢ Some S are P
         # Example: Some artists are musicians, All musicians are performers ⊢ Some performers are artists
         syl = parse_syllogism(
-            "Some artists are musicians",      # P-M (middle as predicate)
-            "All musicians are performers",    # M-S (middle as subject)
-            "Some performers are artists"
+            "Some artists are musicians",  # P-M (middle as predicate)
+            "All musicians are performers",  # M-S (middle as subject)
+            "Some performers are artists",
         )
 
         assert syl is not None
@@ -324,7 +310,7 @@ class TestRealWorldSyllogisms:
         result = validate_barbara(
             "All humans are mortal",
             "All socrates are humans",  # Treating Socrates as a class
-            "All socrates are mortal"
+            "All socrates are mortal",
         )
 
         assert result.is_valid is True
@@ -335,7 +321,7 @@ class TestRealWorldSyllogisms:
         result = validate_barbara(
             "All vertebrates have spines",
             "All mammals are vertebrates",
-            "All mammals have spines"
+            "All mammals have spines",
         )
 
         assert result.is_valid is True
@@ -356,9 +342,7 @@ def test_engine_initialization(categorical_engine):
 def test_mood_calculation():
     """Test mood string correctly calculated."""
     syl = parse_syllogism(
-        "All mammals are animals",
-        "All dogs are mammals",
-        "All dogs are animals"
+        "All mammals are animals", "All dogs are mammals", "All dogs are animals"
     )
 
     assert syl.mood == "AAA"
@@ -367,9 +351,7 @@ def test_mood_calculation():
 def test_term_identification():
     """Test correct identification of major, minor, middle terms."""
     syl = parse_syllogism(
-        "All mammals are animals",
-        "All dogs are mammals",
-        "All dogs are animals"
+        "All mammals are animals", "All dogs are mammals", "All dogs are animals"
     )
 
     assert syl.major_term == "animals"  # Predicate of conclusion
@@ -462,9 +444,9 @@ class TestParserFallbacks:
         """Syllogism with four terms (ambiguous middle) fails to parse."""
         # This creates ambiguity - no clear single middle term
         result = parse_syllogism(
-            "All cats are felines",      # cats, felines
-            "All dogs are canines",      # dogs, canines
-            "All dogs are felines",      # dogs, felines
+            "All cats are felines",  # cats, felines
+            "All dogs are canines",  # dogs, canines
+            "All dogs are felines",  # dogs, felines
         )
         # Should fail because no single term connects premises
         assert result is None
@@ -483,8 +465,8 @@ class TestSyllogismRuleViolations:
         # I + I (Some M are P, Some S are M)
         syl = parse_syllogism(
             "Some animals are mammals",  # I
-            "Some pets are animals",     # I
-            "Some pets are mammals",     # Conclusion
+            "Some pets are animals",  # I
+            "Some pets are mammals",  # Conclusion
         )
 
         if syl is not None:
@@ -497,9 +479,9 @@ class TestSyllogismRuleViolations:
         """Rule 4: Two negative premises yield no valid conclusion."""
         # Build E + O premises
         syl = parse_syllogism(
-            "No reptiles are mammals",     # E
+            "No reptiles are mammals",  # E
             "Some animals are not reptiles",  # O
-            "Some animals are not mammals",   # Conclusion
+            "Some animals are not mammals",  # Conclusion
         )
 
         if syl is not None:

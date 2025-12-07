@@ -40,7 +40,10 @@ def test_contradiction_penalty_applied():
     options = [
         DecisionOption(id="clean", description="clean", value=1.0),
         DecisionOption(
-            id="contradictory", description="conflict", value=1.0, contradiction_flag=True
+            id="contradictory",
+            description="conflict",
+            value=1.0,
+            contradiction_flag=True,
         ),
     ]
 
@@ -56,7 +59,12 @@ def test_soft_penalty_and_risk_warning():
     constraints = Constraints(soft_penalties={"slow": 0.2})
     options = [
         DecisionOption(
-            id="risky", description="risky", value=1.0, risk=0.9, tags=["slow"], cited=True
+            id="risky",
+            description="risky",
+            value=1.0,
+            risk=0.9,
+            tags=["slow"],
+            cited=True,
         ),
         DecisionOption(id="safe", description="safe", value=0.9, risk=0.1, cited=True),
     ]

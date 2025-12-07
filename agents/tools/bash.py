@@ -6,24 +6,28 @@ from dataclasses import dataclass, field
 
 from .security import CommandSecurityPolicy
 
+
 @dataclass
 class BashTool(Tool):
     name: str = "bash"
     description: str = field(default="", init=False)
-    input_schema: dict = field(default_factory=lambda: {
-        "type": "object",
-        "properties": {
-            "command": {
-                "type": "string",
-                "description": "The bash command to execute"
+    input_schema: dict = field(
+        default_factory=lambda: {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string",
+                    "description": "The bash command to execute",
+                },
+                "working_directory": {
+                    "type": "string",
+                    "description": "Working directory for command execution (optional, defaults to current directory)",
+                },
             },
-            "working_directory": {
-                "type": "string",
-                "description": "Working directory for command execution (optional, defaults to current directory)"
-            }
+            "required": ["command"],
         },
-        "required": ["command"]
-    }, init=False)
+        init=False,
+    )
 
     # Permission settings
     allowed_commands: List[str] = field(default=None)
@@ -54,11 +58,11 @@ class BashTool(Tool):
         if self.allowed_commands:
             desc += f"\n\nYou can ONLY use these commands: {', '.join(self.allowed_commands)}"
             desc += "\nExamples:"
-            if 'git' in self.allowed_commands:
+            if "git" in self.allowed_commands:
                 desc += "\n- git status, git log, git diff"
-            if 'npm' in self.allowed_commands:
+            if "npm" in self.allowed_commands:
                 desc += "\n- npm install, npm run build, npm test"
-            if 'ls' in self.allowed_commands:
+            if "ls" in self.allowed_commands:
                 desc += "\n- ls -la, ls src/"
         else:
             desc += "\n\nYou can use any bash command except those explicitly denied."
@@ -84,7 +88,9 @@ class BashTool(Tool):
 
         return desc
 
-    async def execute(self, command: str, working_directory: Optional[str] = None) -> str:
+    async def execute(
+        self, command: str, working_directory: Optional[str] = None
+    ) -> str:
         # Basic permission checks
         validation = self.security_policy.validate(command, working_directory)
         if not validation.allowed:
@@ -96,10 +102,10 @@ class BashTool(Tool):
         if working_directory and not self._is_directory_allowed(working_directory):
             return f"Error: Working directory '{working_directory}' not permitted"
 
-        if not self.allow_pipes and '|' in command:
+        if not self.allow_pipes and "|" in command:
             return "Error: Pipe operators not permitted"
 
-        if not self.allow_redirects and any(op in command for op in ['>', '<', '>>']):
+        if not self.allow_redirects and any(op in command for op in [">", "<", ">>"]):
             return "Error: Redirect operators not permitted"
 
         # Execute command
@@ -110,13 +116,12 @@ class BashTool(Tool):
                 command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=cwd
+                cwd=cwd,
             )
 
             try:
                 stdout, stderr = await asyncio.wait_for(
-                    process.communicate(),
-                    timeout=self.timeout
+                    process.communicate(), timeout=self.timeout
                 )
             except asyncio.TimeoutError:
                 process.kill()
@@ -126,11 +131,11 @@ class BashTool(Tool):
             # Format output
             output = ""
             if stdout:
-                output += stdout.decode('utf-8', errors='replace')
+                output += stdout.decode("utf-8", errors="replace")
             if stderr:
                 if output:
                     output += "\n--- stderr ---\n"
-                output += stderr.decode('utf-8', errors='replace')
+                output += stderr.decode("utf-8", errors="replace")
 
             if process.returncode != 0:
                 output += f"\n[Exit code: {process.returncode}]"
@@ -151,7 +156,9 @@ class BashTool(Tool):
 
         # If allowed list exists, command must be in it
         if self.allowed_commands:
-            return any(base_command.startswith(allowed) for allowed in self.allowed_commands)
+            return any(
+                base_command.startswith(allowed) for allowed in self.allowed_commands
+            )
 
         # No allowed list means all non-denied commands are permitted
         return True
@@ -162,5 +169,7 @@ class BashTool(Tool):
 
         # Normalize paths for comparison
         abs_dir = os.path.abspath(directory)
-        return any(abs_dir.startswith(os.path.abspath(allowed))
-                  for allowed in self.working_directories)
+        return any(
+            abs_dir.startswith(os.path.abspath(allowed))
+            for allowed in self.working_directories
+        )

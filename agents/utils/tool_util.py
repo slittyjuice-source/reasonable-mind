@@ -4,9 +4,7 @@ import asyncio
 from typing import Any
 
 
-async def _execute_single_tool(
-    call: Any, tool_dict: dict[str, Any]
-) -> dict[str, Any]:
+async def _execute_single_tool(call: Any, tool_dict: dict[str, Any]) -> dict[str, Any]:
     """Execute a single tool and handle errors."""
     response = {"type": "tool_result", "tool_use_id": call.id}
 
@@ -34,6 +32,4 @@ async def execute_tools(
             *[_execute_single_tool(call, tool_dict) for call in tool_calls]
         )
     else:
-        return [
-            await _execute_single_tool(call, tool_dict) for call in tool_calls
-        ]
+        return [await _execute_single_tool(call, tool_dict) for call in tool_calls]

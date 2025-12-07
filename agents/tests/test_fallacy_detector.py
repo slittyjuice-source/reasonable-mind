@@ -9,7 +9,7 @@ from agents.core.fallacy_detector import (
     FallacyDetector,
     FallacyCategory,
     FallacySeverity,
-    FallacyPattern
+    FallacyPattern,
 )
 
 
@@ -174,7 +174,7 @@ class TestFallacyDetector:
         """Test detecting multiple fallacies in one argument."""
         premises = [
             "Either you support this or you're against progress",
-            "Think of the children!"
+            "Think of the children!",
         ]
         conclusion = "Therefore you must support this"
 
@@ -196,7 +196,7 @@ class TestFallacyPattern:
             severity=FallacySeverity.MAJOR,
             description="Test description",
             pattern_indicators=["test", "indicator"],
-            example="Test example"
+            example="Test example",
         )
 
         assert pattern.id == "test_fallacy"
@@ -248,7 +248,13 @@ class TestFallacyDatabase:
         relevance = detector.get_by_category(FallacyCategory.RELEVANCE)
         ids = [f.id for f in relevance]
 
-        expected = ["ad_hominem", "appeal_to_authority", "appeal_to_emotion", "red_herring", "straw_man"]
+        expected = [
+            "ad_hominem",
+            "appeal_to_authority",
+            "appeal_to_emotion",
+            "red_herring",
+            "straw_man",
+        ]
         for fallacy_id in expected:
             assert fallacy_id in ids, f"Missing fallacy: {fallacy_id}"
 
@@ -257,7 +263,12 @@ class TestFallacyDatabase:
         presumption = detector.get_by_category(FallacyCategory.PRESUMPTION)
         ids = [f.id for f in presumption]
 
-        expected = ["false_dilemma", "begging_question", "hasty_generalization", "slippery_slope"]
+        expected = [
+            "false_dilemma",
+            "begging_question",
+            "hasty_generalization",
+            "slippery_slope",
+        ]
         for fallacy_id in expected:
             assert fallacy_id in ids, f"Missing fallacy: {fallacy_id}"
 
@@ -266,7 +277,12 @@ class TestFallacyDatabase:
         formal = detector.get_by_category(FallacyCategory.FORMAL)
         ids = [f.id for f in formal]
 
-        expected = ["affirming_consequent", "denying_antecedent", "post_hoc", "non_sequitur"]
+        expected = [
+            "affirming_consequent",
+            "denying_antecedent",
+            "post_hoc",
+            "non_sequitur",
+        ]
         for fallacy_id in expected:
             assert fallacy_id in ids, f"Missing fallacy: {fallacy_id}"
 
@@ -276,8 +292,12 @@ class TestFallacyDatabase:
 
         for fallacy in all_fallacies:
             assert len(fallacy.example) > 0, f"Fallacy {fallacy.id} missing example"
-            assert len(fallacy.description) > 0, f"Fallacy {fallacy.id} missing description"
-            assert len(fallacy.pattern_indicators) > 0, f"Fallacy {fallacy.id} missing indicators"
+            assert len(fallacy.description) > 0, (
+                f"Fallacy {fallacy.id} missing description"
+            )
+            assert len(fallacy.pattern_indicators) > 0, (
+                f"Fallacy {fallacy.id} missing indicators"
+            )
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ import time
 
 class ClaimStatus(Enum):
     """Status of a claim verification."""
+
     VERIFIED = "verified"  # Proven with evidence
     SUPPORTED = "supported"  # Evidence exists but not conclusive
     UNCERTAIN = "uncertain"  # Cannot determine
@@ -30,6 +31,7 @@ class ClaimStatus(Enum):
 
 class EvidenceType(Enum):
     """Types of evidence."""
+
     CITATION = "citation"  # From cited source
     RETRIEVED = "retrieved"  # From retrieval
     COMPUTED = "computed"  # Computed/verified
@@ -40,6 +42,7 @@ class EvidenceType(Enum):
 @dataclass
 class Claim:
     """A claim that needs verification."""
+
     claim_id: str
     text: str
     source: str
@@ -51,6 +54,7 @@ class Claim:
 @dataclass
 class Evidence:
     """Evidence for or against a claim."""
+
     evidence_id: str
     evidence_type: EvidenceType
     content: str
@@ -64,6 +68,7 @@ class Evidence:
 @dataclass
 class VerificationResult:
     """Result of claim verification."""
+
     claim: Claim
     status: ClaimStatus
     confidence: float
@@ -76,6 +81,7 @@ class VerificationResult:
 @dataclass
 class FactualityScore:
     """Factuality score for a text."""
+
     score: float  # 0-1, higher is more factual
     verified_claims: int
     unverified_claims: int
@@ -89,12 +95,12 @@ class ClaimExtractor:
     def __init__(self):
         # Patterns for identifying factual claims
         self.factual_patterns = [
-            r'\b(is|are|was|were)\b.*\b(the|a|an)\b',
-            r'\b(has|have|had)\b.*\b(been|the)\b',
-            r'\b(first|largest|smallest|oldest|newest)\b',
-            r'\b(in \d{4})\b',
-            r'\b(\d+%|\d+ percent)\b',
-            r'\b(according to|studies show|research indicates)\b',
+            r"\b(is|are|was|were)\b.*\b(the|a|an)\b",
+            r"\b(has|have|had)\b.*\b(been|the)\b",
+            r"\b(first|largest|smallest|oldest|newest)\b",
+            r"\b(in \d{4})\b",
+            r"\b(\d+%|\d+ percent)\b",
+            r"\b(according to|studies show|research indicates)\b",
         ]
 
     def extract(self, text: str) -> List[Claim]:
@@ -109,7 +115,7 @@ class ClaimExtractor:
                     text=sentence.strip(),
                     source="generated",
                     confidence=self._estimate_confidence(sentence),
-                    category=self._categorize_claim(sentence)
+                    category=self._categorize_claim(sentence),
                 )
                 claims.append(claim)
 
@@ -118,7 +124,7 @@ class ClaimExtractor:
     def _split_sentences(self, text: str) -> List[str]:
         """Split text into sentences."""
         # Simple sentence splitting
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = re.split(r"(?<=[.!?])\s+", text)
         return [s for s in sentences if s.strip()]
 
     def _is_factual_claim(self, sentence: str) -> bool:
@@ -131,14 +137,22 @@ class ClaimExtractor:
                 return True
 
         # Check for specific indicators
-        factual_words = ['is', 'was', 'were', 'has', 'have', 'had', 'will']
-        return any(f' {word} ' in f' {sentence_lower} ' for word in factual_words)
+        factual_words = ["is", "was", "were", "has", "have", "had", "will"]
+        return any(f" {word} " in f" {sentence_lower} " for word in factual_words)
 
     def _estimate_confidence(self, sentence: str) -> float:
         """Estimate confidence based on language."""
         hedging_words = [
-            'may', 'might', 'could', 'possibly', 'perhaps',
-            'likely', 'probably', 'seems', 'appears', 'suggests'
+            "may",
+            "might",
+            "could",
+            "possibly",
+            "perhaps",
+            "likely",
+            "probably",
+            "seems",
+            "appears",
+            "suggests",
         ]
 
         sentence_lower = sentence.lower()
@@ -151,13 +165,13 @@ class ClaimExtractor:
         """Categorize the type of claim."""
         sentence_lower = sentence.lower()
 
-        if any(w in sentence_lower for w in ['study', 'research', 'survey']):
+        if any(w in sentence_lower for w in ["study", "research", "survey"]):
             return "scientific"
-        if re.search(r'\d{4}', sentence):
+        if re.search(r"\d{4}", sentence):
             return "historical"
-        if re.search(r'\d+%|\d+ percent', sentence):
+        if re.search(r"\d+%|\d+ percent", sentence):
             return "statistical"
-        if any(w in sentence_lower for w in ['law', 'regulation', 'court']):
+        if any(w in sentence_lower for w in ["law", "regulation", "court"]):
             return "legal"
         return "factual"
 
@@ -174,8 +188,7 @@ class RetrievalEvidenceGatherer(EvidenceGatherer):
     """Gathers evidence from retrieval system."""
 
     def __init__(
-        self,
-        retrieval_fn: Optional[Callable[[str], List[Dict[str, Any]]]] = None
+        self, retrieval_fn: Optional[Callable[[str], List[Dict[str, Any]]]] = None
     ):
         self.retrieval_fn = retrieval_fn
 
@@ -195,15 +208,17 @@ class RetrievalEvidenceGatherer(EvidenceGatherer):
             # Determine if evidence supports or contradicts
             supports = self._check_support(claim.text, content)
 
-            evidence.append(Evidence(
-                evidence_id=f"ret_{idx}",
-                evidence_type=EvidenceType.RETRIEVED,
-                content=content[:500],
-                source=source,
-                relevance=score,
-                supports=supports,
-                confidence=score * 0.8
-            ))
+            evidence.append(
+                Evidence(
+                    evidence_id=f"ret_{idx}",
+                    evidence_type=EvidenceType.RETRIEVED,
+                    content=content[:500],
+                    source=source,
+                    relevance=score,
+                    supports=supports,
+                    confidence=score * 0.8,
+                )
+            )
 
         return evidence
 
@@ -229,24 +244,26 @@ class CitationEvidenceGatherer(EvidenceGatherer):
 
         # Find citation patterns
         citation_patterns = [
-            r'\(([^)]+, \d{4})\)',  # (Author, Year)
-            r'\[(\d+)\]',  # [1], [2], etc.
-            r'according to ([^,]+)',
+            r"\(([^)]+, \d{4})\)",  # (Author, Year)
+            r"\[(\d+)\]",  # [1], [2], etc.
+            r"according to ([^,]+)",
         ]
 
         for pattern in citation_patterns:
             matches = re.findall(pattern, claim.text, re.IGNORECASE)
             for match in matches:
                 if match in self.citation_db:
-                    evidence.append(Evidence(
-                        evidence_id=f"cite_{match}",
-                        evidence_type=EvidenceType.CITATION,
-                        content=self.citation_db[match],
-                        source=match,
-                        relevance=0.9,
-                        supports=True,
-                        confidence=0.85
-                    ))
+                    evidence.append(
+                        Evidence(
+                            evidence_id=f"cite_{match}",
+                            evidence_type=EvidenceType.CITATION,
+                            content=self.citation_db[match],
+                            source=match,
+                            relevance=0.9,
+                            supports=True,
+                            confidence=0.85,
+                        )
+                    )
 
         return evidence
 
@@ -257,11 +274,7 @@ class SelfConsistencyChecker:
     def __init__(self, num_samples: int = 5):
         self.num_samples = num_samples
 
-    def check(
-        self,
-        claim: Claim,
-        alternative_claims: List[str]
-    ) -> Evidence:
+    def check(self, claim: Claim, alternative_claims: List[str]) -> Evidence:
         """Check if claim is consistent with alternatives."""
         if not alternative_claims:
             return Evidence(
@@ -271,13 +284,14 @@ class SelfConsistencyChecker:
                 source="self_consistency",
                 relevance=0.5,
                 supports=True,
-                confidence=0.5
+                confidence=0.5,
             )
 
         # Check agreement
         claim_lower = claim.text.lower()
         agreements = sum(
-            1 for alt in alternative_claims
+            1
+            for alt in alternative_claims
             if self._semantic_similarity(claim_lower, alt.lower()) > 0.7
         )
 
@@ -290,7 +304,7 @@ class SelfConsistencyChecker:
             source="self_consistency",
             relevance=0.8,
             supports=agreement_rate > 0.5,
-            confidence=agreement_rate
+            confidence=agreement_rate,
         )
 
     def _semantic_similarity(self, text1: str, text2: str) -> float:
@@ -318,7 +332,7 @@ class ClaimVerifier:
         verification_threshold: float = 0.7,
         flag_threshold: float = 0.3,
         cache_ttl_seconds: float = 300.0,
-        early_termination_threshold: float = 0.95
+        early_termination_threshold: float = 0.95,
     ):
         self.gatherers = gatherers or []
         self.verification_threshold = verification_threshold
@@ -382,7 +396,7 @@ class ClaimVerifier:
                 confidence=0.5,
                 evidence=[],
                 explanation="No evidence found",
-                flagged=True
+                flagged=True,
             )
             self._set_cached(cache_key, no_evidence_result)
             return no_evidence_result
@@ -405,13 +419,21 @@ class ClaimVerifier:
 
         # Determine status
         if normalized >= self.verification_threshold:
-            status = ClaimStatus.VERIFIED if normalized > 0.85 else ClaimStatus.SUPPORTED
+            status = (
+                ClaimStatus.VERIFIED if normalized > 0.85 else ClaimStatus.SUPPORTED
+            )
         elif normalized <= self.flag_threshold:
-            status = ClaimStatus.CONTRADICTED if contradicting else ClaimStatus.UNSUPPORTED
+            status = (
+                ClaimStatus.CONTRADICTED if contradicting else ClaimStatus.UNSUPPORTED
+            )
         else:
             status = ClaimStatus.UNCERTAIN
 
-        flagged = status in [ClaimStatus.UNCERTAIN, ClaimStatus.UNSUPPORTED, ClaimStatus.CONTRADICTED]
+        flagged = status in [
+            ClaimStatus.UNCERTAIN,
+            ClaimStatus.UNSUPPORTED,
+            ClaimStatus.CONTRADICTED,
+        ]
 
         explanation = self._generate_explanation(
             claim, supporting, contradicting, normalized, status
@@ -424,7 +446,9 @@ class ClaimVerifier:
             evidence=all_evidence,
             explanation=explanation,
             flagged=flagged,
-            suggested_revision=self._suggest_revision(claim, status, all_evidence) if flagged else None
+            suggested_revision=self._suggest_revision(claim, status, all_evidence)
+            if flagged
+            else None,
         )
 
         # Cache the result
@@ -456,7 +480,7 @@ class ClaimVerifier:
             "cache_hits": self._cache_hits,
             "cache_misses": self._cache_misses,
             "hit_rate": self._cache_hits / max(1, total),
-            "cache_size": len(self._cache)
+            "cache_size": len(self._cache),
         }
 
     def _generate_explanation(
@@ -465,7 +489,7 @@ class ClaimVerifier:
         supporting: List[Evidence],
         contradicting: List[Evidence],
         score: float,
-        status: ClaimStatus
+        status: ClaimStatus,
     ) -> str:
         """Generate explanation for verification result."""
         parts = [f"Status: {status.value} (confidence: {score:.2f})"]
@@ -478,16 +502,15 @@ class ClaimVerifier:
         return " | ".join(parts)
 
     def _suggest_revision(
-        self,
-        claim: Claim,
-        status: ClaimStatus,
-        evidence: List[Evidence]
+        self, claim: Claim, status: ClaimStatus, evidence: List[Evidence]
     ) -> str:
         """Suggest revision for flagged claim."""
         if status == ClaimStatus.CONTRADICTED:
             contradicting = [e for e in evidence if not e.supports]
             if contradicting:
-                return f"Consider revising based on: {contradicting[0].content[:100]}..."
+                return (
+                    f"Consider revising based on: {contradicting[0].content[:100]}..."
+                )
 
         if status == ClaimStatus.UNSUPPORTED:
             return f"Add citation or evidence for: '{claim.text[:50]}...'"
@@ -504,16 +527,14 @@ class HallucinationDetector:
     def __init__(
         self,
         verifier: Optional[ClaimVerifier] = None,
-        extractor: Optional[ClaimExtractor] = None
+        extractor: Optional[ClaimExtractor] = None,
     ):
         self.extractor = extractor or ClaimExtractor()
         self.verifier = verifier or ClaimVerifier()
         self.consistency_checker = SelfConsistencyChecker()
 
     def analyze(
-        self,
-        text: str,
-        alternatives: Optional[List[str]] = None
+        self, text: str, alternatives: Optional[List[str]] = None
     ) -> Tuple[FactualityScore, List[VerificationResult]]:
         """Analyze text for potential hallucinations."""
         # Extract claims
@@ -521,10 +542,7 @@ class HallucinationDetector:
 
         if not claims:
             return FactualityScore(
-                score=1.0,
-                verified_claims=0,
-                unverified_claims=0,
-                flagged_claims=0
+                score=1.0, verified_claims=0, unverified_claims=0, flagged_claims=0
             ), []
 
         # Verify each claim
@@ -551,16 +569,11 @@ class HallucinationDetector:
             verified_claims=verified,
             unverified_claims=len(results) - verified - supported,
             flagged_claims=flagged,
-            details={
-                "total_claims": len(claims),
-                "supported_claims": supported
-            }
+            details={"total_claims": len(claims), "supported_claims": supported},
         ), results
 
     def proof_or_flag(
-        self,
-        text: str,
-        require_proof_threshold: float = 0.5
+        self, text: str, require_proof_threshold: float = 0.5
     ) -> Tuple[str, List[str]]:
         """Apply proof-or-flag pattern to text."""
         score, results = self.analyze(text)
@@ -569,7 +582,7 @@ class HallucinationDetector:
         annotated_parts = []
 
         # Get original sentences
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = re.split(r"(?<=[.!?])\s+", text)
         claim_texts = {r.claim.text for r in results if r.flagged}
 
         for sentence in sentences:
@@ -578,9 +591,7 @@ class HallucinationDetector:
                 continue
 
             # Check if this sentence was flagged
-            is_flagged = any(
-                self._text_matches(sentence, ct) for ct in claim_texts
-            )
+            is_flagged = any(self._text_matches(sentence, ct) for ct in claim_texts)
 
             if is_flagged:
                 flagged_texts.append(sentence)
@@ -588,7 +599,7 @@ class HallucinationDetector:
             else:
                 annotated_parts.append(sentence)
 
-        return ' '.join(annotated_parts), flagged_texts
+        return " ".join(annotated_parts), flagged_texts
 
     def _text_matches(self, text1: str, text2: str) -> bool:
         """Check if texts match (fuzzy)."""
@@ -659,7 +670,7 @@ class ConfidenceCalibrator:
 
 # Factory functions
 def create_hallucination_detector(
-    retrieval_fn: Optional[Callable[[str], List[Dict[str, Any]]]] = None
+    retrieval_fn: Optional[Callable[[str], List[Dict[str, Any]]]] = None,
 ) -> HallucinationDetector:
     """Create a hallucination detector."""
     verifier = ClaimVerifier()

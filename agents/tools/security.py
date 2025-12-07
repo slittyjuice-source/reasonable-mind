@@ -179,17 +179,25 @@ def validate_commands(segment: str, commands: Iterable[str]) -> ValidationResult
 class CommandSecurityPolicy:
     """Allowlist-based sandbox policy for bash execution."""
 
-    allowed_commands: Set[str] = field(default_factory=lambda: set(DEFAULT_ALLOWED_COMMANDS))
-    allowed_paths: List[str] = field(default_factory=lambda: [os.path.abspath(os.getcwd())])
+    allowed_commands: Set[str] = field(
+        default_factory=lambda: set(DEFAULT_ALLOWED_COMMANDS)
+    )
+    allowed_paths: List[str] = field(
+        default_factory=lambda: [os.path.abspath(os.getcwd())]
+    )
 
     def is_path_allowed(self, directory: str | None) -> bool:
         if directory is None:
             return True
 
         abs_dir = os.path.abspath(directory)
-        return any(abs_dir.startswith(os.path.abspath(path)) for path in self.allowed_paths)
+        return any(
+            abs_dir.startswith(os.path.abspath(path)) for path in self.allowed_paths
+        )
 
-    def validate(self, command: str, working_directory: str | None = None) -> ValidationResult:
+    def validate(
+        self, command: str, working_directory: str | None = None
+    ) -> ValidationResult:
         if not command.strip():
             return ValidationResult(False, "Command is empty")
 
@@ -212,4 +220,3 @@ class CommandSecurityPolicy:
             return ValidationResult(False, "Working directory is outside the sandbox")
 
         return ValidationResult(True)
-

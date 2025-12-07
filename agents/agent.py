@@ -87,6 +87,7 @@ class Agent:
         Returns a dict with base parameters from config, with any
         message_params overriding conflicting keys.
         """
+
         def _tool_to_dict(tool: Any) -> dict[str, Any]:
             if hasattr(tool, "to_dict"):
                 return tool.to_dict()
@@ -136,8 +137,7 @@ class Agent:
                 merged_headers = default_headers
 
             response = self.client.messages.create(
-                **params,
-                extra_headers=merged_headers
+                **params, extra_headers=merged_headers
             )
             tool_calls = [
                 block for block in response.content if block.type == "tool_use"
@@ -151,10 +151,7 @@ class Agent:
                         params_str = ", ".join(
                             [f"{k}={v}" for k, v in block.input.items()]
                         )
-                        print(
-                            f"\n[{self.name}] Tool call: "
-                            f"{block.name}({params_str})"
-                        )
+                        print(f"\n[{self.name}] Tool call: {block.name}({params_str})")
 
             await self.history.add_message(
                 "assistant", response.content, response.usage
@@ -167,10 +164,7 @@ class Agent:
                 )
                 if self.verbose:
                     for block in tool_results:
-                        print(
-                            f"\n[{self.name}] Tool result: "
-                            f"{block.get('content')}"
-                        )
+                        print(f"\n[{self.name}] Tool result: {block.get('content')}")
                 await self.history.add_message("user", tool_results)
             else:
                 return response
@@ -181,9 +175,7 @@ class Agent:
             original_tools = list(self.tools)
 
             try:
-                mcp_tools = await setup_mcp_connections(
-                    self.mcp_servers, stack
-                )
+                mcp_tools = await setup_mcp_connections(self.mcp_servers, stack)
                 self.tools.extend(mcp_tools)
                 return await self._agent_loop(user_input)
             finally:

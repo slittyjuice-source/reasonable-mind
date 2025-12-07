@@ -19,6 +19,7 @@ import json
 
 class EventType(Enum):
     """Types of UI events."""
+
     # Progress events
     PROGRESS_START = "progress_start"
     PROGRESS_UPDATE = "progress_update"
@@ -52,6 +53,7 @@ class EventType(Enum):
 
 class AgentStatus(Enum):
     """Agent status states."""
+
     IDLE = "idle"
     INITIALIZING = "initializing"
     THINKING = "thinking"
@@ -64,6 +66,7 @@ class AgentStatus(Enum):
 @dataclass
 class UIEvent:
     """An event for UI consumption."""
+
     event_type: EventType
     data: Dict[str, Any]
     timestamp: datetime = field(default_factory=datetime.now)
@@ -72,7 +75,9 @@ class UIEvent:
 
     def __post_init__(self):
         if not self.event_id:
-            self.event_id = f"{self.event_type.value}_{int(self.timestamp.timestamp() * 1000)}"
+            self.event_id = (
+                f"{self.event_type.value}_{int(self.timestamp.timestamp() * 1000)}"
+            )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -81,7 +86,7 @@ class UIEvent:
             "event_type": self.event_type.value,
             "data": self.data,
             "timestamp": self.timestamp.isoformat(),
-            "source": self.source
+            "source": self.source,
         }
 
     def to_json(self) -> str:
@@ -92,6 +97,7 @@ class UIEvent:
 @dataclass
 class ProgressInfo:
     """Progress information for a task."""
+
     task_id: str
     title: str
     current: int = 0
@@ -117,7 +123,7 @@ class ProgressInfo:
             "percentage": self.percentage,
             "message": self.message,
             "status": self.status,
-            "sub_tasks": [t.to_dict() for t in self.sub_tasks]
+            "sub_tasks": [t.to_dict() for t in self.sub_tasks],
         }
 
 
@@ -131,9 +137,7 @@ class EventBus:
         self._lock = threading.Lock()
 
     def subscribe(
-        self,
-        event_type: EventType,
-        callback: Callable[[UIEvent], None]
+        self, event_type: EventType, callback: Callable[[UIEvent], None]
     ) -> str:
         """Subscribe to a specific event type."""
         with self._lock:
@@ -142,10 +146,7 @@ class EventBus:
             self._subscribers[event_type].append(callback)
             return f"sub_{event_type.value}_{len(self._subscribers[event_type])}"
 
-    def subscribe_all(
-        self,
-        callback: Callable[[UIEvent], None]
-    ) -> str:
+    def subscribe_all(self, callback: Callable[[UIEvent], None]) -> str:
         """Subscribe to all events."""
         with self._lock:
             self._global_subscribers.append(callback)
@@ -195,26 +196,17 @@ class ProgressTracker:
         self._tasks: Dict[str, ProgressInfo] = {}
         self._lock = threading.Lock()
 
-    def start_task(
-        self,
-        task_id: str,
-        title: str,
-        total: int = 100
-    ) -> ProgressInfo:
+    def start_task(self, task_id: str, title: str, total: int = 100) -> ProgressInfo:
         """Start tracking a new task."""
         with self._lock:
             progress = ProgressInfo(
-                task_id=task_id,
-                title=title,
-                total=total,
-                status="running"
+                task_id=task_id, title=title, total=total, status="running"
             )
             self._tasks[task_id] = progress
 
-            self._bus.emit(UIEvent(
-                event_type=EventType.PROGRESS_START,
-                data=progress.to_dict()
-            ))
+            self._bus.emit(
+                UIEvent(event_type=EventType.PROGRESS_START, data=progress.to_dict())
+            )
 
             return progress
 
@@ -223,7 +215,7 @@ class ProgressTracker:
         task_id: str,
         current: Optional[int] = None,
         message: Optional[str] = None,
-        increment: int = 0
+        increment: int = 0,
     ) -> Optional[ProgressInfo]:
         """Update progress for a task."""
         with self._lock:
@@ -239,17 +231,14 @@ class ProgressTracker:
             if message:
                 progress.message = message
 
-            self._bus.emit(UIEvent(
-                event_type=EventType.PROGRESS_UPDATE,
-                data=progress.to_dict()
-            ))
+            self._bus.emit(
+                UIEvent(event_type=EventType.PROGRESS_UPDATE, data=progress.to_dict())
+            )
 
             return progress
 
     def complete_task(
-        self,
-        task_id: str,
-        message: str = "Complete"
+        self, task_id: str, message: str = "Complete"
     ) -> Optional[ProgressInfo]:
         """Mark a task as complete."""
         with self._lock:
@@ -261,18 +250,13 @@ class ProgressTracker:
             progress.status = "complete"
             progress.message = message
 
-            self._bus.emit(UIEvent(
-                event_type=EventType.PROGRESS_COMPLETE,
-                data=progress.to_dict()
-            ))
+            self._bus.emit(
+                UIEvent(event_type=EventType.PROGRESS_COMPLETE, data=progress.to_dict())
+            )
 
             return progress
 
-    def fail_task(
-        self,
-        task_id: str,
-        error: str
-    ) -> Optional[ProgressInfo]:
+    def fail_task(self, task_id: str, error: str) -> Optional[ProgressInfo]:
         """Mark a task as failed."""
         with self._lock:
             progress = self._tasks.get(task_id)
@@ -282,10 +266,12 @@ class ProgressTracker:
             progress.status = "error"
             progress.message = error
 
-            self._bus.emit(UIEvent(
-                event_type=EventType.PROGRESS_ERROR,
-                data={**progress.to_dict(), "error": error}
-            ))
+            self._bus.emit(
+                UIEvent(
+                    event_type=EventType.PROGRESS_ERROR,
+                    data={**progress.to_dict(), "error": error},
+                )
+            )
 
             return progress
 
@@ -314,7 +300,7 @@ class StatusManager:
         self,
         status: AgentStatus,
         message: str = "",
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Set the current agent status."""
         with self._lock:
@@ -322,14 +308,16 @@ class StatusManager:
             self._message = message
             self._details = details or {}
 
-            self._bus.emit(UIEvent(
-                event_type=EventType.STATUS_CHANGE,
-                data={
-                    "status": status.value,
-                    "message": message,
-                    "details": self._details
-                }
-            ))
+            self._bus.emit(
+                UIEvent(
+                    event_type=EventType.STATUS_CHANGE,
+                    data={
+                        "status": status.value,
+                        "message": message,
+                        "details": self._details,
+                    },
+                )
+            )
 
     def get_status(self) -> Dict[str, Any]:
         """Get current status."""
@@ -337,15 +325,17 @@ class StatusManager:
             return {
                 "status": self._status.value,
                 "message": self._message,
-                "details": self._details
+                "details": self._details,
             }
 
     def send_message(self, message: str, level: str = "info") -> None:
         """Send a status message."""
-        self._bus.emit(UIEvent(
-            event_type=EventType.STATUS_MESSAGE,
-            data={"message": message, "level": level}
-        ))
+        self._bus.emit(
+            UIEvent(
+                event_type=EventType.STATUS_MESSAGE,
+                data={"message": message, "level": level},
+            )
+        )
 
 
 class ReasoningReporter:
@@ -356,10 +346,7 @@ class ReasoningReporter:
         self._steps: List[Dict[str, Any]] = []
 
     def report_step(
-        self,
-        step_type: str,
-        description: str,
-        details: Optional[Dict[str, Any]] = None
+        self, step_type: str, description: str, details: Optional[Dict[str, Any]] = None
     ) -> None:
         """Report a reasoning step."""
         step = {
@@ -367,50 +354,47 @@ class ReasoningReporter:
             "type": step_type,
             "description": description,
             "details": details or {},
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
         self._steps.append(step)
 
-        self._bus.emit(UIEvent(
-            event_type=EventType.REASONING_STEP,
-            data=step
-        ))
+        self._bus.emit(UIEvent(event_type=EventType.REASONING_STEP, data=step))
 
     def report_decision(
         self,
         decision: str,
         reasoning: str,
         alternatives: Optional[List[str]] = None,
-        confidence: float = 0.0
+        confidence: float = 0.0,
     ) -> None:
         """Report a decision made."""
-        self._bus.emit(UIEvent(
-            event_type=EventType.DECISION_MADE,
-            data={
-                "decision": decision,
-                "reasoning": reasoning,
-                "alternatives": alternatives or [],
-                "confidence": confidence
-            }
-        ))
+        self._bus.emit(
+            UIEvent(
+                event_type=EventType.DECISION_MADE,
+                data={
+                    "decision": decision,
+                    "reasoning": reasoning,
+                    "alternatives": alternatives or [],
+                    "confidence": confidence,
+                },
+            )
+        )
 
     def report_evidence(
-        self,
-        claim: str,
-        evidence: str,
-        source: str,
-        confidence: float
+        self, claim: str, evidence: str, source: str, confidence: float
     ) -> None:
         """Report evidence found."""
-        self._bus.emit(UIEvent(
-            event_type=EventType.EVIDENCE_FOUND,
-            data={
-                "claim": claim,
-                "evidence": evidence,
-                "source": source,
-                "confidence": confidence
-            }
-        ))
+        self._bus.emit(
+            UIEvent(
+                event_type=EventType.EVIDENCE_FOUND,
+                data={
+                    "claim": claim,
+                    "evidence": evidence,
+                    "source": source,
+                    "confidence": confidence,
+                },
+            )
+        )
 
     def get_steps(self) -> List[Dict[str, Any]]:
         """Get all reasoning steps."""
@@ -433,10 +417,12 @@ class StreamHandler:
         """Stream a single token."""
         self._buffer += token
 
-        self._bus.emit(UIEvent(
-            event_type=EventType.TOKEN_GENERATED,
-            data={"token": token, "buffer": self._buffer}
-        ))
+        self._bus.emit(
+            UIEvent(
+                event_type=EventType.TOKEN_GENERATED,
+                data={"token": token, "buffer": self._buffer},
+            )
+        )
 
         # Emit chunk when buffer is large enough
         if len(self._buffer) >= self._chunk_size:
@@ -445,10 +431,9 @@ class StreamHandler:
     def flush(self) -> None:
         """Flush the current buffer as a chunk."""
         if self._buffer:
-            self._bus.emit(UIEvent(
-                event_type=EventType.CHUNK_READY,
-                data={"chunk": self._buffer}
-            ))
+            self._bus.emit(
+                UIEvent(event_type=EventType.CHUNK_READY, data={"chunk": self._buffer})
+            )
             self._buffer = ""
 
     def get_buffer(self) -> str:
@@ -470,7 +455,7 @@ class UserInteractionHandler:
         request_id: str,
         question: str,
         options: Optional[List[str]] = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Request clarification from user."""
         with self._lock:
@@ -479,21 +464,20 @@ class UserInteractionHandler:
                 "question": question,
                 "options": options,
                 "context": context or {},
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
             self._pending_requests[request_id] = request
 
-            self._bus.emit(UIEvent(
-                event_type=EventType.CLARIFICATION_NEEDED,
-                data=request
-            ))
+            self._bus.emit(
+                UIEvent(event_type=EventType.CLARIFICATION_NEEDED, data=request)
+            )
 
     def request_input(
         self,
         request_id: str,
         prompt: str,
         input_type: str = "text",
-        validation: Optional[Dict[str, Any]] = None
+        validation: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Request input from user."""
         with self._lock:
@@ -502,21 +486,16 @@ class UserInteractionHandler:
                 "prompt": prompt,
                 "input_type": input_type,
                 "validation": validation or {},
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
             self._pending_requests[request_id] = request
 
-            self._bus.emit(UIEvent(
-                event_type=EventType.USER_INPUT_REQUIRED,
-                data=request
-            ))
+            self._bus.emit(
+                UIEvent(event_type=EventType.USER_INPUT_REQUIRED, data=request)
+            )
 
     def request_confirmation(
-        self,
-        request_id: str,
-        message: str,
-        action: str,
-        severity: str = "info"
+        self, request_id: str, message: str, action: str, severity: str = "info"
     ) -> None:
         """Request confirmation from user."""
         with self._lock:
@@ -525,14 +504,13 @@ class UserInteractionHandler:
                 "message": message,
                 "action": action,
                 "severity": severity,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
             self._pending_requests[request_id] = request
 
-            self._bus.emit(UIEvent(
-                event_type=EventType.CONFIRMATION_NEEDED,
-                data=request
-            ))
+            self._bus.emit(
+                UIEvent(event_type=EventType.CONFIRMATION_NEEDED, data=request)
+            )
 
     def provide_response(self, request_id: str, response: Any) -> bool:
         """Provide response to a pending request."""
@@ -571,9 +549,7 @@ class UIHooks:
         self.interaction = UserInteractionHandler(self.event_bus)
 
     def subscribe(
-        self,
-        event_type: EventType,
-        callback: Callable[[UIEvent], None]
+        self, event_type: EventType, callback: Callable[[UIEvent], None]
     ) -> str:
         """Subscribe to an event type."""
         return self.event_bus.subscribe(event_type, callback)
@@ -583,17 +559,10 @@ class UIHooks:
         return self.event_bus.subscribe_all(callback)
 
     def emit_custom(
-        self,
-        event_type: EventType,
-        data: Dict[str, Any],
-        source: str = "agent"
+        self, event_type: EventType, data: Dict[str, Any], source: str = "agent"
     ) -> None:
         """Emit a custom event."""
-        self.event_bus.emit(UIEvent(
-            event_type=event_type,
-            data=data,
-            source=source
-        ))
+        self.event_bus.emit(UIEvent(event_type=event_type, data=data, source=source))
 
     def get_event_history(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Get event history as dictionaries."""
@@ -602,6 +571,7 @@ class UIHooks:
 
 # Convenience functions
 
+
 def create_ui_hooks() -> UIHooks:
     """Create a UI hooks instance."""
     return UIHooks()
@@ -609,6 +579,7 @@ def create_ui_hooks() -> UIHooks:
 
 def create_console_logger(hooks: UIHooks) -> None:
     """Attach console logging to UI hooks."""
+
     def log_event(event: UIEvent):
         print(f"[{event.event_type.value}] {event.data}")
 
@@ -618,6 +589,7 @@ def create_console_logger(hooks: UIHooks) -> None:
 def create_json_logger(hooks: UIHooks, output_file: str) -> None:
     """Attach JSON file logging to UI hooks."""
     import threading
+
     lock = threading.Lock()
 
     def log_event(event: UIEvent):

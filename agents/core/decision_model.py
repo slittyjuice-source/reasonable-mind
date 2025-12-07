@@ -18,6 +18,7 @@ from abc import ABC, abstractmethod
 
 class RiskLevel(Enum):
     """Risk levels for decision options."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -26,6 +27,7 @@ class RiskLevel(Enum):
 
 class ConstraintType(Enum):
     """Types of constraints on decisions."""
+
     HARD = "hard"  # Must be satisfied, zeros out option
     SOFT = "soft"  # Penalty if violated
     PREFERENCE = "preference"  # Minor adjustment
@@ -33,6 +35,7 @@ class ConstraintType(Enum):
 
 class DecisionOutcome(Enum):
     """Outcome of a decision for feedback."""
+
     SUCCESS = "success"
     PARTIAL = "partial"
     FAILURE = "failure"
@@ -42,6 +45,7 @@ class DecisionOutcome(Enum):
 @dataclass
 class Citation:
     """A citation backing a claim or score input."""
+
     source_id: str
     source_type: str  # "fact", "tool_result", "memory", "inference"
     content: str
@@ -58,6 +62,7 @@ class Citation:
 @dataclass
 class ScoredInput:
     """An input to the utility function with citation."""
+
     name: str
     value: float
     citations: List[Citation] = field(default_factory=list)
@@ -75,6 +80,7 @@ class ScoredInput:
 @dataclass
 class Constraint:
     """A constraint on decision options."""
+
     name: str
     constraint_type: ConstraintType
     check_fn: Callable[[Dict[str, Any]], bool]
@@ -88,13 +94,14 @@ class Constraint:
         if satisfied:
             return True, 0.0
         if self.constraint_type == ConstraintType.HARD:
-            return False, float('inf')  # Zeros out option
+            return False, float("inf")  # Zeros out option
         return False, self.penalty
 
 
 @dataclass
 class DecisionOption:
     """An option being evaluated for selection."""
+
     option_id: str
     name: str
     description: str
@@ -118,6 +125,7 @@ class DecisionOption:
 @dataclass
 class DecisionResult:
     """Result of a decision evaluation."""
+
     selected_option: Optional[DecisionOption]
     all_options: List[DecisionOption]
     selection_reason: str
@@ -132,6 +140,7 @@ class DecisionResult:
 @dataclass
 class RoleProfile:
     """Profile defining decision preferences for a role."""
+
     role_id: str
     name: str
 
@@ -176,7 +185,7 @@ DEFAULT_PROFILES: Dict[str, RoleProfile] = {
         confidence_threshold=0.6,
         risk_tolerance=0.4,
         require_critic_for_high_risk=True,
-        prefer_validated_options=True
+        prefer_validated_options=True,
     ),
     "operator": RoleProfile(
         role_id="operator",
@@ -189,7 +198,7 @@ DEFAULT_PROFILES: Dict[str, RoleProfile] = {
         confidence_threshold=0.4,
         risk_tolerance=0.6,
         require_critic_for_high_risk=False,
-        prefer_validated_options=False
+        prefer_validated_options=False,
     ),
     "conservative": RoleProfile(
         role_id="conservative",
@@ -202,7 +211,7 @@ DEFAULT_PROFILES: Dict[str, RoleProfile] = {
         confidence_threshold=0.7,
         risk_tolerance=0.2,
         require_critic_for_high_risk=True,
-        prefer_validated_options=True
+        prefer_validated_options=True,
     ),
     "exploratory": RoleProfile(
         role_id="exploratory",
@@ -215,7 +224,7 @@ DEFAULT_PROFILES: Dict[str, RoleProfile] = {
         confidence_threshold=0.3,
         risk_tolerance=0.8,
         require_critic_for_high_risk=False,
-        prefer_validated_options=False
+        prefer_validated_options=False,
     ),
     "balanced": RoleProfile(
         role_id="balanced",
@@ -228,8 +237,8 @@ DEFAULT_PROFILES: Dict[str, RoleProfile] = {
         confidence_threshold=0.5,
         risk_tolerance=0.5,
         require_critic_for_high_risk=True,
-        prefer_validated_options=True
-    )
+        prefer_validated_options=True,
+    ),
 }
 
 
@@ -238,10 +247,7 @@ class UtilityFunction(ABC):
 
     @abstractmethod
     def compute(
-        self,
-        option: DecisionOption,
-        profile: RoleProfile,
-        context: Dict[str, Any]
+        self, option: DecisionOption, profile: RoleProfile, context: Dict[str, Any]
     ) -> float:
         """Compute utility score for an option."""
         ...
@@ -265,10 +271,7 @@ class StandardUtilityFunction(UtilityFunction):
         return max(self.weight_bounds[0], min(self.weight_bounds[1], weight))
 
     def compute(
-        self,
-        option: DecisionOption,
-        profile: RoleProfile,
-        context: Dict[str, Any]
+        self, option: DecisionOption, profile: RoleProfile, context: Dict[str, Any]
     ) -> float:
         """Compute bounded utility score."""
         # Base utility components
@@ -285,8 +288,8 @@ class StandardUtilityFunction(UtilityFunction):
 
         # Apply constraint penalties
         for penalty_name, penalty_value in option.constraint_penalties.items():
-            if penalty_value == float('inf'):
-                return float('-inf')  # Hard constraint violated
+            if penalty_value == float("inf"):
+                return float("-inf")  # Hard constraint violated
             utility -= penalty_value
 
         # Tie-breaker: prefer validated options
@@ -297,9 +300,7 @@ class StandardUtilityFunction(UtilityFunction):
         return utility
 
     def _compute_evidence_factor(
-        self,
-        option: DecisionOption,
-        profile: RoleProfile
+        self, option: DecisionOption, profile: RoleProfile
     ) -> float:
         """Compute evidence quality factor (0-1)."""
         if not option.inputs:
@@ -310,7 +311,9 @@ class StandardUtilityFunction(UtilityFunction):
         if not cited_inputs:
             return 1.0 - (profile.uncited_penalty * profile.evidence_weight)
 
-        avg_quality = sum(inp.citation_quality for inp in cited_inputs) / len(cited_inputs)
+        avg_quality = sum(inp.citation_quality for inp in cited_inputs) / len(
+            cited_inputs
+        )
 
         if avg_quality < profile.citation_threshold:
             return profile.low_confidence_multiplier
@@ -342,7 +345,7 @@ class DecisionModel:
     def __init__(
         self,
         profile: Optional[RoleProfile] = None,
-        utility_fn: Optional[UtilityFunction] = None
+        utility_fn: Optional[UtilityFunction] = None,
     ):
         self.profile = profile or DEFAULT_PROFILES["balanced"]
         self.utility_fn = utility_fn or StandardUtilityFunction()
@@ -392,7 +395,7 @@ class DecisionModel:
         self,
         options: List[DecisionOption],
         context: Optional[Dict[str, Any]] = None,
-        allow_relaxation: bool = True
+        allow_relaxation: bool = True,
     ) -> DecisionResult:
         """
         Evaluate options and select the best one.
@@ -418,7 +421,7 @@ class DecisionModel:
                     selection_reason="No options provided, using fallback",
                     confidence=0.3,
                     warnings=["No options provided"],
-                    fallback_used=True
+                    fallback_used=True,
                 )
             return DecisionResult(
                 selected_option=None,
@@ -426,7 +429,7 @@ class DecisionModel:
                 selection_reason="No options available",
                 confidence=0.0,
                 warnings=["No options to evaluate"],
-                required_escalation=True
+                required_escalation=True,
             )
 
         # Step 1: Validate citations and compute evidence quality
@@ -459,11 +462,10 @@ class DecisionModel:
                         all_options=options,
                         selection_reason="All options blocked by constraints, using fallback",
                         confidence=0.2,
-                        warnings=["All options blocked"] + [
-                            f"{o.name}: blocked by {o.blocked_by}" for o in options
-                        ],
+                        warnings=["All options blocked"]
+                        + [f"{o.name}: blocked by {o.blocked_by}" for o in options],
                         fallback_used=True,
-                        required_escalation=True
+                        required_escalation=True,
                     )
 
                 # Escalate
@@ -473,12 +475,14 @@ class DecisionModel:
                     selection_reason="All options blocked by constraints",
                     confidence=0.0,
                     warnings=["All options blocked, escalation required"],
-                    required_escalation=True
+                    required_escalation=True,
                 )
 
         # Step 4: Compute utility scores
         for option in feasible_options:
-            option.utility_score = self.utility_fn.compute(option, self.profile, context)
+            option.utility_score = self.utility_fn.compute(
+                option, self.profile, context
+            )
 
             # Check if high-risk requires critic
             if option.risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL):
@@ -502,7 +506,7 @@ class DecisionModel:
                     selection_reason="Best option has unacceptable utility, using fallback",
                     confidence=0.3,
                     warnings=["Best option utility too low"],
-                    fallback_used=True
+                    fallback_used=True,
                 )
 
         # Check if critic is required
@@ -523,7 +527,7 @@ class DecisionModel:
             confidence=confidence,
             warnings=warnings + selected.warnings,
             fallback_used=fallback_used,
-            critic_invoked=critic_invoked
+            critic_invoked=critic_invoked,
         )
 
     def _validate_citations(self, option: DecisionOption) -> None:
@@ -555,7 +559,7 @@ class DecisionModel:
             "risk_score": option.risk_score,
             "risk_level": option.risk_level,
             "raw_value": option.raw_value,
-            **option.metadata
+            **option.metadata,
         }
 
         for constraint in self.constraints:
@@ -567,14 +571,12 @@ class DecisionModel:
                 else:
                     option.constraint_penalties[constraint.name] = penalty
 
-    def _relax_constraints(
-        self,
-        options: List[DecisionOption]
-    ) -> List[DecisionOption]:
+    def _relax_constraints(self, options: List[DecisionOption]) -> List[DecisionOption]:
         """Try relaxing soft constraints to find feasible options."""
         # Get only hard constraints
         hard_constraints = [
-            c for c in self.constraints
+            c
+            for c in self.constraints
             if c.constraint_type == ConstraintType.HARD and not c.relaxable
         ]
 
@@ -591,7 +593,7 @@ class DecisionModel:
                 "risk_score": option.risk_score,
                 "risk_level": option.risk_level,
                 "raw_value": option.raw_value,
-                **option.metadata
+                **option.metadata,
             }
 
             blocked = False
@@ -609,9 +611,7 @@ class DecisionModel:
         return relaxed_options
 
     def _compute_selection_confidence(
-        self,
-        selected: DecisionOption,
-        all_options: List[DecisionOption]
+        self, selected: DecisionOption, all_options: List[DecisionOption]
     ) -> float:
         """Compute confidence in the selection."""
         if len(all_options) == 1:
@@ -628,8 +628,10 @@ class DecisionModel:
 
         # Adjust for evidence quality
         if selected.inputs:
-            cited_ratio = sum(1 for i in selected.inputs.values() if i.is_cited) / len(selected.inputs)
-            base_conf *= (0.5 + 0.5 * cited_ratio)
+            cited_ratio = sum(1 for i in selected.inputs.values() if i.is_cited) / len(
+                selected.inputs
+            )
+            base_conf *= 0.5 + 0.5 * cited_ratio
 
         # Adjust for risk
         if selected.risk_level == RiskLevel.HIGH:
@@ -643,24 +645,26 @@ class DecisionModel:
         self,
         selected: DecisionOption,
         all_options: List[DecisionOption],
-        context: Dict[str, Any]
+        context: Dict[str, Any],
     ) -> None:
         """Log decision for feedback loop."""
-        self.decision_history.append({
-            "timestamp": datetime.now().isoformat(),
-            "selected": selected.option_id,
-            "selected_utility": selected.utility_score,
-            "options_count": len(all_options),
-            "profile": self.profile.role_id,
-            "context_keys": list(context.keys()),
-            "outcome": None  # To be updated later
-        })
+        self.decision_history.append(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "selected": selected.option_id,
+                "selected_utility": selected.utility_score,
+                "options_count": len(all_options),
+                "profile": self.profile.role_id,
+                "context_keys": list(context.keys()),
+                "outcome": None,  # To be updated later
+            }
+        )
 
     def record_outcome(
         self,
         decision_index: int,
         outcome: DecisionOutcome,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Record outcome of a past decision for feedback."""
         if 0 <= decision_index < len(self.decision_history):
@@ -668,9 +672,7 @@ class DecisionModel:
             self.decision_history[decision_index]["outcome_details"] = details
 
     def adapt_weights(
-        self,
-        learning_rate: float = 0.1,
-        min_samples: int = 5
+        self, learning_rate: float = 0.1, min_samples: int = 5
     ) -> Dict[str, float]:
         """
         Adapt weights based on decision outcomes.
@@ -678,10 +680,7 @@ class DecisionModel:
         Uses bounded updates to prevent oscillation.
         """
         # Filter decisions with outcomes
-        completed = [
-            d for d in self.decision_history
-            if d.get("outcome") is not None
-        ]
+        completed = [d for d in self.decision_history if d.get("outcome") is not None]
 
         if len(completed) < min_samples:
             return {}
@@ -728,7 +727,7 @@ class DecisionModel:
             "completed_decisions": len(completed),
             "outcomes": outcomes,
             "weight_adjustments": self.weight_adjustments,
-            "current_profile": self.profile.role_id
+            "current_profile": self.profile.role_id,
         }
 
 
@@ -744,14 +743,13 @@ class ContradictionDetector:
         self.penalty_amount = 0.3
 
     def detect_contradictions(
-        self,
-        citations: List[Citation]
+        self, citations: List[Citation]
     ) -> List[Tuple[Citation, Citation, str]]:
         """Detect contradictions between citations."""
         contradictions = []
 
         for i, c1 in enumerate(citations):
-            for c2 in citations[i+1:]:
+            for c2 in citations[i + 1 :]:
                 if self._are_contradictory(c1.content, c2.content):
                     reason = f"'{c1.content[:50]}' contradicts '{c2.content[:50]}'"
                     contradictions.append((c1, c2, reason))
@@ -778,10 +776,7 @@ class ContradictionDetector:
 
         return False
 
-    def apply_to_option(
-        self,
-        option: DecisionOption
-    ) -> Tuple[bool, List[str]]:
+    def apply_to_option(self, option: DecisionOption) -> Tuple[bool, List[str]]:
         """
         Check option for contradictions and apply policy.
 
@@ -820,7 +815,7 @@ class RiskGate:
         self,
         require_critic: bool = True,
         require_extra_evidence: bool = True,
-        max_risk_without_gate: RiskLevel = RiskLevel.MEDIUM
+        max_risk_without_gate: RiskLevel = RiskLevel.MEDIUM,
     ):
         self.require_critic = require_critic
         self.require_extra_evidence = require_extra_evidence
@@ -835,7 +830,7 @@ class RiskGate:
             RiskLevel.LOW: 0,
             RiskLevel.MEDIUM: 1,
             RiskLevel.HIGH: 2,
-            RiskLevel.CRITICAL: 3
+            RiskLevel.CRITICAL: 3,
         }
 
         if risk_order[option.risk_level] > risk_order[self.max_risk_without_gate]:
@@ -850,13 +845,12 @@ class RiskGate:
         return {
             "needs_gate": needs_gate,
             "requirements": requirements,
-            "risk_level": option.risk_level.value
+            "risk_level": option.risk_level.value,
         }
 
 
 def create_decision_model(
-    profile_id: str = "balanced",
-    custom_constraints: Optional[List[Constraint]] = None
+    profile_id: str = "balanced", custom_constraints: Optional[List[Constraint]] = None
 ) -> DecisionModel:
     """Factory function to create a configured decision model."""
     model = DecisionModel()

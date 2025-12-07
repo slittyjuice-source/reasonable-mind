@@ -55,6 +55,7 @@ from agents.core.clarification_system import (
 
 # ==================== Curriculum System Tests ====================
 
+
 class TestCurriculumLearner:
     """Test suite for CurriculumLearner."""
 
@@ -94,6 +95,7 @@ class TestEvaluator:
 
 
 # ==================== Observability System Tests ====================
+
 
 class TestObservabilitySystem:
     """Test suite for ObservabilitySystem."""
@@ -139,14 +141,17 @@ class TestTracer:
 
 # ==================== Role System Tests ====================
 
+
 class TestRoleBasedReasoner:
     """Test suite for RoleBasedReasoner."""
 
     @pytest.fixture
     def reasoner(self):
         """Create RoleBasedReasoner instance with a reasoning function."""
+
         def dummy_reasoning_fn(text: str, context: dict) -> dict:
             return {"result": text}
+
         return RoleBasedReasoner(reasoning_fn=dummy_reasoning_fn)
 
     @pytest.mark.unit
@@ -182,7 +187,7 @@ class TestRolePersona:
             description="Analytical reasoning",
             required_steps=["gather_data", "analyze", "conclude"],
             forbidden_fallacies=["hasty_generalization"],
-            preferred_argument_forms=["inductive"]
+            preferred_argument_forms=["inductive"],
         )
 
         persona = RolePersona(
@@ -199,6 +204,7 @@ class TestRolePersona:
 
 
 # ==================== Semantic Parser Tests ====================
+
 
 class TestEnhancedSemanticParser:
     """Test suite for EnhancedSemanticParser."""
@@ -228,6 +234,7 @@ class TestSemanticFrame:
 
 
 # ==================== Clarification System Tests ====================
+
 
 class TestClarificationManager:
     """Test suite for ClarificationManager."""

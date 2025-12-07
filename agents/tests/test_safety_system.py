@@ -39,8 +39,7 @@ class TestPIIDetector:
 
         assert len(findings) >= 1
         # Check that email was found
-        has_email = any(f[0] == "email" or "email" in str(f).lower()
-                       for f in findings)
+        has_email = any(f[0] == "email" or "email" in str(f).lower() for f in findings)
         assert has_email
 
     @pytest.mark.security
@@ -103,8 +102,11 @@ class TestContentPolicyChecker:
         violations = checker.check(text)
 
         # Should have no severe violations
-        severe = [v for v in violations
-                 if hasattr(v, 'severity') and v.severity in ['high', 'critical']]
+        severe = [
+            v
+            for v in violations
+            if hasattr(v, "severity") and v.severity in ["high", "critical"]
+        ]
         assert len(severe) == 0
 
     @pytest.mark.security
@@ -149,9 +151,9 @@ class TestInputSanitizer:
         input_text = "Test input"
         result = sanitizer.sanitize(input_text)
 
-        assert hasattr(result, 'original')
-        assert hasattr(result, 'sanitized')
-        assert hasattr(result, 'is_safe')
+        assert hasattr(result, "original")
+        assert hasattr(result, "sanitized")
+        assert hasattr(result, "is_safe")
 
 
 class TestSafetyGate:
@@ -177,7 +179,7 @@ class TestSafetyGate:
         is_safe, sanitized, warnings = gate.check_input(dangerous_input)
 
         # Potentially dangerous queries may have warnings
-        assert hasattr(gate, 'check_input')
+        assert hasattr(gate, "check_input")
 
 
 class TestOutputGuard:
@@ -212,7 +214,7 @@ class TestErrorHandler:
         error = handler.create_error(
             category=ErrorCategory.VALIDATION,
             message="Invalid input format",
-            severity=ErrorSeverity.WARNING
+            severity=ErrorSeverity.WARNING,
         )
 
         assert isinstance(error, StructuredError)
@@ -222,13 +224,9 @@ class TestErrorHandler:
     def test_error_history(self, handler):
         """Test error history tracking."""
         handler.create_error(
-            category=ErrorCategory.TIMEOUT,
-            message="Operation timed out"
+            category=ErrorCategory.TIMEOUT, message="Operation timed out"
         )
-        handler.create_error(
-            category=ErrorCategory.PARSING,
-            message="Parse failed"
-        )
+        handler.create_error(category=ErrorCategory.PARSING, message="Parse failed")
 
         stats = handler.get_error_stats()
 
@@ -245,7 +243,7 @@ class TestStructuredError:
             error_id="test_001",
             category=ErrorCategory.PARSING,
             severity=ErrorSeverity.ERROR,
-            message="Failed to parse input"
+            message="Failed to parse input",
         )
 
         assert error.error_id == "test_001"
@@ -259,7 +257,7 @@ class TestStructuredError:
             error_id="test_002",
             category=ErrorCategory.INFERENCE,
             severity=ErrorSeverity.WARNING,
-            message="Low confidence result"
+            message="Low confidence result",
         )
 
         as_dict = error.to_dict()
@@ -276,7 +274,7 @@ class TestStructuredError:
             category=ErrorCategory.TOOL_EXECUTION,
             severity=ErrorSeverity.ERROR,
             message="Tool failed",
-            recovery_suggestions=[RecoveryAction.RETRY, RecoveryAction.FALLBACK]
+            recovery_suggestions=[RecoveryAction.RETRY, RecoveryAction.FALLBACK],
         )
 
         assert RecoveryAction.RETRY in error.recovery_suggestions

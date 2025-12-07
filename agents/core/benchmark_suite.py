@@ -19,6 +19,7 @@ import json
 
 class BenchmarkCategory(Enum):
     """Categories of benchmarks."""
+
     PERFORMANCE = "performance"
     ACCURACY = "accuracy"
     MEMORY = "memory"
@@ -29,6 +30,7 @@ class BenchmarkCategory(Enum):
 @dataclass
 class BenchmarkConfig:
     """Configuration for a benchmark."""
+
     name: str
     category: BenchmarkCategory
     warmup_iterations: int = 3
@@ -40,6 +42,7 @@ class BenchmarkConfig:
 @dataclass
 class BenchmarkResult:
     """Result of a single benchmark run."""
+
     name: str
     category: BenchmarkCategory
     success: bool
@@ -62,6 +65,7 @@ class BenchmarkResult:
 @dataclass
 class RegressionResult:
     """Result of comparing benchmarks across versions."""
+
     benchmark_name: str
     baseline_mean_ms: float
     current_mean_ms: float
@@ -82,7 +86,7 @@ class BenchmarkRunner:
         self,
         config: BenchmarkConfig,
         func: Callable[[], Any],
-        accuracy_checker: Optional[Callable[[Any], bool]] = None
+        accuracy_checker: Optional[Callable[[Any], bool]] = None,
     ) -> BenchmarkResult:
         """Run a single benchmark."""
         timings = []
@@ -117,9 +121,14 @@ class BenchmarkRunner:
                 category=config.category,
                 success=False,
                 iterations=0,
-                mean_ms=0, std_ms=0, min_ms=0, max_ms=0,
-                p50_ms=0, p90_ms=0, p99_ms=0,
-                error="No timings recorded"
+                mean_ms=0,
+                std_ms=0,
+                min_ms=0,
+                max_ms=0,
+                p50_ms=0,
+                p90_ms=0,
+                p99_ms=0,
+                error="No timings recorded",
             )
 
         sorted_timings = sorted(timings)
@@ -137,9 +146,11 @@ class BenchmarkRunner:
             p50_ms=sorted_timings[n // 2],
             p90_ms=sorted_timings[int(n * 0.9)] if n >= 10 else sorted_timings[-1],
             p99_ms=sorted_timings[int(n * 0.99)] if n >= 100 else sorted_timings[-1],
-            throughput=1000 / statistics.mean(timings) if statistics.mean(timings) > 0 else 0,
+            throughput=1000 / statistics.mean(timings)
+            if statistics.mean(timings) > 0
+            else 0,
             accuracy=successes / n if accuracy_checker else None,
-            error=error_msg
+            error=error_msg,
         )
 
         # Store result
@@ -154,10 +165,7 @@ class BenchmarkRunner:
         self._baselines[name] = result
 
     def check_regression(
-        self,
-        name: str,
-        current: BenchmarkResult,
-        threshold_percent: float = 10.0
+        self, name: str, current: BenchmarkResult, threshold_percent: float = 10.0
     ) -> RegressionResult:
         """Check for regression against baseline."""
         baseline = self._baselines.get(name)
@@ -170,7 +178,7 @@ class BenchmarkRunner:
                 change_percent=0,
                 is_regression=False,
                 threshold_percent=threshold_percent,
-                details="No baseline available"
+                details="No baseline available",
             )
 
         change = ((current.mean_ms - baseline.mean_ms) / baseline.mean_ms) * 100
@@ -183,10 +191,12 @@ class BenchmarkRunner:
             change_percent=change,
             is_regression=is_regression,
             threshold_percent=threshold_percent,
-            details=f"{'REGRESSION' if is_regression else 'OK'}: {change:+.1f}% change"
+            details=f"{'REGRESSION' if is_regression else 'OK'}: {change:+.1f}% change",
         )
 
-    def get_results(self, name: Optional[str] = None) -> Dict[str, List[BenchmarkResult]]:
+    def get_results(
+        self, name: Optional[str] = None
+    ) -> Dict[str, List[BenchmarkResult]]:
         """Get benchmark results."""
         if name:
             return {name: self._results.get(name, [])}
@@ -194,10 +204,7 @@ class BenchmarkRunner:
 
     def export_results(self) -> str:
         """Export all results to JSON."""
-        data = {
-            "timestamp": datetime.now().isoformat(),
-            "benchmarks": {}
-        }
+        data = {"timestamp": datetime.now().isoformat(), "benchmarks": {}}
 
         for name, results in self._results.items():
             data["benchmarks"][name] = [
@@ -213,7 +220,7 @@ class BenchmarkRunner:
                     "p99_ms": r.p99_ms,
                     "throughput": r.throughput,
                     "accuracy": r.accuracy,
-                    "timestamp": r.timestamp
+                    "timestamp": r.timestamp,
                 }
                 for r in results
             ]
@@ -232,23 +239,26 @@ class AccuracyBenchmarks:
         name: str,
         input_data: Any,
         expected_output: Any,
-        category: str = "general"
+        category: str = "general",
     ) -> None:
         """Add a test case for accuracy testing."""
-        self._test_cases.append({
-            "name": name,
-            "input": input_data,
-            "expected": expected_output,
-            "category": category
-        })
+        self._test_cases.append(
+            {
+                "name": name,
+                "input": input_data,
+                "expected": expected_output,
+                "category": category,
+            }
+        )
 
     def run_accuracy_test(
         self,
         evaluator: Callable[[Any], Any],
-        comparator: Optional[Callable[[Any, Any], bool]] = None
+        comparator: Optional[Callable[[Any, Any], bool]] = None,
     ) -> Dict[str, Any]:
         """Run accuracy tests against all test cases."""
         if comparator is None:
+
             def comparator(expected, actual):
                 return expected == actual
 
@@ -262,26 +272,30 @@ class AccuracyBenchmarks:
                 if is_correct:
                     correct += 1
 
-                results.append({
-                    "name": case["name"],
-                    "category": case["category"],
-                    "correct": is_correct,
-                    "expected": case["expected"],
-                    "actual": actual
-                })
+                results.append(
+                    {
+                        "name": case["name"],
+                        "category": case["category"],
+                        "correct": is_correct,
+                        "expected": case["expected"],
+                        "actual": actual,
+                    }
+                )
             except Exception as e:
-                results.append({
-                    "name": case["name"],
-                    "category": case["category"],
-                    "correct": False,
-                    "error": str(e)
-                })
+                results.append(
+                    {
+                        "name": case["name"],
+                        "category": case["category"],
+                        "correct": False,
+                        "error": str(e),
+                    }
+                )
 
         return {
             "total": len(self._test_cases),
             "correct": correct,
             "accuracy": correct / len(self._test_cases) if self._test_cases else 0,
-            "results": results
+            "results": results,
         }
 
     def get_accuracy_by_category(self, results: Dict[str, Any]) -> Dict[str, float]:
@@ -307,16 +321,13 @@ class PerformanceBenchmarks:
         self.runner = runner
 
     def benchmark_inference(
-        self,
-        engine: Any,
-        premises: List[str],
-        iterations: int = 100
+        self, engine: Any, premises: List[str], iterations: int = 100
     ) -> BenchmarkResult:
         """Benchmark inference engine performance."""
         config = BenchmarkConfig(
             name="inference_engine",
             category=BenchmarkCategory.PERFORMANCE,
-            iterations=iterations
+            iterations=iterations,
         )
 
         def run():
@@ -325,16 +336,13 @@ class PerformanceBenchmarks:
         return self.runner.run_benchmark(config, run)
 
     def benchmark_memory_retrieval(
-        self,
-        memory: Any,
-        query: str,
-        iterations: int = 100
+        self, memory: Any, query: str, iterations: int = 100
     ) -> BenchmarkResult:
         """Benchmark memory retrieval performance."""
         config = BenchmarkConfig(
             name="memory_retrieval",
             category=BenchmarkCategory.LATENCY,
-            iterations=iterations
+            iterations=iterations,
         )
 
         def run():
@@ -343,16 +351,13 @@ class PerformanceBenchmarks:
         return self.runner.run_benchmark(config, run)
 
     def benchmark_planning(
-        self,
-        planner: Any,
-        goal: str,
-        iterations: int = 50
+        self, planner: Any, goal: str, iterations: int = 50
     ) -> BenchmarkResult:
         """Benchmark planning performance."""
         config = BenchmarkConfig(
             name="planning",
             category=BenchmarkCategory.PERFORMANCE,
-            iterations=iterations
+            iterations=iterations,
         )
 
         def run():
@@ -361,16 +366,13 @@ class PerformanceBenchmarks:
         return self.runner.run_benchmark(config, run)
 
     def benchmark_constraint_checking(
-        self,
-        engine: Any,
-        context: Dict[str, Any],
-        iterations: int = 200
+        self, engine: Any, context: Dict[str, Any], iterations: int = 200
     ) -> BenchmarkResult:
         """Benchmark constraint checking performance."""
         config = BenchmarkConfig(
             name="constraint_checking",
             category=BenchmarkCategory.PERFORMANCE,
-            iterations=iterations
+            iterations=iterations,
         )
 
         def run():
@@ -379,16 +381,13 @@ class PerformanceBenchmarks:
         return self.runner.run_benchmark(config, run)
 
     def benchmark_retrieval_augmentation(
-        self,
-        retriever: Any,
-        query: str,
-        iterations: int = 50
+        self, retriever: Any, query: str, iterations: int = 50
     ) -> BenchmarkResult:
         """Benchmark RAG retrieval performance."""
         config = BenchmarkConfig(
             name="rag_retrieval",
             category=BenchmarkCategory.LATENCY,
-            iterations=iterations
+            iterations=iterations,
         )
 
         def run():
@@ -415,7 +414,7 @@ class BenchmarkSuite:
             "modus_ponens_1",
             {"premises": ["If A then B", "A"], "goal": "B"},
             True,
-            "logic"
+            "logic",
         )
 
         # Modus tollens
@@ -423,7 +422,7 @@ class BenchmarkSuite:
             "modus_tollens_1",
             {"premises": ["If A then B", "Not B"], "goal": "Not A"},
             True,
-            "logic"
+            "logic",
         )
 
         # Syllogism
@@ -431,7 +430,7 @@ class BenchmarkSuite:
             "syllogism_1",
             {"premises": ["All X are Y", "All Y are Z"], "goal": "All X are Z"},
             True,
-            "logic"
+            "logic",
         )
 
         # Contradiction detection
@@ -439,12 +438,11 @@ class BenchmarkSuite:
             "contradiction_1",
             {"premises": ["A is true", "A is false"]},
             False,  # Should detect contradiction
-            "logic"
+            "logic",
         )
 
     def run_full_suite(
-        self,
-        components: Optional[Dict[str, Any]] = None
+        self, components: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Run the full benchmark suite."""
         suite_start = time.time()
@@ -452,40 +450,37 @@ class BenchmarkSuite:
             "timestamp": datetime.now().isoformat(),
             "performance": {},
             "accuracy": {},
-            "regressions": []
+            "regressions": [],
         }
 
         # Run component benchmarks if provided
         if components:
             if "inference_engine" in components:
                 result = self.performance.benchmark_inference(
-                    components["inference_engine"],
-                    ["If P then Q", "P"]
+                    components["inference_engine"], ["If P then Q", "P"]
                 )
                 results["performance"]["inference"] = {
                     "mean_ms": result.mean_ms,
                     "p99_ms": result.p99_ms,
-                    "throughput": result.throughput
+                    "throughput": result.throughput,
                 }
 
             if "memory" in components:
                 result = self.performance.benchmark_memory_retrieval(
-                    components["memory"],
-                    "test query"
+                    components["memory"], "test query"
                 )
                 results["performance"]["memory"] = {
                     "mean_ms": result.mean_ms,
-                    "p99_ms": result.p99_ms
+                    "p99_ms": result.p99_ms,
                 }
 
             if "constraint_engine" in components:
                 result = self.performance.benchmark_constraint_checking(
-                    components["constraint_engine"],
-                    {"value": 1.0}
+                    components["constraint_engine"], {"value": 1.0}
                 )
                 results["performance"]["constraints"] = {
                     "mean_ms": result.mean_ms,
-                    "p99_ms": result.p99_ms
+                    "p99_ms": result.p99_ms,
                 }
 
         # Check for regressions
@@ -494,11 +489,13 @@ class BenchmarkSuite:
                 current = result_list[-1]
                 regression = self.runner.check_regression(name, current)
                 if regression.is_regression:
-                    results["regressions"].append({
-                        "benchmark": name,
-                        "change_percent": regression.change_percent,
-                        "details": regression.details
-                    })
+                    results["regressions"].append(
+                        {
+                            "benchmark": name,
+                            "change_percent": regression.change_percent,
+                            "details": regression.details,
+                        }
+                    )
 
         results["duration_seconds"] = time.time() - suite_start
         self._suite_results.append(results)
@@ -524,7 +521,9 @@ class BenchmarkSuite:
                 mean = data.get("mean_ms", 0)
                 p99 = data.get("p99_ms", 0)
                 throughput = data.get("throughput", 0)
-                lines.append(f"| {name} | {mean:.2f} | {p99:.2f} | {throughput:.1f}/s |")
+                lines.append(
+                    f"| {name} | {mean:.2f} | {p99:.2f} | {throughput:.1f}/s |"
+                )
 
             lines.append("")
 
@@ -534,7 +533,9 @@ class BenchmarkSuite:
                 lines.append("## ⚠️ Regressions Detected")
                 lines.append("")
                 for reg in regressions:
-                    lines.append(f"- **{reg['benchmark']}**: {reg['change_percent']:+.1f}% - {reg['details']}")
+                    lines.append(
+                        f"- **{reg['benchmark']}**: {reg['change_percent']:+.1f}% - {reg['details']}"
+                    )
                 lines.append("")
             else:
                 lines.append("## ✅ No Regressions Detected")
@@ -544,13 +545,17 @@ class BenchmarkSuite:
 
     def export_results(self) -> str:
         """Export all suite results to JSON."""
-        return json.dumps({
-            "suite_results": self._suite_results,
-            "benchmark_results": self.runner.export_results()
-        }, indent=2)
+        return json.dumps(
+            {
+                "suite_results": self._suite_results,
+                "benchmark_results": self.runner.export_results(),
+            },
+            indent=2,
+        )
 
 
 # Convenience functions
+
 
 def create_benchmark_suite() -> BenchmarkSuite:
     """Create a benchmark suite with standard test cases."""
@@ -565,7 +570,7 @@ def quick_benchmark(func: Callable, iterations: int = 100) -> Dict[str, float]:
     config = BenchmarkConfig(
         name="quick_benchmark",
         category=BenchmarkCategory.PERFORMANCE,
-        iterations=iterations
+        iterations=iterations,
     )
     result = runner.run_benchmark(config, func)
 
@@ -575,5 +580,5 @@ def quick_benchmark(func: Callable, iterations: int = 100) -> Dict[str, float]:
         "min_ms": result.min_ms,
         "max_ms": result.max_ms,
         "p99_ms": result.p99_ms,
-        "throughput": result.throughput or 0.0
+        "throughput": result.throughput or 0.0,
     }

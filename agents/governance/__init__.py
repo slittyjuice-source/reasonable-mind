@@ -1,11 +1,8 @@
-"""
-Lightweight governance layer exposed for tests.
+"""Governance utilities for process, execution, and plan validation.
 
-These modules provide a minimal implementation focused on the behaviours
-covered by the governance and shell injection test suites. The intent is to
-mirror the API that tests expect while keeping the logic easy to audit.
+This package exposes a small surface used by the test-suite. Keep imports
+at module top-level so linters and static analyzers see public symbols.
 """
-"""Governance utilities for process, execution, and plan validation."""
 
 from .process_gate import ProcessGate, ProcessStage, StageResult
 from .registry import ConstraintRegistry, ConstraintProfile
@@ -24,7 +21,6 @@ from .plan_validator import (
     ValidationResult,
     Violation,
 )
-from .plan_validator import PlanValidator, Plan, PlanStep, ViolationType
 
 __all__ = [
     "ProcessGate",

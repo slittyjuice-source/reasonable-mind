@@ -21,6 +21,7 @@ from collections import Counter
 
 class RetrievalMethod(Enum):
     """Methods for document retrieval."""
+
     BM25 = "bm25"
     VECTOR = "vector"
     HYBRID = "hybrid"
@@ -29,6 +30,7 @@ class RetrievalMethod(Enum):
 
 class DiversityMethod(Enum):
     """Methods for result diversification."""
+
     MMR = "mmr"  # Maximal Marginal Relevance
     CLUSTERING = "clustering"
     TOPIC_COVERAGE = "topic_coverage"
@@ -37,6 +39,7 @@ class DiversityMethod(Enum):
 @dataclass
 class Document:
     """A document for retrieval."""
+
     doc_id: str
     content: str
     title: str = ""
@@ -50,6 +53,7 @@ class Document:
 @dataclass
 class RetrievalResult:
     """Result from retrieval."""
+
     document: Document
     score: float
     method: RetrievalMethod
@@ -61,6 +65,7 @@ class RetrievalResult:
 @dataclass
 class HybridResult:
     """Combined hybrid retrieval result."""
+
     results: List[RetrievalResult]
     bm25_count: int
     vector_count: int
@@ -76,16 +81,52 @@ class Tokenizer:
         self,
         lowercase: bool = True,
         remove_punctuation: bool = True,
-        stopwords: Optional[Set[str]] = None
+        stopwords: Optional[Set[str]] = None,
     ):
         self.lowercase = lowercase
         self.remove_punctuation = remove_punctuation
         self.stopwords = stopwords or {
-            "the", "a", "an", "is", "are", "was", "were", "be", "been",
-            "being", "have", "has", "had", "do", "does", "did", "will",
-            "would", "could", "should", "may", "might", "must", "shall",
-            "can", "need", "dare", "ought", "used", "to", "of", "in",
-            "for", "on", "with", "at", "by", "from", "as", "into", "about"
+            "the",
+            "a",
+            "an",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "must",
+            "shall",
+            "can",
+            "need",
+            "dare",
+            "ought",
+            "used",
+            "to",
+            "of",
+            "in",
+            "for",
+            "on",
+            "with",
+            "at",
+            "by",
+            "from",
+            "as",
+            "into",
+            "about",
         }
 
     def tokenize(self, text: str) -> List[str]:
@@ -94,7 +135,7 @@ class Tokenizer:
             text = text.lower()
 
         if self.remove_punctuation:
-            text = re.sub(r'[^\w\s]', ' ', text)
+            text = re.sub(r"[^\w\s]", " ", text)
 
         tokens = text.split()
 
@@ -116,7 +157,7 @@ class BM25Retriever:
         k1: float = 1.5,
         b: float = 0.75,
         tokenizer: Optional[Tokenizer] = None,
-        cache_size: int = 128
+        cache_size: int = 128,
     ):
         self.k1 = k1
         self.b = b
@@ -192,9 +233,13 @@ class BM25Retriever:
                 idf = math.log((n_docs - df + 0.5) / (df + 0.5) + 1)
 
                 # TF component with length normalization
-                tf_norm = tf * (self.k1 + 1) / (
-                    tf + self.k1 * (
-                        1 - self.b + self.b * doc_len / max(self.avg_doc_length, 1)
+                tf_norm = (
+                    tf
+                    * (self.k1 + 1)
+                    / (
+                        tf
+                        + self.k1
+                        * (1 - self.b + self.b * doc_len / max(self.avg_doc_length, 1))
                     )
                 )
 
@@ -208,13 +253,15 @@ class BM25Retriever:
 
         results = []
         for rank, (doc_idx, score) in enumerate(scores[:top_k]):
-            results.append(RetrievalResult(
-                document=self.documents[doc_idx],
-                score=score,
-                method=RetrievalMethod.BM25,
-                rank=rank + 1,
-                relevance_explanation=f"BM25 keyword match: {score:.3f}"
-            ))
+            results.append(
+                RetrievalResult(
+                    document=self.documents[doc_idx],
+                    score=score,
+                    method=RetrievalMethod.BM25,
+                    rank=rank + 1,
+                    relevance_explanation=f"BM25 keyword match: {score:.3f}",
+                )
+            )
 
         # Cache results (with LRU eviction)
         if len(self._query_cache) >= self.cache_size:
@@ -231,7 +278,7 @@ class BM25Retriever:
             "cache_hits": self._cache_hits,
             "cache_misses": self._cache_misses,
             "hit_rate": self._cache_hits / max(1, total),
-            "cache_size": len(self._query_cache)
+            "cache_size": len(self._query_cache),
         }
 
 
@@ -254,9 +301,7 @@ class VectorRetriever:
                 self.embeddings.append(doc.embedding)
 
     def search(
-        self,
-        query_embedding: List[float],
-        top_k: int = 10
+        self, query_embedding: List[float], top_k: int = 10
     ) -> List[RetrievalResult]:
         """Search for documents by vector similarity."""
         scores: List[Tuple[int, float]] = []
@@ -269,21 +314,19 @@ class VectorRetriever:
 
         results = []
         for rank, (doc_idx, score) in enumerate(scores[:top_k]):
-            results.append(RetrievalResult(
-                document=self.documents[doc_idx],
-                score=score,
-                method=RetrievalMethod.VECTOR,
-                rank=rank + 1,
-                relevance_explanation=f"Vector similarity: {score:.3f}"
-            ))
+            results.append(
+                RetrievalResult(
+                    document=self.documents[doc_idx],
+                    score=score,
+                    method=RetrievalMethod.VECTOR,
+                    rank=rank + 1,
+                    relevance_explanation=f"Vector similarity: {score:.3f}",
+                )
+            )
 
         return results
 
-    def _cosine_similarity(
-        self,
-        vec1: List[float],
-        vec2: List[float]
-    ) -> float:
+    def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """Compute cosine similarity."""
         dot = sum(a * b for a, b in zip(vec1, vec2))
         norm1 = math.sqrt(sum(a * a for a in vec1))
@@ -300,10 +343,7 @@ class Reranker(ABC):
 
     @abstractmethod
     def rerank(
-        self,
-        query: str,
-        results: List[RetrievalResult],
-        top_k: int = 10
+        self, query: str, results: List[RetrievalResult], top_k: int = 10
     ) -> List[RetrievalResult]:
         """Rerank retrieval results."""
 
@@ -316,10 +356,7 @@ class CrossEncoderReranker(Reranker):
         self.score_fn = score_fn or self._default_score
 
     def rerank(
-        self,
-        query: str,
-        results: List[RetrievalResult],
-        top_k: int = 10
+        self, query: str, results: List[RetrievalResult], top_k: int = 10
     ) -> List[RetrievalResult]:
         """Rerank using cross-encoder scores."""
         scored = []
@@ -334,14 +371,16 @@ class CrossEncoderReranker(Reranker):
 
         reranked = []
         for rank, (result, score) in enumerate(scored[:top_k]):
-            reranked.append(RetrievalResult(
-                document=result.document,
-                score=score,
-                method=RetrievalMethod.RERANKED,
-                rank=rank + 1,
-                diversity_score=result.diversity_score,
-                relevance_explanation=f"Reranked: {score:.3f}"
-            ))
+            reranked.append(
+                RetrievalResult(
+                    document=result.document,
+                    score=score,
+                    method=RetrievalMethod.RERANKED,
+                    rank=rank + 1,
+                    diversity_score=result.diversity_score,
+                    relevance_explanation=f"Reranked: {score:.3f}",
+                )
+            )
 
         return reranked
 
@@ -364,10 +403,7 @@ class ColBERTReranker(Reranker):
         self.token_embeddings: Dict[str, List[float]] = {}
 
     def rerank(
-        self,
-        query: str,
-        results: List[RetrievalResult],
-        top_k: int = 10
+        self, query: str, results: List[RetrievalResult], top_k: int = 10
     ) -> List[RetrievalResult]:
         """Rerank using ColBERT-style MaxSim."""
         query_tokens = query.lower().split()
@@ -380,8 +416,11 @@ class ColBERTReranker(Reranker):
             max_sim_sum = 0.0
             for q_token in query_tokens:
                 max_sim = max(
-                    (self._token_similarity(q_token, d_token) for d_token in doc_tokens),
-                    default=0.0
+                    (
+                        self._token_similarity(q_token, d_token)
+                        for d_token in doc_tokens
+                    ),
+                    default=0.0,
                 )
                 max_sim_sum += max_sim
 
@@ -392,13 +431,15 @@ class ColBERTReranker(Reranker):
 
         reranked = []
         for rank, (result, score) in enumerate(scored[:top_k]):
-            reranked.append(RetrievalResult(
-                document=result.document,
-                score=score,
-                method=RetrievalMethod.RERANKED,
-                rank=rank + 1,
-                relevance_explanation=f"ColBERT MaxSim: {score:.3f}"
-            ))
+            reranked.append(
+                RetrievalResult(
+                    document=result.document,
+                    score=score,
+                    method=RetrievalMethod.RERANKED,
+                    rank=rank + 1,
+                    relevance_explanation=f"ColBERT MaxSim: {score:.3f}",
+                )
+            )
 
         return reranked
 
@@ -423,9 +464,7 @@ class MMRDiversifier:
         self.lambda_param = lambda_param
 
     def diversify(
-        self,
-        results: List[RetrievalResult],
-        top_k: int = 10
+        self, results: List[RetrievalResult], top_k: int = 10
     ) -> List[RetrievalResult]:
         """Apply MMR diversification."""
         if not results:
@@ -438,7 +477,7 @@ class MMRDiversifier:
         selected.append(candidates.pop(0))
 
         while len(selected) < top_k and candidates:
-            best_mmr = float('-inf')
+            best_mmr = float("-inf")
             best_idx = 0
 
             for idx, candidate in enumerate(candidates):
@@ -460,8 +499,7 @@ class MMRDiversifier:
 
             best = candidates.pop(best_idx)
             best.diversity_score = 1 - max(
-                self._document_similarity(best.document, s.document)
-                for s in selected
+                self._document_similarity(best.document, s.document) for s in selected
             )
             selected.append(best)
 
@@ -500,7 +538,7 @@ class HybridRetriever:
         bm25_weight: float = 0.4,
         vector_weight: float = 0.6,
         diversify: bool = True,
-        mmr_lambda: float = 0.7
+        mmr_lambda: float = 0.7,
     ):
         self.bm25_weight = bm25_weight
         self.vector_weight = vector_weight
@@ -526,7 +564,7 @@ class HybridRetriever:
         query_embedding: Optional[List[float]] = None,
         top_k: int = 10,
         bm25_k: int = 50,
-        vector_k: int = 50
+        vector_k: int = 50,
     ) -> HybridResult:
         """Perform hybrid search."""
         # BM25 retrieval
@@ -538,9 +576,7 @@ class HybridRetriever:
             vector_results = self.vector.search(query_embedding, top_k=vector_k)
 
         # Reciprocal Rank Fusion
-        fused = self._reciprocal_rank_fusion(
-            bm25_results, vector_results
-        )
+        fused = self._reciprocal_rank_fusion(bm25_results, vector_results)
 
         # Apply reranking if available
         if self.reranker:
@@ -565,14 +601,14 @@ class HybridRetriever:
             bm25_count=len(bm25_results),
             vector_count=len(vector_results),
             overlap_count=overlap,
-            diversity_score=diversity
+            diversity_score=diversity,
         )
 
     def _reciprocal_rank_fusion(
         self,
         bm25_results: List[RetrievalResult],
         vector_results: List[RetrievalResult],
-        k: int = 60
+        k: int = 60,
     ) -> List[RetrievalResult]:
         """Combine results using RRF."""
         scores: Dict[str, float] = {}
@@ -581,13 +617,17 @@ class HybridRetriever:
         # Score BM25 results
         for result in bm25_results:
             doc_id = result.document.doc_id
-            scores[doc_id] = scores.get(doc_id, 0) + self.bm25_weight / (k + result.rank)
+            scores[doc_id] = scores.get(doc_id, 0) + self.bm25_weight / (
+                k + result.rank
+            )
             doc_map[doc_id] = result
 
         # Score vector results
         for result in vector_results:
             doc_id = result.document.doc_id
-            scores[doc_id] = scores.get(doc_id, 0) + self.vector_weight / (k + result.rank)
+            scores[doc_id] = scores.get(doc_id, 0) + self.vector_weight / (
+                k + result.rank
+            )
             if doc_id not in doc_map:
                 doc_map[doc_id] = result
 
@@ -597,13 +637,15 @@ class HybridRetriever:
         results = []
         for rank, doc_id in enumerate(sorted_ids):
             original = doc_map[doc_id]
-            results.append(RetrievalResult(
-                document=original.document,
-                score=scores[doc_id],
-                method=RetrievalMethod.HYBRID,
-                rank=rank + 1,
-                relevance_explanation=f"RRF hybrid: {scores[doc_id]:.3f}"
-            ))
+            results.append(
+                RetrievalResult(
+                    document=original.document,
+                    score=scores[doc_id],
+                    method=RetrievalMethod.HYBRID,
+                    rank=rank + 1,
+                    relevance_explanation=f"RRF hybrid: {scores[doc_id]:.3f}",
+                )
+            )
 
         return results
 
@@ -614,7 +656,7 @@ class HybridRetriever:
 
         similarities = []
         for i, r1 in enumerate(results):
-            for r2 in results[i + 1:]:
+            for r2 in results[i + 1 :]:
                 sim = self.mmr._document_similarity(r1.document, r2.document)
                 similarities.append(sim)
 
@@ -635,11 +677,7 @@ class QueryExpander:
         """Add synonyms for a term."""
         self.synonyms[term.lower()] = [s.lower() for s in synonyms]
 
-    def expand(
-        self,
-        query: str,
-        max_expansions: int = 3
-    ) -> Tuple[str, List[str]]:
+    def expand(self, query: str, max_expansions: int = 3) -> Tuple[str, List[str]]:
         """Expand query with synonyms."""
         terms = query.lower().split()
         expanded_terms: List[str] = []
@@ -663,7 +701,7 @@ class RetrievalEvaluator:
         self,
         results: List[RetrievalResult],
         relevant_ids: Set[str],
-        k_values: List[int] = None
+        k_values: List[int] = None,
     ) -> Dict[str, float]:
         """Compute retrieval metrics."""
         if k_values is None:
@@ -692,18 +730,17 @@ class RetrievalEvaluator:
 
         return metrics
 
-    def _compute_ndcg(
-        self,
-        result_ids: List[str],
-        relevant_ids: Set[str]
-    ) -> float:
+    def _compute_ndcg(self, result_ids: List[str], relevant_ids: Set[str]) -> float:
         """Compute NDCG@k."""
         dcg = 0.0
         for i, doc_id in enumerate(result_ids):
             if doc_id in relevant_ids:
                 dcg += 1.0 / math.log2(i + 2)
 
-        ideal_dcg = sum(1.0 / math.log2(i + 2) for i in range(min(len(relevant_ids), len(result_ids))))
+        ideal_dcg = sum(
+            1.0 / math.log2(i + 2)
+            for i in range(min(len(relevant_ids), len(result_ids)))
+        )
 
         if ideal_dcg == 0:
             return 0.0
@@ -713,15 +750,11 @@ class RetrievalEvaluator:
 
 # Factory functions
 def create_hybrid_retriever(
-    bm25_weight: float = 0.4,
-    vector_weight: float = 0.6,
-    use_reranker: bool = True
+    bm25_weight: float = 0.4, vector_weight: float = 0.6, use_reranker: bool = True
 ) -> HybridRetriever:
     """Create a hybrid retriever."""
     retriever = HybridRetriever(
-        bm25_weight=bm25_weight,
-        vector_weight=vector_weight,
-        diversify=True
+        bm25_weight=bm25_weight, vector_weight=vector_weight, diversify=True
     )
 
     if use_reranker:
@@ -731,15 +764,7 @@ def create_hybrid_retriever(
 
 
 def create_document(
-    doc_id: str,
-    content: str,
-    title: str = "",
-    embedding: Optional[List[float]] = None
+    doc_id: str, content: str, title: str = "", embedding: Optional[List[float]] = None
 ) -> Document:
     """Create a document for retrieval."""
-    return Document(
-        doc_id=doc_id,
-        content=content,
-        title=title,
-        embedding=embedding
-    )
+    return Document(doc_id=doc_id, content=content, title=title, embedding=embedding)

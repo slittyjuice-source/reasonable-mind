@@ -1,4 +1,3 @@
-
 """
 Execution proxy focused on shell-injection hardening for tests.
 
@@ -6,6 +5,7 @@ The proxy does not execute commands in LIVE mode (to keep tests hermetic);
 it validates commands against an allowlist, deny patterns, and shell
 metacharacter checks, then returns an ExecutionResult describing the decision.
 """
+
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
@@ -14,10 +14,12 @@ import re
 import time
 import uuid
 
+
 class ExecutionMode(Enum):
     LIVE = "live"
     DRY_RUN = "dry_run"
     MOCK = "mock"
+
 
 @dataclass(frozen=True)
 class ExecutionContext:
@@ -40,6 +42,7 @@ class ExecutionContext:
             "session_id": self.session_id,
         }
 
+
 def create_execution_context(
     constraint_hash: str,
     plan_id: str,
@@ -53,15 +56,17 @@ def create_execution_context(
         session_id=session_id or uuid.uuid4().hex[:8],
     )
 
+
 @dataclass
 class ExecutionResult:
-    correlation_id: str
-    command: str
-    mode: ExecutionMode
-    exit_code: int
-    stdout: str
-    stderr: str
-    duration_ms: int
+    correlation_id: str = field(default_factory=lambda: uuid.uuid4().hex[:8])
+    command: str = ""
+    mode: ExecutionMode = ExecutionMode.LIVE
+    exit_code: int = 0
+    stdout: str = ""
+    stderr: str = ""
+    duration_ms: int = 0
+    message: Optional[str] = None
     blocked: bool = False
     block_reason: Optional[str] = None
     constraint_hash: Optional[str] = None
@@ -93,6 +98,7 @@ class ExecutionResult:
             "duration_ms": self.duration_ms,
             "timestamp": int(time.time() * 1000),
         }
+
 
 class ExecutionProxy:
     _DENY_PATTERNS: List[Pattern[str]] = [
@@ -126,7 +132,9 @@ class ExecutionProxy:
     def _record_friction(self, command_token: str) -> None:
         self._friction[command_token] = self._friction.get(command_token, 0) + 1
 
-    def _blocked_result(self, command: str, reason: str, ctx: Optional[ExecutionContext]) -> ExecutionResult:
+    def _blocked_result(
+        self, command: str, reason: str, ctx: Optional[ExecutionContext]
+    ) -> ExecutionResult:
         token = self._primary_token(command)
         if token:
             self._record_friction(token)
@@ -166,21 +174,22 @@ class ExecutionProxy:
         return None
 
     def _matches_denylist(self, command: str) -> Optional[str]:
+        # Return denylist reasons with an explicit 'denylist' marker to aid tests
         if self._DENY_REDIRECT.search(command):
-            return "Redirection to system directories is denied"
+            return "denylist: Redirection to system directories is denied"
         if self._DENY_PIPE_TO_SHELL.search(command):
-            return "Piping to shell is denied"
+            return "denylist: Piping to shell is denied"
         for pattern in self._DENY_PATTERNS:
             if pattern.search(command):
-                return f"Pattern '{pattern.pattern}' is denied"
+                return f"denylist: Pattern '{pattern.pattern}' is denied"
         return None
 
     def _is_blocked_command(self, command: str) -> Optional[str]:
         token = self._primary_token(command)
         if "rm -rf /" in command:
-            return "Attempt to remove root directory is blocked"
+            return "denylist: Attempt to remove root directory is blocked"
         if token in self._BLOCKED_COMMANDS:
-            return f"Command '{token}' is blocked"
+            return f"denylist: Command '{token}' is blocked"
         return None
 
     def execute(
@@ -189,26 +198,89 @@ class ExecutionProxy:
         execution_context: Optional[ExecutionContext] = None,
     ) -> ExecutionResult:
         ctx = execution_context or self.execution_context
+        # MOCK mode: return registered mock if one matches; otherwise return default mock result
+        if self.mode == ExecutionMode.MOCK:
+            for pattern, result in self._mocks:
+                if pattern.search(command):
+                    # If mock provides message but not stdout, prefer message
+                    if not result.stdout and result.message:
+                        # Create a shallow copy with stdout populated
+                        return ExecutionResult(
+                            correlation_id=result.correlation_id,
+                            command=command or result.command,
+                            mode=self.mode,
+                            exit_code=result.exit_code,
+                            stdout=result.message,
+                            stderr=result.stderr,
+                            duration_ms=result.duration_ms,
+                            message=result.message,
+                            blocked=result.blocked,
+                            block_reason=result.block_reason,
+                            constraint_hash=result.constraint_hash or getattr(ctx, "constraint_hash", None),
+                            plan_id=result.plan_id or getattr(ctx, "plan_id", None),
+                            persona_id=result.persona_id or getattr(ctx, "persona_id", None),
+                            execution_context=result.execution_context or ctx,
+                        )
+                    return ExecutionResult(
+                        correlation_id=result.correlation_id,
+                        command=command or result.command,
+                        mode=self.mode,
+                        exit_code=result.exit_code,
+                        stdout=result.stdout,
+                        stderr=result.stderr,
+                        duration_ms=result.duration_ms,
+                        message=result.message,
+                        blocked=result.blocked,
+                        block_reason=result.block_reason,
+                        constraint_hash=result.constraint_hash or getattr(ctx, "constraint_hash", None),
+                        plan_id=result.plan_id or getattr(ctx, "plan_id", None),
+                        persona_id=result.persona_id or getattr(ctx, "persona_id", None),
+                        execution_context=result.execution_context or ctx,
+                    )
+            # No mock matched
+            return ExecutionResult(
+                command=command,
+                mode=self.mode,
+                exit_code=0,
+                stdout="",
+                stderr="",
+                duration_ms=0,
+                message="No mock registered",
+                execution_context=ctx,
+            )
+
+        # Non-MOCK modes: perform block checks
         block_reason = (
-            self._validate_allowlist(command)
-            or self._matches_denylist(command)
+            self._matches_denylist(command)
             or self._is_blocked_command(command)
+            or self._validate_allowlist(command)
         )
         if block_reason:
             return self._blocked_result(command, block_reason, ctx)
+
+        # DRY_RUN: annotate stdout to indicate dry run
+        if self.mode == ExecutionMode.DRY_RUN:
+            return ExecutionResult(
+                command=command,
+                mode=self.mode,
+                exit_code=0,
+                stdout=f"[DRY RUN] {command}",
+                stderr="",
+                duration_ms=0,
+                execution_context=ctx,
+            )
+
+        # LIVE (simulated here for tests): return simulated output
         return ExecutionResult(
-            correlation_id=uuid.uuid4().hex[:8],
             command=command,
             mode=self.mode,
             exit_code=0,
             stdout="Simulated output",
             stderr="",
             duration_ms=10,
-            blocked=False,
-            block_reason=None,
-            constraint_hash=getattr(ctx, "constraint_hash", None),
-            plan_id=getattr(ctx, "plan_id", None),
-            persona_id=getattr(ctx, "persona_id", None),
             execution_context=ctx,
         )
 
+    def get_friction_report(self) -> Dict[str, int]:
+        """Return a copy of the friction counters for analysis/tuning."""
+        return dict(self._friction)

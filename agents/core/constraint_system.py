@@ -18,6 +18,7 @@ import re
 
 class ConstraintType(Enum):
     """Types of constraints."""
+
     HARD = "hard"  # Must be satisfied
     SOFT = "soft"  # Preferred but can be relaxed
     BOUNDARY = "boundary"  # Defines valid range
@@ -25,6 +26,7 @@ class ConstraintType(Enum):
 
 class ConstraintPriority(Enum):
     """Priority levels for soft constraints."""
+
     CRITICAL = 5
     HIGH = 4
     MEDIUM = 3
@@ -34,6 +36,7 @@ class ConstraintPriority(Enum):
 
 class RelaxationStrategy(Enum):
     """Strategies for constraint relaxation."""
+
     NONE = "none"  # No relaxation allowed
     THRESHOLD = "threshold"  # Relax boundary by percentage
     PRIORITY = "priority"  # Drop lower priority constraints
@@ -43,6 +46,7 @@ class RelaxationStrategy(Enum):
 
 class EscalationLevel(Enum):
     """Escalation levels when constraints cannot be satisfied."""
+
     LOG_ONLY = 1
     WARN_USER = 2
     REQUIRE_CONFIRMATION = 3
@@ -53,6 +57,7 @@ class EscalationLevel(Enum):
 @dataclass
 class ConstraintViolation:
     """Represents a constraint violation."""
+
     constraint_id: str
     constraint_name: str
     constraint_type: ConstraintType
@@ -66,6 +71,7 @@ class ConstraintViolation:
 @dataclass
 class RelaxationPath:
     """A path for relaxing a constraint."""
+
     constraint_id: str
     original_value: Any
     relaxed_value: Any
@@ -77,6 +83,7 @@ class RelaxationPath:
 @dataclass
 class EscalationRequest:
     """Request to escalate when constraints fail."""
+
     violations: List[ConstraintViolation]
     level: EscalationLevel
     context: Dict[str, Any]
@@ -89,6 +96,7 @@ class EscalationRequest:
 @dataclass
 class ConstraintCheckResult:
     """Result of checking constraints."""
+
     satisfied: bool
     violations: List[ConstraintViolation]
     relaxation_paths: List[RelaxationPath]
@@ -107,7 +115,7 @@ class Constraint:
         condition: str = "",
         description: str = "",
         priority: ConstraintPriority = ConstraintPriority.MEDIUM,
-        relaxation_strategy: RelaxationStrategy = RelaxationStrategy.NONE
+        relaxation_strategy: RelaxationStrategy = RelaxationStrategy.NONE,
     ):
         self.constraint_id = constraint_id
         self.name = name
@@ -118,10 +126,14 @@ class Constraint:
         self.relaxation_strategy = relaxation_strategy
         self.enabled = True
 
-    def check(self, context: Dict[str, Any]) -> Tuple[bool, Optional[ConstraintViolation]]:
+    def check(
+        self, context: Dict[str, Any]
+    ) -> Tuple[bool, Optional[ConstraintViolation]]:
         """Check if constraint is satisfied. Returns (satisfied, violation)."""
         try:
-            satisfied = bool(eval(self.condition, {}, context)) if self.condition else True
+            satisfied = (
+                bool(eval(self.condition, {}, context)) if self.condition else True
+            )
         except Exception:
             satisfied = False
 
@@ -135,7 +147,7 @@ class Constraint:
             actual_value=None,
             expected_value=self.condition,
             violation_severity=1.0,
-            message=f"Condition failed: {self.condition}"
+            message=f"Condition failed: {self.condition}",
         )
         return False, violation
 
@@ -156,12 +168,14 @@ class ValueConstraint(Constraint):
         expected_value: Any,
         constraint_type: ConstraintType = ConstraintType.HARD,
         priority: ConstraintPriority = ConstraintPriority.MEDIUM,
-        relaxation_margin: float = 0.0  # For numeric relaxation
+        relaxation_margin: float = 0.0,  # For numeric relaxation
     ):
         super().__init__(
-            constraint_id, name, constraint_type,
+            constraint_id,
+            name,
+            constraint_type,
             f"{field_path} {operator} {expected_value}",
-            priority
+            priority,
         )
         self.field_path = field_path
         self.operator = operator
@@ -179,7 +193,9 @@ class ValueConstraint(Constraint):
                 return None
         return value
 
-    def check(self, context: Dict[str, Any]) -> Tuple[bool, Optional[ConstraintViolation]]:
+    def check(
+        self, context: Dict[str, Any]
+    ) -> Tuple[bool, Optional[ConstraintViolation]]:
         actual = self._get_value(context)
         satisfied = False
         severity = 1.0
@@ -191,19 +207,27 @@ class ValueConstraint(Constraint):
         elif self.operator == "lt":
             satisfied = actual < self.expected_value
             if not satisfied and actual is not None:
-                severity = min(1.0, (actual - self.expected_value) / abs(self.expected_value + 1))
+                severity = min(
+                    1.0, (actual - self.expected_value) / abs(self.expected_value + 1)
+                )
         elif self.operator == "le":
             satisfied = actual <= self.expected_value
             if not satisfied and actual is not None:
-                severity = min(1.0, (actual - self.expected_value) / abs(self.expected_value + 1))
+                severity = min(
+                    1.0, (actual - self.expected_value) / abs(self.expected_value + 1)
+                )
         elif self.operator == "gt":
             satisfied = actual > self.expected_value
             if not satisfied and actual is not None:
-                severity = min(1.0, (self.expected_value - actual) / abs(self.expected_value + 1))
+                severity = min(
+                    1.0, (self.expected_value - actual) / abs(self.expected_value + 1)
+                )
         elif self.operator == "ge":
             satisfied = actual >= self.expected_value
             if not satisfied and actual is not None:
-                severity = min(1.0, (self.expected_value - actual) / abs(self.expected_value + 1))
+                severity = min(
+                    1.0, (self.expected_value - actual) / abs(self.expected_value + 1)
+                )
         elif self.operator == "in":
             satisfied = actual in self.expected_value
         elif self.operator == "not_in":
@@ -221,7 +245,7 @@ class ValueConstraint(Constraint):
             actual_value=actual,
             expected_value=self.expected_value,
             violation_severity=severity,
-            message=f"{self.field_path}: expected {self.operator} {self.expected_value}, got {actual}"
+            message=f"{self.field_path}: expected {self.operator} {self.expected_value}, got {actual}",
         )
         return False, violation
 
@@ -245,7 +269,7 @@ class ValueConstraint(Constraint):
                 relaxed_value=relaxed,
                 strategy=RelaxationStrategy.THRESHOLD,
                 cost=self.relaxation_margin,
-                justification=f"Relaxed {self.field_path} boundary by {self.relaxation_margin*100}%"
+                justification=f"Relaxed {self.field_path} boundary by {self.relaxation_margin * 100}%",
             )
 
         return None
@@ -261,14 +285,16 @@ class CompositeConstraint(Constraint):
         constraints: List[Constraint],
         mode: str = "all",  # "all" = AND, "any" = OR, "n_of" = at least N
         required_count: int = 1,  # For "n_of" mode
-        constraint_type: ConstraintType = ConstraintType.HARD
+        constraint_type: ConstraintType = ConstraintType.HARD,
     ):
         super().__init__(constraint_id, name, constraint_type)
         self.constraints = constraints
         self.mode = mode
         self.required_count = required_count
 
-    def check(self, context: Dict[str, Any]) -> Tuple[bool, Optional[ConstraintViolation]]:
+    def check(
+        self, context: Dict[str, Any]
+    ) -> Tuple[bool, Optional[ConstraintViolation]]:
         results = []
         violations = []
 
@@ -289,7 +315,11 @@ class CompositeConstraint(Constraint):
             return True, None
 
         # Create aggregate violation
-        severity = sum(v.violation_severity for v in violations) / len(violations) if violations else 1.0
+        severity = (
+            sum(v.violation_severity for v in violations) / len(violations)
+            if violations
+            else 1.0
+        )
         violation = ConstraintViolation(
             constraint_id=self.constraint_id,
             constraint_name=self.name,
@@ -297,7 +327,7 @@ class CompositeConstraint(Constraint):
             actual_value=f"{sum(results)}/{len(self.constraints)} satisfied",
             expected_value=f"{self.mode}: {self.required_count if self.mode == 'n_of' else 'all/any'}",
             violation_severity=severity,
-            message=f"Composite constraint failed: {len(violations)} sub-violations"
+            message=f"Composite constraint failed: {len(violations)} sub-violations",
         )
         return False, violation
 
@@ -328,7 +358,7 @@ class TemporalConstraint(Constraint):
         max_duration_seconds: Optional[float] = None,
         min_duration_seconds: Optional[float] = None,
         deadline: Optional[str] = None,  # ISO format
-        constraint_type: ConstraintType = ConstraintType.HARD
+        constraint_type: ConstraintType = ConstraintType.HARD,
     ):
         super().__init__(constraint_id, name, constraint_type)
         self.field_path = field_path
@@ -346,7 +376,9 @@ class TemporalConstraint(Constraint):
                 return None
         return value
 
-    def check(self, context: Dict[str, Any]) -> Tuple[bool, Optional[ConstraintViolation]]:
+    def check(
+        self, context: Dict[str, Any]
+    ) -> Tuple[bool, Optional[ConstraintViolation]]:
         value = self._get_value(context)
 
         violations = []
@@ -354,9 +386,13 @@ class TemporalConstraint(Constraint):
         # Check duration
         if isinstance(value, (int, float)):
             if self.max_duration_seconds and value > self.max_duration_seconds:
-                violations.append(f"Duration {value}s exceeds max {self.max_duration_seconds}s")
+                violations.append(
+                    f"Duration {value}s exceeds max {self.max_duration_seconds}s"
+                )
             if self.min_duration_seconds and value < self.min_duration_seconds:
-                violations.append(f"Duration {value}s below min {self.min_duration_seconds}s")
+                violations.append(
+                    f"Duration {value}s below min {self.min_duration_seconds}s"
+                )
 
         # Check deadline
         if self.deadline and isinstance(value, str):
@@ -378,7 +414,7 @@ class TemporalConstraint(Constraint):
             actual_value=value,
             expected_value=f"max={self.max_duration_seconds}, min={self.min_duration_seconds}, deadline={self.deadline}",
             violation_severity=0.8,
-            message="; ".join(violations)
+            message="; ".join(violations),
         )
         return False, violation
 
@@ -395,7 +431,7 @@ class TemporalConstraint(Constraint):
                 relaxed_value=relaxed,
                 strategy=RelaxationStrategy.THRESHOLD,
                 cost=0.2,
-                justification=f"Extended max duration from {self.max_duration_seconds}s to {relaxed}s"
+                justification=f"Extended max duration from {self.max_duration_seconds}s to {relaxed}s",
             )
 
         return None
@@ -412,7 +448,7 @@ class ResourceConstraint(Constraint):
         max_value: Optional[float] = None,
         min_value: Optional[float] = None,
         budget: Optional[float] = None,
-        constraint_type: ConstraintType = ConstraintType.HARD
+        constraint_type: ConstraintType = ConstraintType.HARD,
     ):
         super().__init__(constraint_id, name, constraint_type)
         self.resource_type = resource_type
@@ -420,7 +456,9 @@ class ResourceConstraint(Constraint):
         self.min_value = min_value
         self.budget = budget
 
-    def check(self, context: Dict[str, Any]) -> Tuple[bool, Optional[ConstraintViolation]]:
+    def check(
+        self, context: Dict[str, Any]
+    ) -> Tuple[bool, Optional[ConstraintViolation]]:
         resources = context.get("resources", {})
         current = resources.get(self.resource_type, 0)
 
@@ -455,7 +493,7 @@ class ResourceConstraint(Constraint):
             actual_value=current,
             expected_value=f"max={self.max_value}, min={self.min_value}, budget={self.budget}",
             violation_severity=min(1.0, severity),
-            message=f"{self.resource_type}: {', '.join(issues)}"
+            message=f"{self.resource_type}: {', '.join(issues)}",
         )
         return False, violation
 
@@ -471,7 +509,7 @@ class ResourceConstraint(Constraint):
                 relaxed_value=relaxed,
                 strategy=RelaxationStrategy.THRESHOLD,
                 cost=0.25,
-                justification=f"Increased {self.resource_type} limit by 25%"
+                justification=f"Increased {self.resource_type} limit by 25%",
             )
 
         if self.budget:
@@ -482,7 +520,7 @@ class ResourceConstraint(Constraint):
                 relaxed_value=relaxed,
                 strategy=RelaxationStrategy.THRESHOLD,
                 cost=0.25,
-                justification=f"Increased {self.resource_type} budget by 25%"
+                justification=f"Increased {self.resource_type} budget by 25%",
             )
 
         return None
@@ -506,9 +544,7 @@ class ConstraintEngine:
         self._escalation_handlers: Dict[EscalationLevel, Callable] = {}
 
     def register_constraint(
-        self,
-        constraint: Constraint,
-        group: Optional[str] = None
+        self, constraint: Constraint, group: Optional[str] = None
     ) -> None:
         """Register a constraint."""
         self._constraints[constraint.constraint_id] = constraint
@@ -544,17 +580,13 @@ class ConstraintEngine:
         return False
 
     def register_escalation_handler(
-        self,
-        level: EscalationLevel,
-        handler: Callable[[EscalationRequest], bool]
+        self, level: EscalationLevel, handler: Callable[[EscalationRequest], bool]
     ) -> None:
         """Register a handler for escalation at a specific level."""
         self._escalation_handlers[level] = handler
 
     def check_all(
-        self,
-        context: Dict[str, Any],
-        allow_relaxation: bool = True
+        self, context: Dict[str, Any], allow_relaxation: bool = True
     ) -> ConstraintCheckResult:
         """Check all registered constraints."""
         violations = []
@@ -580,12 +612,19 @@ class ConstraintEngine:
         escalation_request = None
 
         # Count hard constraint violations
-        hard_violations = [v for v in violations if v.constraint_type == ConstraintType.HARD]
+        hard_violations = [
+            v for v in violations if v.constraint_type == ConstraintType.HARD
+        ]
 
         if hard_violations:
             # Check if we can relax any
-            relaxable_hard = len([p for p in relaxation_paths
-                                  if any(v.constraint_id == p.constraint_id for v in hard_violations)])
+            relaxable_hard = len(
+                [
+                    p
+                    for p in relaxation_paths
+                    if any(v.constraint_id == p.constraint_id for v in hard_violations)
+                ]
+            )
 
             if len(hard_violations) > relaxable_hard:
                 needs_escalation = True
@@ -598,21 +637,17 @@ class ConstraintEngine:
             violations=violations,
             relaxation_paths=relaxation_paths,
             needs_escalation=needs_escalation,
-            escalation_request=escalation_request
+            escalation_request=escalation_request,
         )
 
-    def check_group(
-        self,
-        group: str,
-        context: Dict[str, Any]
-    ) -> ConstraintCheckResult:
+    def check_group(self, group: str, context: Dict[str, Any]) -> ConstraintCheckResult:
         """Check constraints in a specific group."""
         if group not in self._constraint_groups:
             return ConstraintCheckResult(
                 satisfied=True,
                 violations=[],
                 relaxation_paths=[],
-                needs_escalation=False
+                needs_escalation=False,
             )
 
         violations = []
@@ -635,14 +670,10 @@ class ConstraintEngine:
             satisfied=len(violations) == 0,
             violations=violations,
             relaxation_paths=relaxation_paths,
-            needs_escalation=False
+            needs_escalation=False,
         )
 
-    def apply_relaxation(
-        self,
-        path: RelaxationPath,
-        context: Dict[str, Any]
-    ) -> bool:
+    def apply_relaxation(self, path: RelaxationPath, context: Dict[str, Any]) -> bool:
         """Apply a relaxation path to the context."""
         constraint = self._constraints.get(path.constraint_id)
         if not constraint:
@@ -668,9 +699,7 @@ class ConstraintEngine:
         return False
 
     def find_satisfying_options(
-        self,
-        options: List[Dict[str, Any]],
-        context: Dict[str, Any]
+        self, options: List[Dict[str, Any]], context: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Filter options to only those satisfying constraints."""
         satisfying = []
@@ -686,9 +715,7 @@ class ConstraintEngine:
         return satisfying
 
     def find_best_option_with_relaxation(
-        self,
-        options: List[Dict[str, Any]],
-        context: Dict[str, Any]
+        self, options: List[Dict[str, Any]], context: Dict[str, Any]
     ) -> Tuple[Optional[Dict[str, Any]], List[RelaxationPath]]:
         """
         Find the best option, possibly with constraint relaxation.
@@ -703,7 +730,7 @@ class ConstraintEngine:
         # Try with relaxation
         best_option = None
         best_relaxations: List[RelaxationPath] = []
-        best_cost = float('inf')
+        best_cost = float("inf")
 
         for option in options:
             merged = {**context, **option}
@@ -721,9 +748,7 @@ class ConstraintEngine:
         return best_option, best_relaxations
 
     def _create_escalation_request(
-        self,
-        violations: List[ConstraintViolation],
-        context: Dict[str, Any]
+        self, violations: List[ConstraintViolation], context: Dict[str, Any]
     ) -> EscalationRequest:
         """Create an escalation request for unresolvable violations."""
         # Determine escalation level based on severity
@@ -753,7 +778,7 @@ class ConstraintEngine:
             level=level,
             context=context,
             suggested_actions=suggestions,
-            requires_response=level.value >= EscalationLevel.REQUIRE_CONFIRMATION.value
+            requires_response=level.value >= EscalationLevel.REQUIRE_CONFIRMATION.value,
         )
 
     def handle_escalation(self, request: EscalationRequest) -> bool:
@@ -764,7 +789,9 @@ class ConstraintEngine:
 
         # Default handling
         if request.level == EscalationLevel.EMERGENCY_STOP:
-            raise RuntimeError(f"Emergency stop: {[v.message for v in request.violations]}")
+            raise RuntimeError(
+                f"Emergency stop: {[v.message for v in request.violations]}"
+            )
         elif request.level == EscalationLevel.BLOCK_ACTION:
             return False
 
@@ -785,11 +812,13 @@ class ConstraintEngine:
 
         return {
             "total_constraints": len(self._constraints),
-            "enabled_constraints": sum(1 for c in self._constraints.values() if c.enabled),
+            "enabled_constraints": sum(
+                1 for c in self._constraints.values() if c.enabled
+            ),
             "by_type": {t.value: c for t, c in by_type.items()},
             "by_priority": {p.name: c for p, c in by_priority.items()},
             "groups": {g: len(ids) for g, ids in self._constraint_groups.items()},
-            "relaxations_applied": len(self._relaxation_history)
+            "relaxations_applied": len(self._relaxation_history),
         }
 
 
@@ -806,59 +835,61 @@ class ConstraintBuilder:
         self._value: Any = None
         self._relaxation_margin: float = 0.0
 
-    def hard(self) -> 'ConstraintBuilder':
+    def hard(self) -> "ConstraintBuilder":
         """Make this a hard constraint."""
         self._type = ConstraintType.HARD
         return self
 
-    def soft(self, priority: ConstraintPriority = ConstraintPriority.MEDIUM) -> 'ConstraintBuilder':
+    def soft(
+        self, priority: ConstraintPriority = ConstraintPriority.MEDIUM
+    ) -> "ConstraintBuilder":
         """Make this a soft constraint."""
         self._type = ConstraintType.SOFT
         self._priority = priority
         return self
 
-    def field(self, path: str) -> 'ConstraintBuilder':
+    def field(self, path: str) -> "ConstraintBuilder":
         """Set the field path to check."""
         self._field_path = path
         return self
 
-    def equals(self, value: Any) -> 'ConstraintBuilder':
+    def equals(self, value: Any) -> "ConstraintBuilder":
         """Field must equal value."""
         self._operator = "eq"
         self._value = value
         return self
 
-    def not_equals(self, value: Any) -> 'ConstraintBuilder':
+    def not_equals(self, value: Any) -> "ConstraintBuilder":
         """Field must not equal value."""
         self._operator = "ne"
         self._value = value
         return self
 
-    def less_than(self, value: float) -> 'ConstraintBuilder':
+    def less_than(self, value: float) -> "ConstraintBuilder":
         """Field must be less than value."""
         self._operator = "lt"
         self._value = value
         return self
 
-    def greater_than(self, value: float) -> 'ConstraintBuilder':
+    def greater_than(self, value: float) -> "ConstraintBuilder":
         """Field must be greater than value."""
         self._operator = "gt"
         self._value = value
         return self
 
-    def in_list(self, values: List[Any]) -> 'ConstraintBuilder':
+    def in_list(self, values: List[Any]) -> "ConstraintBuilder":
         """Field must be in list."""
         self._operator = "in"
         self._value = values
         return self
 
-    def matches(self, pattern: str) -> 'ConstraintBuilder':
+    def matches(self, pattern: str) -> "ConstraintBuilder":
         """Field must match regex pattern."""
         self._operator = "matches"
         self._value = pattern
         return self
 
-    def relaxable(self, margin: float = 0.1) -> 'ConstraintBuilder':
+    def relaxable(self, margin: float = 0.1) -> "ConstraintBuilder":
         """Allow relaxation by margin percentage."""
         self._relaxation_margin = margin
         return self
@@ -876,18 +907,23 @@ class ConstraintBuilder:
             expected_value=self._value,
             constraint_type=self._type,
             priority=self._priority,
-            relaxation_margin=self._relaxation_margin
+            relaxation_margin=self._relaxation_margin,
         )
 
 
 # Convenience functions
+
 
 def must(constraint_id: str, name: str) -> ConstraintBuilder:
     """Create a hard constraint builder."""
     return ConstraintBuilder(constraint_id, name).hard()
 
 
-def prefer(constraint_id: str, name: str, priority: ConstraintPriority = ConstraintPriority.MEDIUM) -> ConstraintBuilder:
+def prefer(
+    constraint_id: str,
+    name: str,
+    priority: ConstraintPriority = ConstraintPriority.MEDIUM,
+) -> ConstraintBuilder:
     """Create a soft constraint builder."""
     return ConstraintBuilder(constraint_id, name).soft(priority)
 
@@ -897,26 +933,31 @@ def create_standard_constraints() -> List[Constraint]:
     return [
         # Token limits
         ResourceConstraint(
-            "max_tokens", "Token Limit",
+            "max_tokens",
+            "Token Limit",
             resource_type="tokens",
             max_value=8000,
-            constraint_type=ConstraintType.HARD
+            constraint_type=ConstraintType.HARD,
         ),
         # Cost budget
         ResourceConstraint(
-            "cost_budget", "Cost Budget",
+            "cost_budget",
+            "Cost Budget",
             resource_type="cost",
             budget=1.0,
-            constraint_type=ConstraintType.SOFT
+            constraint_type=ConstraintType.SOFT,
         ),
         # Response time
         TemporalConstraint(
-            "response_time", "Response Time",
+            "response_time",
+            "Response Time",
             field_path="duration_seconds",
             max_duration_seconds=30.0,
-            constraint_type=ConstraintType.SOFT
+            constraint_type=ConstraintType.SOFT,
         ),
         # Safety score
         must("min_safety", "Minimum Safety Score")
-            .field("safety_score").greater_than(0.7).build(),
+        .field("safety_score")
+        .greater_than(0.7)
+        .build(),
     ]

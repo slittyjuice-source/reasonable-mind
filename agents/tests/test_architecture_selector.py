@@ -64,4 +64,3 @@ def test_extreme_accuracy_with_low_cost_sensitivity_enables_32x():
 
     assert rec.variant is ArchitectureVariant.THIRTY_TWO_X
     assert rec.logic_weight > 0.85
-

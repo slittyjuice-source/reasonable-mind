@@ -56,7 +56,9 @@ def test_extract_commands():
 
     for cmd, expected in test_cases:
         result = extract_commands(cmd)
-        assert result == expected, f"Command extraction failed for {cmd!r}: expected {expected}, got {result}"
+        assert result == expected, (
+            f"Command extraction failed for {cmd!r}: expected {expected}, got {result}"
+        )
         print(f"  PASS: {cmd!r} -> {result}")
 
 
@@ -71,7 +73,7 @@ def test_command_substitution_blocking():
         ("ls $(id)", "$() with id command"),
         ("cat $(pwd)/file.txt", "$() in path"),
         ("ls $(echo 'malicious')", "$() with nested command"),
-        ('cat "$(cat /etc/passwd)"', '$() inside quotes'),
+        ('cat "$(cat /etc/passwd)"', "$() inside quotes"),
         ("$(rm -rf /)", "dangerous command in $()"),
         # Backtick syntax
         ("echo `whoami`", "basic backtick substitution"),
@@ -91,7 +93,9 @@ def test_command_substitution_blocking():
 
     for cmd, description in dangerous_patterns:
         result = extract_commands(cmd)
-        assert result == [], f"Command substitution not blocked for {cmd!r} ({description}): got {result}"
+        assert result == [], (
+            f"Command substitution not blocked for {cmd!r} ({description}): got {result}"
+        )
         print(f"  PASS: {cmd!r} ({description}) -> blocked")
 
     print("\n✓ Command substitution blocking tests passed")
@@ -112,7 +116,9 @@ def test_legitimate_dollar_signs():
 
     for cmd, expected, description in legitimate_cases:
         result = extract_commands(cmd)
-        assert result == expected, f"Legitimate $ usage incorrectly handled for {cmd!r} ({description}): expected {expected}, got {result}"
+        assert result == expected, (
+            f"Legitimate $ usage incorrectly handled for {cmd!r} ({description}): expected {expected}, got {result}"
+        )
         print(f"  PASS: {cmd!r} ({description}) -> {result}")
 
     print("\n✓ Legitimate dollar sign tests passed")
@@ -144,7 +150,9 @@ def test_validate_chmod():
 
     for cmd, should_allow, description in test_cases:
         allowed, reason = validate_chmod_command(cmd)
-        assert allowed == should_allow, f"chmod validation failed for {cmd!r} ({description}): expected {'allowed' if should_allow else 'blocked'}, got {'allowed' if allowed else 'blocked'}. Reason: {reason}"
+        assert allowed == should_allow, (
+            f"chmod validation failed for {cmd!r} ({description}): expected {'allowed' if should_allow else 'blocked'}, got {'allowed' if allowed else 'blocked'}. Reason: {reason}"
+        )
         print(f"  PASS: {cmd!r} ({description})")
 
 
@@ -171,7 +179,9 @@ def test_validate_init_script():
 
     for cmd, should_allow, description in test_cases:
         allowed, reason = validate_init_script(cmd)
-        assert allowed == should_allow, f"init.sh validation failed for {cmd!r} ({description}): expected {'allowed' if should_allow else 'blocked'}, got {'allowed' if allowed else 'blocked'}. Reason: {reason}"
+        assert allowed == should_allow, (
+            f"init.sh validation failed for {cmd!r} ({description}): expected {'allowed' if should_allow else 'blocked'}, got {'allowed' if allowed else 'blocked'}. Reason: {reason}"
+        )
         print(f"  PASS: {cmd!r} ({description})")
 
 

@@ -16,11 +16,14 @@ import re
 
 class InferencePattern(Enum):
     """Supported inference patterns."""
+
     MODUS_PONENS = "modus_ponens"  # P, P→Q ⊢ Q
     MODUS_TOLLENS = "modus_tollens"  # ¬Q, P→Q ⊢ ¬P
     HYPOTHETICAL_SYLLOGISM = "hypothetical_syllogism"  # P→Q, Q→R ⊢ P→R
     DISJUNCTIVE_SYLLOGISM = "disjunctive_syllogism"  # P∨Q, ¬P ⊢ Q
-    CATEGORICAL_SYLLOGISM = "categorical_syllogism"  # All M are P, All S are M ⊢ All S are P
+    CATEGORICAL_SYLLOGISM = (
+        "categorical_syllogism"  # All M are P, All S are M ⊢ All S are P
+    )
     UNIVERSAL_INSTANTIATION = "universal_instantiation"  # ∀x P(x) ⊢ P(a)
     EXISTENTIAL_INSTANTIATION = "existential_instantiation"  # ∃x P(x) ⊢ P(c)
     UNIVERSAL_GENERALIZATION = "universal_generalization"  # P(a) ⊢ ∀x P(x)
@@ -34,6 +37,7 @@ class InferencePattern(Enum):
 
 class QuantifierType(Enum):
     """Types of quantifiers."""
+
     UNIVERSAL = "∀"  # All, every, each
     EXISTENTIAL = "∃"  # Some, there exists
     NONE = ""
@@ -42,6 +46,7 @@ class QuantifierType(Enum):
 @dataclass
 class LogicalTerm:
     """A term in a logical expression."""
+
     name: str
     is_variable: bool = False
     is_constant: bool = False
@@ -56,6 +61,7 @@ class LogicalTerm:
 @dataclass
 class QuantifiedPredicate:
     """A predicate with quantification."""
+
     quantifier: QuantifierType
     variable: Optional[str]
     predicate_name: str
@@ -72,6 +78,7 @@ class QuantifiedPredicate:
 @dataclass
 class InferenceStep:
     """A step in an inference chain."""
+
     step_id: int
     premise_ids: List[int]  # Which previous steps are used
     conclusion: str
@@ -84,6 +91,7 @@ class InferenceStep:
 @dataclass
 class InferenceResult:
     """Result of an inference attempt."""
+
     success: bool
     conclusion: str
     confidence: float
@@ -159,18 +167,18 @@ class FormalParser:
     def _parse_formal(self, text: str) -> Optional[Dict[str, Any]]:
         """Parse formal logical notation."""
         # Check for predicate with arguments
-        pred_match = re.match(r'([¬~]?)(\w+)\(([^)]+)\)', text)
+        pred_match = re.match(r"([¬~]?)(\w+)\(([^)]+)\)", text)
         if pred_match:
-            negated = pred_match.group(1) in ('¬', '~')
+            negated = pred_match.group(1) in ("¬", "~")
             pred_name = pred_match.group(2)
-            args = [a.strip() for a in pred_match.group(3).split(',')]
+            args = [a.strip() for a in pred_match.group(3).split(",")]
 
             return {
                 "type": "predicate",
                 "name": pred_name,
                 "arguments": args,
                 "negated": negated,
-                "quantifier": None
+                "quantifier": None,
             }
 
         # Check for quantified expression
@@ -178,7 +186,7 @@ class FormalParser:
             match = re.match(pattern, text, re.IGNORECASE)
             if match:
                 var = match.group(1)
-                rest = text[match.end():].strip()
+                rest = text[match.end() :].strip()
                 inner = self.parse(rest)
                 if inner:
                     inner["quantifier"] = quant_type.value
@@ -196,7 +204,7 @@ class FormalParser:
                         return {
                             "type": "implication",
                             "antecedent": left,
-                            "consequent": right
+                            "consequent": right,
                         }
 
         return None
@@ -214,7 +222,7 @@ class FormalParser:
         return {
             "type": "atomic",
             "content": text,
-            "confidence": 0.5  # Lower confidence for unparsed
+            "confidence": 0.5,  # Lower confidence for unparsed
         }
 
     def _parse_conditional(self, match: re.Match) -> Dict[str, Any]:
@@ -222,7 +230,7 @@ class FormalParser:
         return {
             "type": "implication",
             "antecedent": {"type": "atomic", "content": match.group(1).strip()},
-            "consequent": {"type": "atomic", "content": match.group(2).strip()}
+            "consequent": {"type": "atomic", "content": match.group(2).strip()},
         }
 
     def _parse_universal(self, match: re.Match) -> Dict[str, Any]:
@@ -235,7 +243,7 @@ class FormalParser:
             "variable": "x",
             "subject": subject,
             "predicate": predicate,
-            "formal": f"∀x({subject.capitalize()}(x) → {predicate.capitalize()}(x))"
+            "formal": f"∀x({subject.capitalize()}(x) → {predicate.capitalize()}(x))",
         }
 
     def _parse_negated_universal(self, match: re.Match) -> Dict[str, Any]:
@@ -249,7 +257,7 @@ class FormalParser:
             "subject": subject,
             "predicate": predicate,
             "negated_predicate": True,
-            "formal": f"∀x({subject.capitalize()}(x) → ¬{predicate.capitalize()}(x))"
+            "formal": f"∀x({subject.capitalize()}(x) → ¬{predicate.capitalize()}(x))",
         }
 
     def _parse_existential(self, match: re.Match) -> Dict[str, Any]:
@@ -262,7 +270,7 @@ class FormalParser:
             "variable": "x",
             "subject": subject,
             "predicate": predicate,
-            "formal": f"∃x({subject.capitalize()}(x) ∧ {predicate.capitalize()}(x))"
+            "formal": f"∃x({subject.capitalize()}(x) ∧ {predicate.capitalize()}(x))",
         }
 
     def _parse_instance(self, match: re.Match) -> Dict[str, Any]:
@@ -273,7 +281,7 @@ class FormalParser:
             "type": "predicate",
             "name": predicate.capitalize(),
             "arguments": [instance],
-            "negated": False
+            "negated": False,
         }
 
 
@@ -294,7 +302,7 @@ class InferenceEngine:
         self.facts[fact_id] = {
             "statement": statement,
             "parsed": parsed,
-            "confidence": confidence
+            "confidence": confidence,
         }
 
     def add_rule(
@@ -302,21 +310,19 @@ class InferenceEngine:
         name: str,
         antecedents: List[str],
         consequent: str,
-        confidence: float = 1.0
+        confidence: float = 1.0,
     ) -> None:
         """Add an inference rule."""
-        self.rules.append({
-            "name": name,
-            "antecedents": [self.parser.parse(a) for a in antecedents],
-            "consequent": self.parser.parse(consequent),
-            "confidence": confidence
-        })
+        self.rules.append(
+            {
+                "name": name,
+                "antecedents": [self.parser.parse(a) for a in antecedents],
+                "consequent": self.parser.parse(consequent),
+                "confidence": confidence,
+            }
+        )
 
-    def infer(
-        self,
-        query: str,
-        max_depth: int = 10
-    ) -> InferenceResult:
+    def infer(self, query: str, max_depth: int = 10) -> InferenceResult:
         """
         Attempt to infer the query from known facts and rules.
         """
@@ -335,22 +341,26 @@ class InferenceEngine:
                     success=True,
                     conclusion=query,
                     confidence=fact["confidence"],
-                    steps=[InferenceStep(
-                        step_id=1,
-                        premise_ids=[],
-                        conclusion=query,
-                        pattern_used=InferencePattern.MODUS_PONENS,
-                        confidence=fact["confidence"],
-                        justification=f"Direct fact: {fact['statement']}"
-                    )],
+                    steps=[
+                        InferenceStep(
+                            step_id=1,
+                            premise_ids=[],
+                            conclusion=query,
+                            pattern_used=InferencePattern.MODUS_PONENS,
+                            confidence=fact["confidence"],
+                            justification=f"Direct fact: {fact['statement']}",
+                        )
+                    ],
                     patterns_used=[],
-                    proof_found=True
+                    proof_found=True,
                 )
                 self.inference_cache[query] = result
                 return result
 
         # Try inference patterns
-        result = self._try_inference_patterns(parsed_query, max_depth, steps, patterns_used)
+        result = self._try_inference_patterns(
+            parsed_query, max_depth, steps, patterns_used
+        )
 
         if result:
             self.inference_cache[query] = result
@@ -365,7 +375,7 @@ class InferenceEngine:
             patterns_used=patterns_used,
             proof_found=False,
             needs_flag=True,
-            flag_reason="No proof found in knowledge base"
+            flag_reason="No proof found in knowledge base",
         )
 
     def _try_inference_patterns(
@@ -373,7 +383,7 @@ class InferenceEngine:
         query: Dict[str, Any],
         max_depth: int,
         steps: List[InferenceStep],
-        patterns_used: List[InferencePattern]
+        patterns_used: List[InferencePattern],
     ) -> Optional[InferenceResult]:
         """Try various inference patterns."""
 
@@ -408,7 +418,7 @@ class InferenceEngine:
         self,
         query: Dict[str, Any],
         steps: List[InferenceStep],
-        patterns_used: List[InferencePattern]
+        patterns_used: List[InferencePattern],
     ) -> Optional[InferenceResult]:
         """
         Modus Ponens: P, P→Q ⊢ Q
@@ -434,17 +444,23 @@ class InferenceEngine:
                         break
 
                 if all_satisfied:
-                    confidence = rule["confidence"] * min(antecedent_confs) if antecedent_confs else rule["confidence"]
+                    confidence = (
+                        rule["confidence"] * min(antecedent_confs)
+                        if antecedent_confs
+                        else rule["confidence"]
+                    )
                     patterns_used.append(InferencePattern.MODUS_PONENS)
 
-                    steps.append(InferenceStep(
-                        step_id=len(steps) + 1,
-                        premise_ids=[],
-                        conclusion=str(query),
-                        pattern_used=InferencePattern.MODUS_PONENS,
-                        confidence=confidence,
-                        justification=f"Modus Ponens via rule: {rule['name']}"
-                    ))
+                    steps.append(
+                        InferenceStep(
+                            step_id=len(steps) + 1,
+                            premise_ids=[],
+                            conclusion=str(query),
+                            pattern_used=InferencePattern.MODUS_PONENS,
+                            confidence=confidence,
+                            justification=f"Modus Ponens via rule: {rule['name']}",
+                        )
+                    )
 
                     return InferenceResult(
                         success=True,
@@ -452,7 +468,7 @@ class InferenceEngine:
                         confidence=confidence,
                         steps=steps,
                         patterns_used=patterns_used,
-                        proof_found=True
+                        proof_found=True,
                     )
 
         return None
@@ -461,7 +477,7 @@ class InferenceEngine:
         self,
         query: Dict[str, Any],
         steps: List[InferenceStep],
-        patterns_used: List[InferencePattern]
+        patterns_used: List[InferencePattern],
     ) -> Optional[InferenceResult]:
         """
         Modus Tollens: ¬Q, P→Q ⊢ ¬P
@@ -485,14 +501,16 @@ class InferenceEngine:
                             patterns_used.append(InferencePattern.MODUS_TOLLENS)
                             confidence = rule["confidence"] * fact["confidence"]
 
-                            steps.append(InferenceStep(
-                                step_id=len(steps) + 1,
-                                premise_ids=[],
-                                conclusion=str(query),
-                                pattern_used=InferencePattern.MODUS_TOLLENS,
-                                confidence=confidence,
-                                justification=f"Modus Tollens via rule: {rule['name']}"
-                            ))
+                            steps.append(
+                                InferenceStep(
+                                    step_id=len(steps) + 1,
+                                    premise_ids=[],
+                                    conclusion=str(query),
+                                    pattern_used=InferencePattern.MODUS_TOLLENS,
+                                    confidence=confidence,
+                                    justification=f"Modus Tollens via rule: {rule['name']}",
+                                )
+                            )
 
                             return InferenceResult(
                                 success=True,
@@ -500,7 +518,7 @@ class InferenceEngine:
                                 confidence=confidence,
                                 steps=steps,
                                 patterns_used=patterns_used,
-                                proof_found=True
+                                proof_found=True,
                             )
 
         return None
@@ -509,7 +527,7 @@ class InferenceEngine:
         self,
         query: Dict[str, Any],
         steps: List[InferenceStep],
-        patterns_used: List[InferencePattern]
+        patterns_used: List[InferencePattern],
     ) -> Optional[InferenceResult]:
         """
         Hypothetical Syllogism: P→Q, Q→R ⊢ P→R
@@ -524,24 +542,32 @@ class InferenceEngine:
 
         # Look for chain: find Q such that P→Q and Q→R
         for r1 in self.rules:
-            if self._matches(r1["antecedents"][0] if r1["antecedents"] else None, target_antecedent):
+            if self._matches(
+                r1["antecedents"][0] if r1["antecedents"] else None, target_antecedent
+            ):
                 # r1 is P→Q, now find Q→R
                 intermediate = r1["consequent"]
                 for r2 in self.rules:
                     if r2 != r1:
-                        if r2["antecedents"] and self._matches(r2["antecedents"][0], intermediate):
+                        if r2["antecedents"] and self._matches(
+                            r2["antecedents"][0], intermediate
+                        ):
                             if self._matches(r2["consequent"], target_consequent):
-                                patterns_used.append(InferencePattern.HYPOTHETICAL_SYLLOGISM)
+                                patterns_used.append(
+                                    InferencePattern.HYPOTHETICAL_SYLLOGISM
+                                )
                                 confidence = r1["confidence"] * r2["confidence"]
 
-                                steps.append(InferenceStep(
-                                    step_id=len(steps) + 1,
-                                    premise_ids=[],
-                                    conclusion=str(query),
-                                    pattern_used=InferencePattern.HYPOTHETICAL_SYLLOGISM,
-                                    confidence=confidence,
-                                    justification=f"Hypothetical Syllogism: {r1['name']} + {r2['name']}"
-                                ))
+                                steps.append(
+                                    InferenceStep(
+                                        step_id=len(steps) + 1,
+                                        premise_ids=[],
+                                        conclusion=str(query),
+                                        pattern_used=InferencePattern.HYPOTHETICAL_SYLLOGISM,
+                                        confidence=confidence,
+                                        justification=f"Hypothetical Syllogism: {r1['name']} + {r2['name']}",
+                                    )
+                                )
 
                                 return InferenceResult(
                                     success=True,
@@ -549,7 +575,7 @@ class InferenceEngine:
                                     confidence=confidence,
                                     steps=steps,
                                     patterns_used=patterns_used,
-                                    proof_found=True
+                                    proof_found=True,
                                 )
 
         return None
@@ -558,7 +584,7 @@ class InferenceEngine:
         self,
         query: Dict[str, Any],
         steps: List[InferenceStep],
-        patterns_used: List[InferencePattern]
+        patterns_used: List[InferencePattern],
     ) -> Optional[InferenceResult]:
         """
         Universal Instantiation: ∀x P(x) ⊢ P(a)
@@ -582,14 +608,16 @@ class InferenceEngine:
                     # Would need to verify instance is of subject type
                     patterns_used.append(InferencePattern.UNIVERSAL_INSTANTIATION)
 
-                    steps.append(InferenceStep(
-                        step_id=len(steps) + 1,
-                        premise_ids=[],
-                        conclusion=str(query),
-                        pattern_used=InferencePattern.UNIVERSAL_INSTANTIATION,
-                        confidence=fact["confidence"] * 0.9,
-                        justification=f"Universal Instantiation from: {fact['statement']}"
-                    ))
+                    steps.append(
+                        InferenceStep(
+                            step_id=len(steps) + 1,
+                            premise_ids=[],
+                            conclusion=str(query),
+                            pattern_used=InferencePattern.UNIVERSAL_INSTANTIATION,
+                            confidence=fact["confidence"] * 0.9,
+                            justification=f"Universal Instantiation from: {fact['statement']}",
+                        )
+                    )
 
                     return InferenceResult(
                         success=True,
@@ -597,7 +625,7 @@ class InferenceEngine:
                         confidence=fact["confidence"] * 0.9,
                         steps=steps,
                         patterns_used=patterns_used,
-                        proof_found=True
+                        proof_found=True,
                     )
 
         return None
@@ -606,7 +634,7 @@ class InferenceEngine:
         self,
         query: Dict[str, Any],
         steps: List[InferenceStep],
-        patterns_used: List[InferencePattern]
+        patterns_used: List[InferencePattern],
     ) -> Optional[InferenceResult]:
         """
         Categorical Syllogism: All M are P, All S are M ⊢ All S are P
@@ -641,14 +669,16 @@ class InferenceEngine:
                         patterns_used.append(InferencePattern.CATEGORICAL_SYLLOGISM)
                         confidence = f1["confidence"] * f2["confidence"]
 
-                        steps.append(InferenceStep(
-                            step_id=len(steps) + 1,
-                            premise_ids=[],
-                            conclusion=str(query),
-                            pattern_used=InferencePattern.CATEGORICAL_SYLLOGISM,
-                            confidence=confidence,
-                            justification=f"Categorical Syllogism: {f1['statement']} + {f2['statement']}"
-                        ))
+                        steps.append(
+                            InferenceStep(
+                                step_id=len(steps) + 1,
+                                premise_ids=[],
+                                conclusion=str(query),
+                                pattern_used=InferencePattern.CATEGORICAL_SYLLOGISM,
+                                confidence=confidence,
+                                justification=f"Categorical Syllogism: {f1['statement']} + {f2['statement']}",
+                            )
+                        )
 
                         return InferenceResult(
                             success=True,
@@ -656,15 +686,13 @@ class InferenceEngine:
                             confidence=confidence,
                             steps=steps,
                             patterns_used=patterns_used,
-                            proof_found=True
+                            proof_found=True,
                         )
 
         return None
 
     def _matches(
-        self,
-        parsed1: Optional[Dict[str, Any]],
-        parsed2: Optional[Dict[str, Any]]
+        self, parsed1: Optional[Dict[str, Any]], parsed2: Optional[Dict[str, Any]]
     ) -> bool:
         """Check if two parsed structures match."""
         if parsed1 is None or parsed2 is None:
@@ -674,26 +702,26 @@ class InferenceEngine:
             return False
 
         if parsed1.get("type") == "predicate":
-            return (
-                parsed1.get("name", "").lower() == parsed2.get("name", "").lower() and
-                parsed1.get("negated", False) == parsed2.get("negated", False)
-            )
+            return parsed1.get("name", "").lower() == parsed2.get(
+                "name", ""
+            ).lower() and parsed1.get("negated", False) == parsed2.get("negated", False)
 
         if parsed1.get("type") == "atomic":
-            return parsed1.get("content", "").lower() == parsed2.get("content", "").lower()
+            return (
+                parsed1.get("content", "").lower() == parsed2.get("content", "").lower()
+            )
 
         if parsed1.get("type") == "universal":
             return (
-                parsed1.get("subject", "").lower() == parsed2.get("subject", "").lower() and
-                parsed1.get("predicate", "").lower() == parsed2.get("predicate", "").lower()
+                parsed1.get("subject", "").lower() == parsed2.get("subject", "").lower()
+                and parsed1.get("predicate", "").lower()
+                == parsed2.get("predicate", "").lower()
             )
 
         return False
 
     def cross_check_llm(
-        self,
-        llm_conclusion: str,
-        llm_reasoning: List[str]
+        self, llm_conclusion: str, llm_reasoning: List[str]
     ) -> Tuple[bool, List[str]]:
         """
         Cross-check LLM conclusion against symbolic proof.
@@ -713,15 +741,13 @@ class InferenceEngine:
         for i, step in enumerate(llm_reasoning):
             step_result = self.infer(step)
             if not step_result.proof_found:
-                issues.append(f"Step {i+1} could not be verified: {step[:50]}...")
+                issues.append(f"Step {i + 1} could not be verified: {step[:50]}...")
 
         is_valid = len(issues) == 0
         return is_valid, issues
 
     def proof_or_flag(
-        self,
-        claim: str,
-        require_proof: bool = True
+        self, claim: str, require_proof: bool = True
     ) -> Tuple[bool, Optional[InferenceResult], Optional[str]]:
         """
         Attempt proof; if not found, flag for review.

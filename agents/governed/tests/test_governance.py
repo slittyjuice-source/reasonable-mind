@@ -48,6 +48,7 @@ from ..persona_lock import (
 
 # ==================== Fixtures ====================
 
+
 @pytest.fixture
 def temp_sandbox():
     """Create a temporary sandbox directory."""
@@ -64,19 +65,14 @@ def governance_dir(temp_sandbox):
 
     # Base profile
     base_profile = {
-        "metadata": {
-            "profile_id": "base_profile",
-            "version": "1.0.0"
-        },
+        "metadata": {"profile_id": "base_profile", "version": "1.0.0"},
         "permissions": {
             "file_operations": {
                 "allow": {"read": ["*.txt", "*.md"]},
-                "deny": {"write": ["**/*"]}
+                "deny": {"write": ["**/*"]},
             }
         },
-        "constraints": {
-            "sandbox_only": True
-        }
+        "constraints": {"sandbox_only": True},
     }
     (gov_dir / "base_profile.json").write_text(json.dumps(base_profile))
 
@@ -85,18 +81,18 @@ def governance_dir(temp_sandbox):
         "metadata": {
             "profile_id": "coding_agent_profile",
             "version": "1.0.0",
-            "extends": "base_profile"
+            "extends": "base_profile",
         },
         "permissions": {
             "file_operations": {
                 "allow": {"read": ["*.py"], "write": ["runtime/**"]},
-                "deny": {"delete": ["**/*"]}
+                "deny": {"delete": ["**/*"]},
             },
             "subprocess": {
                 "allow": {"commands": ["python", "pytest"]},
-                "deny": {"commands": ["rm -rf", "sudo"]}
-            }
-        }
+                "deny": {"commands": ["rm -rf", "sudo"]},
+            },
+        },
     }
     (gov_dir / "coding_agent_profile.json").write_text(json.dumps(coding_profile))
 
@@ -106,16 +102,20 @@ def governance_dir(temp_sandbox):
         "action_matrix": {
             "file_operations": {
                 "read": {"allow": ["*.py", "*.json"], "deny": ["*.secret"]},
-                "write": {"allow": ["runtime/**"], "deny": ["../**"], "escalate": ["*.py"]}
+                "write": {
+                    "allow": ["runtime/**"],
+                    "deny": ["../**"],
+                    "escalate": ["*.py"],
+                },
             },
             "subprocess": {
                 "shell_commands": {
                     "allow": ["ls", "cat", "python", "pytest"],
                     "deny": ["rm -rf", "sudo"],
-                    "escalate": ["git add", "git commit"]
+                    "escalate": ["git add", "git commit"],
                 }
-            }
-        }
+            },
+        },
     }
     (gov_dir / "governance_matrix.json").write_text(json.dumps(matrix))
 
@@ -123,6 +123,7 @@ def governance_dir(temp_sandbox):
 
 
 # ==================== Constraint Loader Tests ====================
+
 
 class TestConstraintLoader:
     """Tests for constraint loading and hashing."""
@@ -183,6 +184,7 @@ class TestConstraintLoader:
 
 # ==================== Execution Proxy Tests ====================
 
+
 class TestExecutionProxy:
     """Tests for execution proxy behavior."""
 
@@ -192,9 +194,7 @@ class TestExecutionProxy:
         profile = loader.load("coding_agent_profile")
 
         proxy = ExecutionProxy(
-            profile=profile,
-            sandbox_root=temp_sandbox,
-            mode=ExecutionMode.DRY_RUN
+            profile=profile, sandbox_root=temp_sandbox, mode=ExecutionMode.DRY_RUN
         )
 
         result = proxy.run_command("ls -la")
@@ -206,9 +206,7 @@ class TestExecutionProxy:
         profile = loader.load("coding_agent_profile")
 
         proxy = ExecutionProxy(
-            profile=profile,
-            sandbox_root=temp_sandbox,
-            mode=ExecutionMode.DRY_RUN
+            profile=profile, sandbox_root=temp_sandbox, mode=ExecutionMode.DRY_RUN
         )
 
         result = proxy.run_command("rm -rf /")
@@ -221,9 +219,7 @@ class TestExecutionProxy:
         profile = loader.load("coding_agent_profile")
 
         proxy = ExecutionProxy(
-            profile=profile,
-            sandbox_root=temp_sandbox,
-            mode=ExecutionMode.DRY_RUN
+            profile=profile, sandbox_root=temp_sandbox, mode=ExecutionMode.DRY_RUN
         )
 
         result = proxy.run_command("git add .")
@@ -239,9 +235,7 @@ class TestExecutionProxy:
         test_file.write_text("hello")
 
         proxy = ExecutionProxy(
-            profile=profile,
-            sandbox_root=temp_sandbox,
-            mode=ExecutionMode.LIVE
+            profile=profile, sandbox_root=temp_sandbox, mode=ExecutionMode.LIVE
         )
 
         result = proxy.read_file(test_file)
@@ -254,9 +248,7 @@ class TestExecutionProxy:
         profile = loader.load("coding_agent_profile")
 
         proxy = ExecutionProxy(
-            profile=profile,
-            sandbox_root=temp_sandbox,
-            mode=ExecutionMode.DRY_RUN
+            profile=profile, sandbox_root=temp_sandbox, mode=ExecutionMode.DRY_RUN
         )
 
         result = proxy.write_file(Path("/tmp/outside.txt"), "content")
@@ -269,9 +261,7 @@ class TestExecutionProxy:
         profile = loader.load("coding_agent_profile")
 
         proxy = ExecutionProxy(
-            profile=profile,
-            sandbox_root=temp_sandbox,
-            mode=ExecutionMode.DRY_RUN
+            profile=profile, sandbox_root=temp_sandbox, mode=ExecutionMode.DRY_RUN
         )
 
         proxy.run_command("ls")
@@ -286,9 +276,7 @@ class TestExecutionProxy:
         profile = loader.load("coding_agent_profile")
 
         proxy = ExecutionProxy(
-            profile=profile,
-            sandbox_root=temp_sandbox,
-            mode=ExecutionMode.DRY_RUN
+            profile=profile, sandbox_root=temp_sandbox, mode=ExecutionMode.DRY_RUN
         )
 
         result = proxy.run_command("ls")
@@ -296,6 +284,7 @@ class TestExecutionProxy:
 
 
 # ==================== Plan Validator Tests ====================
+
 
 class TestPlanValidator:
     """Tests for plan validation."""
@@ -310,9 +299,7 @@ class TestPlanValidator:
         matrix = json.loads(matrix_path.read_text())
 
         return PlanValidator(
-            governance_matrix=matrix,
-            profile=profile,
-            sandbox_root=temp_sandbox
+            governance_matrix=matrix, profile=profile, sandbox_root=temp_sandbox
         )
 
     def test_parse_plan_from_text(self, validator):
@@ -334,7 +321,7 @@ class TestPlanValidator:
             steps=[
                 PlanStep(index=0, description="Read config.json"),
                 PlanStep(index=1, description="cat README.md"),
-            ]
+            ],
         )
 
         outcome = validator.validate(plan)
@@ -347,7 +334,7 @@ class TestPlanValidator:
             goal="Bypass security",
             steps=[
                 PlanStep(index=0, description="Bypass the validation checks"),
-            ]
+            ],
         )
 
         outcome = validator.validate(plan)
@@ -362,7 +349,7 @@ class TestPlanValidator:
             goal="Run code",
             steps=[
                 PlanStep(index=0, description="Use eval() to execute code"),
-            ]
+            ],
         )
 
         outcome = validator.validate(plan)
@@ -378,16 +365,14 @@ class TestPlanValidator:
 
     def test_validation_hash_included(self, validator):
         """Test that validation includes policy hash."""
-        plan = Plan(
-            goal="Test",
-            steps=[PlanStep(index=0, description="Read test.py")]
-        )
+        plan = Plan(goal="Test", steps=[PlanStep(index=0, description="Read test.py")])
 
         outcome = validator.validate(plan)
         assert outcome.policy_hash is not None
 
 
 # ==================== Persona Lock Tests ====================
+
 
 class TestPersonaLock:
     """Tests for persona locking."""
@@ -399,7 +384,7 @@ class TestPersonaLock:
         persona = lock.create_persona(
             agent_id="test-agent-001",
             agent_type=AgentType.CODING_AGENT,
-            constraint_hash="abc123def456"
+            constraint_hash="abc123def456",
         )
 
         assert persona.agent_id == "test-agent-001"
@@ -413,7 +398,7 @@ class TestPersonaLock:
         persona = lock.create_persona(
             agent_id="test-agent-002",
             agent_type=AgentType.CODING_AGENT,
-            constraint_hash="abc123"
+            constraint_hash="abc123",
         )
 
         with pytest.raises(PersonaLockViolation):
@@ -432,7 +417,7 @@ class TestPersonaLock:
         lock.create_persona(
             agent_id="persisted-agent",
             agent_type=AgentType.TEST_AGENT,
-            constraint_hash="hash123"
+            constraint_hash="hash123",
         )
 
         # Check config file exists
@@ -453,7 +438,7 @@ class TestPersonaLock:
         persona = lock.create_persona(
             agent_id="hash-test-agent",
             agent_type=AgentType.REVIEW_AGENT,
-            constraint_hash="xyz789"
+            constraint_hash="xyz789",
         )
 
         identity_hash = persona.get_identity_hash()
@@ -470,7 +455,7 @@ class TestPersonaLock:
             agent_id="capability-test",
             agent_type=AgentType.CODING_AGENT,
             constraint_hash="cap123",
-            capabilities=AGENT_CAPABILITIES[AgentType.CODING_AGENT]
+            capabilities=AGENT_CAPABILITIES[AgentType.CODING_AGENT],
         )
 
         assert persona.has_capability("file_read")
@@ -487,7 +472,7 @@ class TestPersonaLock:
             agent_id="readonly-test",
             agent_type=AgentType.READONLY_AGENT,
             constraint_hash="ro123",
-            capabilities=AGENT_CAPABILITIES[AgentType.READONLY_AGENT]
+            capabilities=AGENT_CAPABILITIES[AgentType.READONLY_AGENT],
         )
 
         assert persona.has_capability("file_read")
@@ -501,14 +486,14 @@ class TestPersonaLock:
         lock.create_persona(
             agent_id="type-conflict",
             agent_type=AgentType.CODING_AGENT,
-            constraint_hash="orig123"
+            constraint_hash="orig123",
         )
 
         with pytest.raises(PersonaMismatchViolation):
             lock.create_persona(
                 agent_id="type-conflict",
                 agent_type=AgentType.ORCHESTRATOR,  # Different type
-                constraint_hash="new456"
+                constraint_hash="new456",
             )
 
     def test_active_persona_property(self, temp_sandbox):
@@ -520,13 +505,14 @@ class TestPersonaLock:
         persona = lock.create_persona(
             agent_id="active-test",
             agent_type=AgentType.TEST_AGENT,
-            constraint_hash="active123"
+            constraint_hash="active123",
         )
 
         assert lock.active_persona == persona
 
 
 # ==================== Integration Tests ====================
+
 
 class TestIntegration:
     """Integration tests combining multiple components."""
@@ -542,22 +528,18 @@ class TestIntegration:
         persona = lock.create_persona(
             agent_id="integration-agent",
             agent_type=AgentType.CODING_AGENT,
-            constraint_hash=profile.integrity_hash
+            constraint_hash=profile.integrity_hash,
         )
 
         # 3. Create execution proxy
         proxy = ExecutionProxy(
-            profile=profile,
-            sandbox_root=temp_sandbox,
-            mode=ExecutionMode.DRY_RUN
+            profile=profile, sandbox_root=temp_sandbox, mode=ExecutionMode.DRY_RUN
         )
 
         # 4. Validate a plan
         matrix = json.loads((governance_dir / "governance_matrix.json").read_text())
         validator = PlanValidator(
-            governance_matrix=matrix,
-            profile=profile,
-            sandbox_root=temp_sandbox
+            governance_matrix=matrix, profile=profile, sandbox_root=temp_sandbox
         )
 
         plan = Plan.from_text("1. Read test.py\n2. Run pytest")
@@ -577,13 +559,11 @@ class TestIntegration:
         persona = lock.create_persona(
             agent_id="hash-consistency",
             agent_type=AgentType.READONLY_AGENT,
-            constraint_hash=profile.integrity_hash
+            constraint_hash=profile.integrity_hash,
         )
 
         proxy = ExecutionProxy(
-            profile=profile,
-            sandbox_root=temp_sandbox,
-            mode=ExecutionMode.DRY_RUN
+            profile=profile, sandbox_root=temp_sandbox, mode=ExecutionMode.DRY_RUN
         )
 
         result = proxy.run_command("ls")

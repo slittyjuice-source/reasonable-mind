@@ -121,7 +121,8 @@ class MessageHistory:
 
         while (
             self.messages
-            and self.total_tokens + TRUNCATION_NOTICE_TOKENS > self.context_window_tokens
+            and self.total_tokens + TRUNCATION_NOTICE_TOKENS
+            > self.context_window_tokens
         ):
             remove_oldest_message()
 
@@ -131,9 +132,7 @@ class MessageHistory:
 
     def format_for_api(self) -> list[dict[str, Any]]:
         """Format messages for Claude API with optional caching."""
-        result = [
-            {"role": m["role"], "content": m["content"]} for m in self.messages
-        ]
+        result = [{"role": m["role"], "content": m["content"]} for m in self.messages]
 
         if self.enable_caching and self.messages:
             result[-1]["content"] = [

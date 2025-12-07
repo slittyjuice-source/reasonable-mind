@@ -9,16 +9,21 @@ This package provides the foundational logic components:
 
 from .logic_engine import LogicEngine, ArgumentForm, LogicResult
 from .categorical_engine import CategoricalEngine, SyllogismType
-from .fallacy_detector import FallacyDetector, FallacyCategory, FallacySeverity, FallacyPattern
+from .fallacy_detector import (
+    FallacyDetector,
+    FallacyCategory,
+    FallacySeverity,
+    FallacyPattern,
+)
 
 __all__ = [
-    'LogicEngine',
-    'ArgumentForm',
-    'LogicResult',
-    'CategoricalEngine',
-    'SyllogismType',
-    'FallacyDetector',
-    'FallacyCategory',
-    'FallacySeverity',
-    'FallacyPattern',
+    "LogicEngine",
+    "ArgumentForm",
+    "LogicResult",
+    "CategoricalEngine",
+    "SyllogismType",
+    "FallacyDetector",
+    "FallacyCategory",
+    "FallacySeverity",
+    "FallacyPattern",
 ]

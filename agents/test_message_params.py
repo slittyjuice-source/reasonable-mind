@@ -41,13 +41,19 @@ class TestMessageParams:
         agent = Agent(
             name="BasicAgent",
             system="You are a helpful assistant. Be very brief.",
-            verbose=False
+            verbose=False,
         )
 
         response = agent.run("What is 2+2?")
         # response is a list of message content blocks
-        assert any("4" in str(block.get("text", "")) for block in response if block.get("type") == "text")
-        response_text = next((block["text"] for block in response if block.get("type") == "text"), "")
+        assert any(
+            "4" in str(block.get("text", ""))
+            for block in response
+            if block.get("type") == "text"
+        )
+        response_text = next(
+            (block["text"] for block in response if block.get("type") == "text"), ""
+        )
         self._print(f"Response: {response_text}")
 
     def test_custom_headers(self) -> None:
@@ -59,9 +65,9 @@ class TestMessageParams:
             message_params={
                 "extra_headers": {
                     "X-Custom-Header": "test-value",
-                    "X-Request-ID": "test-12345"
+                    "X-Request-ID": "test-12345",
                 }
-            }
+            },
         )
 
         # Verify headers are stored
@@ -69,7 +75,9 @@ class TestMessageParams:
         assert agent.message_params["extra_headers"]["X-Custom-Header"] == "test-value"
 
         response = agent.run("What is 3+3?")
-        response_text = next((block["text"] for block in response if block.get("type") == "text"), "")
+        response_text = next(
+            (block["text"] for block in response if block.get("type") == "text"), ""
+        )
         assert "6" in response_text
         self._print(f"Response with custom headers: {response_text}")
 
@@ -80,15 +88,15 @@ class TestMessageParams:
             system="You are a helpful assistant. Be very brief.",
             verbose=False,
             message_params={
-                "extra_headers": {
-                    "anthropic-beta": "files-api-2025-04-14"
-                }
-            }
+                "extra_headers": {"anthropic-beta": "files-api-2025-04-14"}
+            },
         )
 
         # The API call should succeed even with beta headers
         response = agent.run("What is 5*5?")
-        response_text = next((block["text"] for block in response if block.get("type") == "text"), "")
+        response_text = next(
+            (block["text"] for block in response if block.get("type") == "text"), ""
+        )
         assert "25" in response_text
         self._print(f"Response with beta headers: {response_text}")
 
@@ -98,15 +106,13 @@ class TestMessageParams:
             name="MetadataAgent",
             system="You are a helpful assistant. Be very brief.",
             verbose=False,
-            message_params={
-                "metadata": {
-                    "user_id": "test-user-123"
-                }
-            }
+            message_params={"metadata": {"user_id": "test-user-123"}},
         )
 
         response = agent.run("What is 10/2?")
-        response_text = next((block["text"] for block in response if block.get("type") == "text"), "")
+        response_text = next(
+            (block["text"] for block in response if block.get("type") == "text"), ""
+        )
         assert "5" in response_text
         self._print(f"Response with metadata: {response_text}")
 
@@ -116,11 +122,7 @@ class TestMessageParams:
             name="ParamsAgent",
             system="You are a helpful assistant.",
             verbose=False,
-            message_params={
-                "top_k": 10,
-                "top_p": 0.95,
-                "temperature": 0.7
-            }
+            message_params={"top_k": 10, "top_p": 0.95, "temperature": 0.7},
         )
 
         # Verify parameters are passed through
@@ -130,16 +132,15 @@ class TestMessageParams:
         assert params["temperature"] == 0.7
 
         response = agent.run("Say 'test'")
-        response_text = next((block["text"] for block in response if block.get("type") == "text"), "")
+        response_text = next(
+            (block["text"] for block in response if block.get("type") == "text"), ""
+        )
         assert response_text
         self._print(f"Response with custom params: {response_text}")
 
     def test_parameter_override(self) -> None:
         """Test that message_params override config defaults."""
-        config = ModelConfig(
-            temperature=1.0,
-            max_tokens=100
-        )
+        config = ModelConfig(temperature=1.0, max_tokens=100)
 
         agent = Agent(
             name="OverrideAgent",
@@ -148,8 +149,8 @@ class TestMessageParams:
             verbose=False,
             message_params={
                 "temperature": 0.5,  # Should override config
-                "max_tokens": 200    # Should override config
-            }
+                "max_tokens": 200,  # Should override config
+            },
         )
 
         params = agent._prepare_message_params()
@@ -164,11 +165,8 @@ class TestMessageParams:
             system="You are a helpful assistant.",
             verbose=False,
             message_params={
-                "metadata": {
-                    "user_id": "valid",
-                    "invalid_field": "should-fail"
-                }
-            }
+                "metadata": {"user_id": "valid", "invalid_field": "should-fail"}
+            },
         )
 
         try:
@@ -188,14 +186,12 @@ class TestMessageParams:
             message_params={
                 "extra_headers": {
                     "X-Test": "combined",
-                    "anthropic-beta": "files-api-2025-04-14"
+                    "anthropic-beta": "files-api-2025-04-14",
                 },
-                "metadata": {
-                    "user_id": "combined-test"
-                },
+                "metadata": {"user_id": "combined-test"},
                 "temperature": 0.8,
-                "top_k": 5
-            }
+                "top_k": 5,
+            },
         )
 
         params = agent._prepare_message_params()
@@ -205,6 +201,8 @@ class TestMessageParams:
         assert params["top_k"] == 5
 
         response = agent.run("What is 1+1?")
-        response_text = next((block["text"] for block in response if block.get("type") == "text"), "")
+        response_text = next(
+            (block["text"] for block in response if block.get("type") == "text"), ""
+        )
         assert "2" in response_text
         self._print(f"Response with combined params: {response_text}")

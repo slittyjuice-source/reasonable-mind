@@ -22,6 +22,7 @@ from .knowledge_base import (
 @dataclass
 class ReasoningStep:
     """Represents one step in a logical argument chain."""
+
     premise: str
     inference_rule: InferenceRule
     conclusion: str
@@ -34,6 +35,7 @@ class ReasoningStep:
 @dataclass
 class FormalArgument:
     """A complete formal logical argument."""
+
     premises: List[LogicalStatement]
     inference_steps: List[InferenceRule]
     conclusion: LogicalStatement
@@ -55,10 +57,7 @@ class ArgumentBuilder:
         self.logic_system = logic_system
         self.formatter = ArgumentFormatter(logic_system)
 
-    def build_argument(
-        self,
-        reasoning_chain: List[ReasoningStep]
-    ) -> FormalArgument:
+    def build_argument(self, reasoning_chain: List[ReasoningStep]) -> FormalArgument:
         """
         Convert ML reasoning chain to symbolic logic representation.
 
@@ -99,7 +98,7 @@ class ArgumentBuilder:
             overall_confidence=overall_confidence,
             cited_facts=list(set(cited_facts)),  # Deduplicate
             notation=self.logic_system,
-            argument_structure=structure
+            argument_structure=structure,
         )
 
     def _formalize_premises(self, premises: List[str]) -> List[LogicalStatement]:
@@ -147,7 +146,7 @@ class ArgumentBuilder:
                     formal_notation=formal,
                     logic_type=self.logic_system,
                     variables=variables,
-                    predicates=predicates
+                    predicates=predicates,
                 )
 
         # Pattern: "X is Y"
@@ -165,7 +164,7 @@ class ArgumentBuilder:
                     formal_notation=formal,
                     logic_type=self.logic_system,
                     variables=set(),
-                    predicates=predicates
+                    predicates=predicates,
                 )
 
         # Pattern: "If P then Q"
@@ -181,16 +180,16 @@ class ArgumentBuilder:
                 formal_notation=formal,
                 logic_type=self.logic_system,
                 variables=set(),
-                predicates={p.capitalize(), q.capitalize()}
+                predicates={p.capitalize(), q.capitalize()},
             )
 
         # Default: treat as atomic proposition
         return LogicalStatement(
             natural_language=statement,
-            formal_notation=f"P(\"{statement}\")",
+            formal_notation=f'P("{statement}")',
             logic_type=self.logic_system,
             variables=set(),
-            predicates={"P"}
+            predicates={"P"},
         )
 
     def _calculate_chain_confidence(self, confidences: List[float]) -> float:
@@ -214,8 +213,7 @@ class ArgumentBuilder:
         return adjusted
 
     def _build_structure_visualization(
-        self,
-        reasoning_chain: List[ReasoningStep]
+        self, reasoning_chain: List[ReasoningStep]
     ) -> str:
         """Build ASCII visualization of argument structure."""
         lines = []
@@ -249,7 +247,9 @@ class ArgumentFormatter:
             lines.append(f"  P{i}: {premise.formal_notation}")
             lines.append(f"      ({premise.natural_language})")
 
-        lines.append(f"\nINFERENCE RULES: {', '.join(r.value for r in argument.inference_steps)}")
+        lines.append(
+            f"\nINFERENCE RULES: {', '.join(r.value for r in argument.inference_steps)}"
+        )
 
         lines.append("\nCONCLUSION:")
         lines.append(f"  ∴ {argument.conclusion.formal_notation}")
@@ -280,7 +280,7 @@ class ReasoningAgent:
         logic_framework: LogicType = LogicType.FIRST_ORDER,
         reasoning_depth: int = 3,
         logic_weight: float = 0.75,
-        verbose: bool = False
+        verbose: bool = False,
     ):
         self.name = name
         self.system_prompt = system_prompt
@@ -298,7 +298,7 @@ class ReasoningAgent:
         self,
         query: str,
         context: Optional[str] = None,
-        options: Optional[List[str]] = None
+        options: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Execute extended reasoning on a query.
@@ -352,7 +352,7 @@ class ReasoningAgent:
                     "premise": step.premise,
                     "rule": step.inference_rule.value,
                     "conclusion": step.conclusion,
-                    "confidence": step.confidence
+                    "confidence": step.confidence,
                 }
                 for step in self.reasoning_chain
             ],
@@ -362,11 +362,11 @@ class ReasoningAgent:
                 "valid": validation.valid,
                 "confidence": validation.confidence,
                 "sources": validation.sources,
-                "reasoning_chain": validation.reasoning_chain
+                "reasoning_chain": validation.reasoning_chain,
             },
             "knowledge_used": formal_argument.cited_facts,
             "ml_reasoning_trace": self._get_ml_trace(),
-            "proved": all(step.confidence >= 0.8 for step in self.reasoning_chain)
+            "proved": all(step.confidence >= 0.8 for step in self.reasoning_chain),
         }
 
         # Step 6: Apply hallucination guard (confidence adjustment + warnings)
@@ -393,11 +393,13 @@ class ReasoningAgent:
         # Downstream consumers: propagate verification/warnings into formal argument
         result["formal_argument"].overall_confidence = result["confidence"]
         if result["warnings"]:
-            result["formal_argument"].argument_structure += (
-                f"\nWarnings: {'; '.join(result['warnings'])}"
-            )
+            result[
+                "formal_argument"
+            ].argument_structure += f"\nWarnings: {'; '.join(result['warnings'])}"
         result["formal_argument"].argument_structure += (
-            "\nProof status: proved" if result["proved"] else "\nProof status: unproven/heuristic"
+            "\nProof status: proved"
+            if result["proved"]
+            else "\nProof status: unproven/heuristic"
         )
 
         if self.verbose:
@@ -438,11 +440,15 @@ class ReasoningAgent:
         inference_rule = self._select_inference_rule(problem, relevant_facts)
 
         # Generate conclusion
-        conclusion, proved = self._generate_conclusion(problem, relevant_facts, inference_rule)
+        conclusion, proved = self._generate_conclusion(
+            problem, relevant_facts, inference_rule
+        )
 
         # Calculate confidence
         if relevant_facts:
-            avg_fact_confidence = sum(f.confidence for f in relevant_facts) / len(relevant_facts)
+            avg_fact_confidence = sum(f.confidence for f in relevant_facts) / len(
+                relevant_facts
+            )
             confidence = avg_fact_confidence * 0.9  # Slight reduction for inference
         else:
             confidence = 0.6  # Lower confidence without KB support
@@ -452,14 +458,10 @@ class ReasoningAgent:
             inference_rule=inference_rule,
             conclusion=conclusion,
             confidence=confidence if proved else max(confidence * 0.8, 0.1),
-            supporting_evidence=[f.source for f in relevant_facts]
+            supporting_evidence=[f.source for f in relevant_facts],
         )
 
-    def _select_inference_rule(
-        self,
-        problem: str,
-        facts: List[Fact]
-    ) -> InferenceRule:
+    def _select_inference_rule(self, problem: str, facts: List[Fact]) -> InferenceRule:
         """Select appropriate inference rule based on problem and facts."""
         problem_lower = problem.lower()
 
@@ -480,10 +482,7 @@ class ReasoningAgent:
         return InferenceRule.MODUS_PONENS
 
     def _generate_conclusion(
-        self,
-        problem: str,
-        facts: List[Fact],
-        rule: InferenceRule
+        self, problem: str, facts: List[Fact], rule: InferenceRule
     ) -> (str, bool):
         """Generate conclusion from premises using inference rule."""
         # Simplified conclusion generation
@@ -515,8 +514,14 @@ class ReasoningAgent:
                     return parts[1].strip(), True
 
             statement_lower = fact.statement.lower()
-            if "if" in statement_lower or "then" in statement_lower or "are" in statement_lower:
-                parts = statement_lower.split("then" if "then" in statement_lower else "are")
+            if (
+                "if" in statement_lower
+                or "then" in statement_lower
+                or "are" in statement_lower
+            ):
+                parts = statement_lower.split(
+                    "then" if "then" in statement_lower else "are"
+                )
                 if len(parts) == 2:
                     return parts[1].strip(), True
 
@@ -542,7 +547,9 @@ class ReasoningAgent:
     def build_trace(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """Structured trace for observability."""
         return {
-            "query": result.get("formal_argument", {}).conclusion.natural_language if isinstance(result.get("formal_argument"), LogicalStatement) else result.get("conclusion"),
+            "query": result.get("formal_argument", {}).conclusion.natural_language
+            if isinstance(result.get("formal_argument"), LogicalStatement)
+            else result.get("conclusion"),
             "conclusion": result.get("conclusion"),
             "formal_conclusion": result.get("formal_conclusion"),
             "reasoning_chain": result.get("reasoning_chain"),
@@ -573,7 +580,8 @@ class ReasoningAgent:
 
         avg_chain_conf = (
             sum(step.get("confidence", 0.0) for step in chain) / len(chain)
-            if chain else 0.0
+            if chain
+            else 0.0
         )
 
         if not validation.get("valid") or validation.get("confidence", 0.0) < 0.5:
@@ -585,7 +593,9 @@ class ReasoningAgent:
             if risk_level == "low":
                 risk_level = "medium"
             adjustment *= 0.85
-            warnings.append("No cited facts; consider verifying against trusted sources.")
+            warnings.append(
+                "No cited facts; consider verifying against trusted sources."
+            )
 
         if avg_chain_conf < 0.65:
             if risk_level == "low":
@@ -596,7 +606,9 @@ class ReasoningAgent:
         if len(chain) > 6:
             warnings.append("Long reasoning chain—higher chance of compounding errors.")
 
-        adjusted_confidence = max(0.0, min(1.0, result.get("confidence", 0.0) * adjustment))
+        adjusted_confidence = max(
+            0.0, min(1.0, result.get("confidence", 0.0) * adjustment)
+        )
 
         return {
             "risk_level": risk_level,
@@ -622,16 +634,13 @@ class ReasoningAgent:
                 for w in guard["warnings"]:
                     print(f"  - {w}")
         print("\nReasoning Chain:")
-        for i, step in enumerate(result['reasoning_chain'], 1):
+        for i, step in enumerate(result["reasoning_chain"], 1):
             print(f"  {i}. {step['premise']}")
             print(f"     → {step['rule']} → {step['conclusion']}")
         print("=" * 70)
 
     def add_knowledge(
-        self,
-        statement: str,
-        source: str = "user",
-        confidence: float = 1.0
+        self, statement: str, source: str = "user", confidence: float = 1.0
     ):
         """Add knowledge to the agent's knowledge base."""
         self.knowledge_base.add_fact(statement, source, confidence)

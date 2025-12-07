@@ -125,7 +125,9 @@ class TestTruthTable:
 
     def test_truth_table_counterexample(self):
         """Test truth table provides counterexample for invalid arguments."""
-        arg = parse_argument(["P → Q"], "P")  # Invalid: cannot conclude P from just P → Q
+        arg = parse_argument(
+            ["P → Q"], "P"
+        )  # Invalid: cannot conclude P from just P → Q
         engine = LogicEngine()
         result = engine.validate(arg)
 
@@ -152,10 +154,7 @@ class TestEdgeCases:
     def test_too_many_variables(self):
         """Test handling of >5 variables (truth table infeasible)."""
         # Create argument with 6 variables
-        arg = parse_argument(
-            ["A ∧ B ∧ C", "D ∨ E ∨ F"],
-            "A"
-        )
+        arg = parse_argument(["A ∧ B ∧ C", "D ∨ E ∨ F"], "A")
         engine = LogicEngine()
         result = engine.validate(arg)
 
@@ -190,7 +189,7 @@ class TestRealWorldExamples:
         # This is technically categorical, but can be expressed propositionally
         arg = parse_argument(
             ["Human(Socrates) → Mortal(Socrates)", "Human(Socrates)"],
-            "Mortal(Socrates)"
+            "Mortal(Socrates)",
         )
         engine = LogicEngine()
         result = engine.validate(arg)
@@ -200,10 +199,7 @@ class TestRealWorldExamples:
 
     def test_rain_example(self):
         """Test: If rains, ground wet; raining ⊢ ground wet"""
-        arg = parse_argument(
-            ["Rain → Wet", "Rain"],
-            "Wet"
-        )
+        arg = parse_argument(["Rain → Wet", "Rain"], "Wet")
         engine = LogicEngine()
         result = engine.validate(arg)
 
@@ -212,10 +208,7 @@ class TestRealWorldExamples:
 
     def test_rain_fallacy(self):
         """Test fallacy: If rains, ground wet; ground wet ⊢ rained (AC)"""
-        arg = parse_argument(
-            ["Rain → Wet", "Wet"],
-            "Rain"
-        )
+        arg = parse_argument(["Rain → Wet", "Wet"], "Rain")
         engine = LogicEngine()
         result = engine.validate(arg)
 

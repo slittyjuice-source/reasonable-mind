@@ -50,10 +50,14 @@ class ArchitectureRecommendation:
 class ArchitectureSelector:
     """Applies the policy defaults from the scalability analysis."""
 
-    def __init__(self, default_variant: ArchitectureVariant = ArchitectureVariant.EIGHT_X):
+    def __init__(
+        self, default_variant: ArchitectureVariant = ArchitectureVariant.EIGHT_X
+    ):
         self.default_variant = default_variant
 
-    def recommend(self, decision: ArchitectureDecisionInput) -> ArchitectureRecommendation:
+    def recommend(
+        self, decision: ArchitectureDecisionInput
+    ) -> ArchitectureRecommendation:
         """Return the architecture variant that best matches the policy inputs."""
 
         # Latency and cost sensitive flows downshift to 4× unless risk/accuracy demand more
@@ -82,7 +86,10 @@ class ArchitectureSelector:
             )
 
         # Accuracy-first or high-risk scenarios escalate to 16× if latency budget allows
-        if decision.accuracy_priority >= 0.8 or decision.risk_level in {RiskLevel.HIGH, RiskLevel.CRITICAL}:
+        if decision.accuracy_priority >= 0.8 or decision.risk_level in {
+            RiskLevel.HIGH,
+            RiskLevel.CRITICAL,
+        }:
             if decision.latency_tolerance_ms >= 850:
                 return ArchitectureRecommendation(
                     variant=ArchitectureVariant.SIXTEEN_X,
@@ -108,4 +115,3 @@ class ArchitectureSelector:
             logic_weight=0.75,
             accuracy_gain=1.12,
         )
-

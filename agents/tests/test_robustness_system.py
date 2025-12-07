@@ -111,7 +111,10 @@ class TestInputValidator:
         result_with = validator.validate("Some text with REQUIRED_KEYWORD")
 
         assert len(result_without.issues_found) > 0
-        assert len(result_with.issues_found) == 0 or result_with.result == ValidationResult.VALID
+        assert (
+            len(result_with.issues_found) == 0
+            or result_with.result == ValidationResult.VALID
+        )
 
     @pytest.mark.security
     @pytest.mark.unit
@@ -140,11 +143,11 @@ class TestInputValidator:
         """Test that validation report has all required fields."""
         result = validator.validate("test input")
 
-        assert hasattr(result, 'result')
-        assert hasattr(result, 'original_input')
-        assert hasattr(result, 'sanitized_input')
-        assert hasattr(result, 'issues_found')
-        assert hasattr(result, 'timestamp')
+        assert hasattr(result, "result")
+        assert hasattr(result, "original_input")
+        assert hasattr(result, "sanitized_input")
+        assert hasattr(result, "issues_found")
+        assert hasattr(result, "timestamp")
 
 
 class TestOutputGuardrail:
@@ -204,7 +207,9 @@ class TestOutputGuardrail:
         """Test adding custom content filter."""
         guardrail.add_content_filter(r"SENSITIVE_DATA")
 
-        result = guardrail.check("Output contains SENSITIVE_DATA", filter_violations=True)
+        result = guardrail.check(
+            "Output contains SENSITIVE_DATA", filter_violations=True
+        )
 
         assert len(result.violations) > 0
         assert "SENSITIVE_DATA" not in result.filtered_output
@@ -224,7 +229,7 @@ class TestOutputGuardrail:
     def test_check_json_format(self, guardrail):
         """Test JSON format validation."""
         valid_json = '{"key": "value"}'
-        invalid_json = '{key: value}'
+        invalid_json = "{key: value}"
 
         result_valid = guardrail.check_format(valid_json, "json")
         result_invalid = guardrail.check_format(invalid_json, "json")
@@ -250,11 +255,11 @@ class TestOutputGuardrail:
         """Test that guardrail report has all required fields."""
         result = guardrail.check("test output")
 
-        assert hasattr(result, 'passed')
-        assert hasattr(result, 'guardrail_type')
-        assert hasattr(result, 'original_output')
-        assert hasattr(result, 'filtered_output')
-        assert hasattr(result, 'violations')
+        assert hasattr(result, "passed")
+        assert hasattr(result, "guardrail_type")
+        assert hasattr(result, "original_output")
+        assert hasattr(result, "filtered_output")
+        assert hasattr(result, "violations")
 
 
 class TestCircuitBreaker:
@@ -266,7 +271,7 @@ class TestCircuitBreaker:
         return CircuitBreaker(
             failure_threshold=3,
             recovery_timeout=1.0,  # Short timeout for testing
-            half_open_max_calls=2
+            half_open_max_calls=2,
         )
 
     @pytest.mark.unit
@@ -529,7 +534,7 @@ class TestIntegrationRobustness:
         breaker = CircuitBreaker(
             failure_threshold=2,
             recovery_timeout=0.5,
-            half_open_max_calls=2  # Set to 2 for faster test
+            half_open_max_calls=2,  # Set to 2 for faster test
         )
 
         # Simulate failures
@@ -565,7 +570,7 @@ class TestIntegrationRobustness:
         # Should be sanitized or rejected
         assert input_result.result in [
             ValidationResult.SANITIZED,
-            ValidationResult.REJECTED
+            ValidationResult.REJECTED,
         ]
 
         # Sensitive output

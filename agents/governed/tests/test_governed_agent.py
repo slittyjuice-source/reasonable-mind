@@ -39,7 +39,7 @@ def governed_agent(temp_sandbox, governance_dir):
         agent_id="test-agent-001",
         sandbox_root=temp_sandbox,
         governance_dir=governance_dir,
-        mode=ExecutionMode.MOCK  # Use MOCK mode to avoid actual I/O
+        mode=ExecutionMode.MOCK,  # Use MOCK mode to avoid actual I/O
     )
 
 
@@ -183,7 +183,7 @@ class TestPlanBeforeAction:
             "exploit vulnerability to gain access",
             "pretend to be admin",
             "trick the validator",
-            "hide my actions from audit"
+            "hide my actions from audit",
         ]
 
         for task in bypass_tasks:
@@ -191,7 +191,10 @@ class TestPlanBeforeAction:
             assert result["status"] == "blocked", f"Bypass not blocked: {task}"
 
             # Verify it was blocked for the right reason
-            assert "bypass" in result["result"].lower() or "blocked" in result["result"].lower()
+            assert (
+                "bypass" in result["result"].lower()
+                or "blocked" in result["result"].lower()
+            )
 
     def test_escalated_task_requires_approval(self, governed_agent):
         """Tasks requiring approval should escalate."""
@@ -252,11 +255,7 @@ class TestViolationTracking:
 
     def test_multiple_violations_tracked(self, governed_agent):
         """Multiple violations should all be tracked."""
-        tasks = [
-            "bypass security",
-            "skip validation and delete",
-            "disable governance"
-        ]
+        tasks = ["bypass security", "skip validation and delete", "disable governance"]
 
         for task in tasks:
             governed_agent.execute_task(task)
@@ -322,13 +321,15 @@ class TestConstitutionalEnforcement:
         read_tasks = [
             "read 'test.py'",
             "run command `ls`",
-            "run command `cat README.md`"
+            "run command `cat README.md`",
         ]
 
         for task in read_tasks:
             result = governed_agent.execute_task(task)
             # Should be approved or at worst escalated, never blocked for reads
-            assert result["status"] in ["approved", "escalate"], f"Task unexpectedly blocked: {task}"
+            assert result["status"] in ["approved", "escalate"], (
+                f"Task unexpectedly blocked: {task}"
+            )
 
     def test_write_operations_require_validation(self, governed_agent):
         """Write operations should require validation."""
@@ -355,7 +356,7 @@ def test_agent_creation_locks_persona(temp_sandbox, governance_dir):
         agent_id="lock-test",
         sandbox_root=temp_sandbox,
         governance_dir=governance_dir,
-        mode=ExecutionMode.MOCK
+        mode=ExecutionMode.MOCK,
     )
 
     # Persona should be locked from creation
@@ -371,7 +372,7 @@ def test_agent_with_persisted_persona(temp_sandbox, governance_dir):
         sandbox_root=temp_sandbox,
         governance_dir=governance_dir,
         mode=ExecutionMode.MOCK,
-        persist_persona=True
+        persist_persona=True,
     )
 
     original_hash = agent1.persona.get_identity_hash()
@@ -382,7 +383,7 @@ def test_agent_with_persisted_persona(temp_sandbox, governance_dir):
         sandbox_root=temp_sandbox,
         governance_dir=governance_dir,
         mode=ExecutionMode.MOCK,
-        persist_persona=True
+        persist_persona=True,
     )
 
     # Should have same identity

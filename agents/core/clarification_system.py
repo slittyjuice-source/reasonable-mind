@@ -18,6 +18,7 @@ import re
 
 class AmbiguityType(Enum):
     """Types of ambiguity that can be detected."""
+
     LEXICAL = "lexical"  # Word has multiple meanings
     SYNTACTIC = "syntactic"  # Sentence structure is unclear
     SEMANTIC = "semantic"  # Meaning is unclear
@@ -28,6 +29,7 @@ class AmbiguityType(Enum):
 
 class ClarificationPriority(Enum):
     """Priority levels for clarification needs."""
+
     BLOCKING = 4  # Must clarify before proceeding
     HIGH = 3  # Should clarify but can make assumption
     MEDIUM = 2  # Would be helpful to clarify
@@ -36,6 +38,7 @@ class ClarificationPriority(Enum):
 
 class ClarificationStrategy(Enum):
     """Strategies for handling clarification."""
+
     ASK_USER = "ask_user"  # Ask the user directly
     USE_DEFAULT = "use_default"  # Use a reasonable default
     INFER_FROM_CONTEXT = "infer_from_context"  # Try to infer from context
@@ -46,6 +49,7 @@ class ClarificationStrategy(Enum):
 @dataclass
 class AmbiguityDetection:
     """A detected ambiguity in input."""
+
     ambiguity_id: str
     ambiguity_type: AmbiguityType
     location: str  # Where in the input
@@ -58,6 +62,7 @@ class AmbiguityDetection:
 @dataclass
 class ClarifyingQuestion:
     """A question to clarify ambiguity."""
+
     question_id: str
     question_text: str
     ambiguity_id: str
@@ -70,6 +75,7 @@ class ClarifyingQuestion:
 @dataclass
 class UserResponse:
     """Response from user to a clarifying question."""
+
     question_id: str
     response_text: str
     selected_option: Optional[str] = None
@@ -80,6 +86,7 @@ class UserResponse:
 @dataclass
 class ClarificationResult:
     """Result of a clarification process."""
+
     original_input: str
     clarified_input: str
     ambiguities_found: List[AmbiguityDetection]
@@ -107,112 +114,133 @@ class AmbiguityDetector:
 
         # Pronoun ambiguity patterns
         self._pronoun_pattern = re.compile(
-            r'\b(it|they|them|this|that|these|those|he|she|him|her)\b',
-            re.IGNORECASE
+            r"\b(it|they|them|this|that|these|those|he|she|him|her)\b", re.IGNORECASE
         )
 
         # Vague quantifier patterns
         self._vague_quantifiers = [
-            "some", "many", "few", "several", "various",
-            "a lot", "most", "often", "sometimes", "usually"
+            "some",
+            "many",
+            "few",
+            "several",
+            "various",
+            "a lot",
+            "most",
+            "often",
+            "sometimes",
+            "usually",
         ]
 
         # Scope ambiguity markers
-        self._scope_markers = [
-            "all", "every", "each", "any", "no", "not"
-        ]
+        self._scope_markers = ["all", "every", "each", "any", "no", "not"]
 
-    def detect(self, text: str, context: Optional[Dict[str, Any]] = None) -> List[AmbiguityDetection]:
+    def detect(
+        self, text: str, context: Optional[Dict[str, Any]] = None
+    ) -> List[AmbiguityDetection]:
         """Detect ambiguities in text."""
         ambiguities = []
         detection_id = 0
 
         # Detect lexical ambiguity
         for word, meanings in self._ambiguous_words.items():
-            pattern = rf'\b{word}\b'
+            pattern = rf"\b{word}\b"
             matches = re.finditer(pattern, text, re.IGNORECASE)
             for match in matches:
                 # Check if context resolves it
                 if not self._context_resolves(word, text, context):
                     detection_id += 1
-                    ambiguities.append(AmbiguityDetection(
-                        ambiguity_id=f"amb_{detection_id}",
-                        ambiguity_type=AmbiguityType.LEXICAL,
-                        location=f"position {match.start()}",
-                        description=f"'{word}' has multiple meanings",
-                        possible_interpretations=meanings,
-                        priority=ClarificationPriority.MEDIUM,
-                        confidence=0.7
-                    ))
+                    ambiguities.append(
+                        AmbiguityDetection(
+                            ambiguity_id=f"amb_{detection_id}",
+                            ambiguity_type=AmbiguityType.LEXICAL,
+                            location=f"position {match.start()}",
+                            description=f"'{word}' has multiple meanings",
+                            possible_interpretations=meanings,
+                            priority=ClarificationPriority.MEDIUM,
+                            confidence=0.7,
+                        )
+                    )
 
         # Detect referential ambiguity (pronouns without clear referent)
         pronouns = self._pronoun_pattern.findall(text)
         if pronouns:
             # Check if there are multiple potential referents
-            sentences = text.split('.')
+            sentences = text.split(".")
             for i, sentence in enumerate(sentences):
                 sentence_pronouns = self._pronoun_pattern.findall(sentence)
                 if sentence_pronouns and i == 0:
                     # Pronoun in first sentence might lack referent
                     detection_id += 1
-                    ambiguities.append(AmbiguityDetection(
-                        ambiguity_id=f"amb_{detection_id}",
-                        ambiguity_type=AmbiguityType.REFERENTIAL,
-                        location=f"sentence {i+1}",
-                        description=f"Pronoun '{sentence_pronouns[0]}' may lack clear referent",
-                        possible_interpretations=["previous context", "to be specified"],
-                        priority=ClarificationPriority.HIGH,
-                        confidence=0.6
-                    ))
+                    ambiguities.append(
+                        AmbiguityDetection(
+                            ambiguity_id=f"amb_{detection_id}",
+                            ambiguity_type=AmbiguityType.REFERENTIAL,
+                            location=f"sentence {i + 1}",
+                            description=f"Pronoun '{sentence_pronouns[0]}' may lack clear referent",
+                            possible_interpretations=[
+                                "previous context",
+                                "to be specified",
+                            ],
+                            priority=ClarificationPriority.HIGH,
+                            confidence=0.6,
+                        )
+                    )
 
         # Detect vague quantifiers
         for quantifier in self._vague_quantifiers:
             if quantifier in text.lower():
                 detection_id += 1
-                ambiguities.append(AmbiguityDetection(
-                    ambiguity_id=f"amb_{detection_id}",
-                    ambiguity_type=AmbiguityType.SEMANTIC,
-                    location=f"'{quantifier}'",
-                    description=f"Vague quantifier '{quantifier}' - amount unclear",
-                    possible_interpretations=["small amount", "moderate amount", "large amount"],
-                    priority=ClarificationPriority.LOW,
-                    confidence=0.5
-                ))
+                ambiguities.append(
+                    AmbiguityDetection(
+                        ambiguity_id=f"amb_{detection_id}",
+                        ambiguity_type=AmbiguityType.SEMANTIC,
+                        location=f"'{quantifier}'",
+                        description=f"Vague quantifier '{quantifier}' - amount unclear",
+                        possible_interpretations=[
+                            "small amount",
+                            "moderate amount",
+                            "large amount",
+                        ],
+                        priority=ClarificationPriority.LOW,
+                        confidence=0.5,
+                    )
+                )
 
         # Detect potential scope ambiguity
         scope_words = [w for w in self._scope_markers if w in text.lower()]
         if len(scope_words) >= 2:
             detection_id += 1
-            ambiguities.append(AmbiguityDetection(
-                ambiguity_id=f"amb_{detection_id}",
-                ambiguity_type=AmbiguityType.SCOPE,
-                location="sentence",
-                description=f"Potential scope ambiguity with '{', '.join(scope_words)}'",
-                possible_interpretations=["wide scope", "narrow scope"],
-                priority=ClarificationPriority.MEDIUM,
-                confidence=0.6
-            ))
+            ambiguities.append(
+                AmbiguityDetection(
+                    ambiguity_id=f"amb_{detection_id}",
+                    ambiguity_type=AmbiguityType.SCOPE,
+                    location="sentence",
+                    description=f"Potential scope ambiguity with '{', '.join(scope_words)}'",
+                    possible_interpretations=["wide scope", "narrow scope"],
+                    priority=ClarificationPriority.MEDIUM,
+                    confidence=0.6,
+                )
+            )
 
         # Detect pragmatic ambiguity (underspecified intent)
         if self._is_underspecified(text):
             detection_id += 1
-            ambiguities.append(AmbiguityDetection(
-                ambiguity_id=f"amb_{detection_id}",
-                ambiguity_type=AmbiguityType.PRAGMATIC,
-                location="overall",
-                description="Request may be underspecified",
-                possible_interpretations=["need more details"],
-                priority=ClarificationPriority.HIGH,
-                confidence=0.7
-            ))
+            ambiguities.append(
+                AmbiguityDetection(
+                    ambiguity_id=f"amb_{detection_id}",
+                    ambiguity_type=AmbiguityType.PRAGMATIC,
+                    location="overall",
+                    description="Request may be underspecified",
+                    possible_interpretations=["need more details"],
+                    priority=ClarificationPriority.HIGH,
+                    confidence=0.7,
+                )
+            )
 
         return ambiguities
 
     def _context_resolves(
-        self,
-        word: str,
-        text: str,
-        context: Optional[Dict[str, Any]]
+        self, word: str, text: str, context: Optional[Dict[str, Any]]
     ) -> bool:
         """Check if context resolves the ambiguity."""
         if not context:
@@ -257,34 +285,32 @@ class QuestionGenerator:
             AmbiguityType.LEXICAL: [
                 "When you say '{term}', do you mean {options}?",
                 "Could you clarify what you mean by '{term}'?",
-                "'{term}' can mean different things. Which meaning do you intend?"
+                "'{term}' can mean different things. Which meaning do you intend?",
             ],
             AmbiguityType.REFERENTIAL: [
                 "What does '{term}' refer to in your question?",
                 "Could you specify what '{term}' is referring to?",
-                "I'm not sure what '{term}' points to. Can you clarify?"
+                "I'm not sure what '{term}' points to. Can you clarify?",
             ],
             AmbiguityType.SEMANTIC: [
                 "Could you be more specific about '{term}'?",
                 "What exactly do you mean by '{term}'?",
-                "Can you provide more details about '{term}'?"
+                "Can you provide more details about '{term}'?",
             ],
             AmbiguityType.SCOPE: [
                 "Does '{term}' apply to all items or specific ones?",
                 "What is the scope of '{term}' in your request?",
-                "Should '{term}' be interpreted broadly or narrowly?"
+                "Should '{term}' be interpreted broadly or narrowly?",
             ],
             AmbiguityType.PRAGMATIC: [
                 "Could you provide more details about what you're looking for?",
                 "What specific outcome are you hoping for?",
-                "Can you elaborate on your request?"
-            ]
+                "Can you elaborate on your request?",
+            ],
         }
 
     def generate(
-        self,
-        ambiguity: AmbiguityDetection,
-        context: Optional[Dict[str, Any]] = None
+        self, ambiguity: AmbiguityDetection, context: Optional[Dict[str, Any]] = None
     ) -> ClarifyingQuestion:
         """Generate a clarifying question for an ambiguity."""
         templates = self._templates.get(ambiguity.ambiguity_type, [])
@@ -303,9 +329,12 @@ class QuestionGenerator:
 
         # Determine question type
         if len(ambiguity.possible_interpretations) == 2:
-            question_type = "yes_no" if ambiguity.possible_interpretations in [
-                ["yes", "no"], ["true", "false"]
-            ] else "multiple_choice"
+            question_type = (
+                "yes_no"
+                if ambiguity.possible_interpretations
+                in [["yes", "no"], ["true", "false"]]
+                else "multiple_choice"
+            )
         elif len(ambiguity.possible_interpretations) <= 5:
             question_type = "multiple_choice"
         else:
@@ -317,21 +346,19 @@ class QuestionGenerator:
             ambiguity_id=ambiguity.ambiguity_id,
             question_type=question_type,
             options=ambiguity.possible_interpretations,
-            default_option=ambiguity.possible_interpretations[0] if ambiguity.possible_interpretations else None,
-            context_hint=f"This helps clarify: {ambiguity.description}"
+            default_option=ambiguity.possible_interpretations[0]
+            if ambiguity.possible_interpretations
+            else None,
+            context_hint=f"This helps clarify: {ambiguity.description}",
         )
 
     def generate_batch(
-        self,
-        ambiguities: List[AmbiguityDetection],
-        max_questions: int = 3
+        self, ambiguities: List[AmbiguityDetection], max_questions: int = 3
     ) -> List[ClarifyingQuestion]:
         """Generate questions for multiple ambiguities."""
         # Sort by priority
         sorted_ambiguities = sorted(
-            ambiguities,
-            key=lambda a: a.priority.value,
-            reverse=True
+            ambiguities, key=lambda a: a.priority.value, reverse=True
         )
 
         questions = []
@@ -363,7 +390,7 @@ class DisambiguationEngine:
         ambiguity: AmbiguityDetection,
         strategy: ClarificationStrategy,
         context: Optional[Dict[str, Any]] = None,
-        user_response: Optional[UserResponse] = None
+        user_response: Optional[UserResponse] = None,
     ) -> Optional[str]:
         """Apply a disambiguation strategy and return resolved meaning."""
 
@@ -409,7 +436,7 @@ class DisambiguationEngine:
         self,
         ambiguity: AmbiguityDetection,
         context: Optional[Dict[str, Any]] = None,
-        allow_user_interaction: bool = True
+        allow_user_interaction: bool = True,
     ) -> ClarificationStrategy:
         """Select the best disambiguation strategy."""
 
@@ -445,9 +472,7 @@ class DisambiguationEngine:
         return ClarificationStrategy.USE_DEFAULT
 
     def _can_infer_from_context(
-        self,
-        ambiguity: AmbiguityDetection,
-        context: Dict[str, Any]
+        self, ambiguity: AmbiguityDetection, context: Dict[str, Any]
     ) -> bool:
         """Check if context can resolve this ambiguity."""
         term = self._extract_term(ambiguity)
@@ -468,7 +493,7 @@ class ClarificationManager:
         self,
         allow_user_interaction: bool = True,
         max_questions: int = 3,
-        auto_resolve_low_priority: bool = True
+        auto_resolve_low_priority: bool = True,
     ):
         self.detector = AmbiguityDetector()
         self.question_generator = QuestionGenerator()
@@ -482,9 +507,7 @@ class ClarificationManager:
         self._responses: List[UserResponse] = []
 
     def analyze(
-        self,
-        text: str,
-        context: Optional[Dict[str, Any]] = None
+        self, text: str, context: Optional[Dict[str, Any]] = None
     ) -> Tuple[List[AmbiguityDetection], List[ClarifyingQuestion]]:
         """
         Analyze text for ambiguities and generate questions.
@@ -500,14 +523,14 @@ class ClarificationManager:
         # Filter out low priority if auto-resolving
         if self.auto_resolve_low_priority:
             ambiguities = [
-                a for a in ambiguities
+                a
+                for a in ambiguities
                 if a.priority.value >= ClarificationPriority.MEDIUM.value
             ]
 
         # Generate questions
         questions = self.question_generator.generate_batch(
-            ambiguities,
-            self.max_questions
+            ambiguities, self.max_questions
         )
 
         self._pending_questions = questions
@@ -515,16 +538,15 @@ class ClarificationManager:
         return ambiguities, questions
 
     def needs_clarification(
-        self,
-        text: str,
-        context: Optional[Dict[str, Any]] = None
+        self, text: str, context: Optional[Dict[str, Any]] = None
     ) -> bool:
         """Check if input needs clarification."""
         ambiguities = self.detector.detect(text, context)
 
         # Only need clarification for high-priority ambiguities
         high_priority = [
-            a for a in ambiguities
+            a
+            for a in ambiguities
             if a.priority.value >= ClarificationPriority.HIGH.value
         ]
 
@@ -534,27 +556,26 @@ class ClarificationManager:
         self,
         question_id: str,
         response_text: str,
-        selected_option: Optional[str] = None
+        selected_option: Optional[str] = None,
     ) -> None:
         """Process a user response to a clarifying question."""
         response = UserResponse(
             question_id=question_id,
             response_text=response_text,
-            selected_option=selected_option
+            selected_option=selected_option,
         )
         self._responses.append(response)
 
         # Remove from pending
         self._pending_questions = [
-            q for q in self._pending_questions
-            if q.question_id != question_id
+            q for q in self._pending_questions if q.question_id != question_id
         ]
 
     def clarify(
         self,
         text: str,
         context: Optional[Dict[str, Any]] = None,
-        responses: Optional[Dict[str, str]] = None
+        responses: Optional[Dict[str, str]] = None,
     ) -> ClarificationResult:
         """
         Complete clarification process.
@@ -578,7 +599,7 @@ class ClarificationManager:
                 questions_asked=[],
                 responses_received=[],
                 resolved=True,
-                remaining_ambiguities=[]
+                remaining_ambiguities=[],
             )
 
         # Process pre-provided responses
@@ -621,7 +642,7 @@ class ClarificationManager:
             questions_asked=questions,
             responses_received=list(self._responses),
             resolved=len(remaining) == 0,
-            remaining_ambiguities=remaining
+            remaining_ambiguities=remaining,
         )
 
     def get_pending_questions(self) -> List[ClarifyingQuestion]:
@@ -651,6 +672,7 @@ class ClarificationManager:
 
 # Convenience functions
 
+
 def needs_clarification(text: str, context: Optional[Dict[str, Any]] = None) -> bool:
     """Quick check if text needs clarification."""
     manager = ClarificationManager(allow_user_interaction=False)
@@ -658,9 +680,7 @@ def needs_clarification(text: str, context: Optional[Dict[str, Any]] = None) -> 
 
 
 def get_clarifying_questions(
-    text: str,
-    context: Optional[Dict[str, Any]] = None,
-    max_questions: int = 3
+    text: str, context: Optional[Dict[str, Any]] = None, max_questions: int = 3
 ) -> List[ClarifyingQuestion]:
     """Get clarifying questions for text."""
     manager = ClarificationManager(max_questions=max_questions)
@@ -668,10 +688,7 @@ def get_clarifying_questions(
     return questions
 
 
-def auto_clarify(
-    text: str,
-    context: Optional[Dict[str, Any]] = None
-) -> str:
+def auto_clarify(text: str, context: Optional[Dict[str, Any]] = None) -> str:
     """Automatically clarify text using defaults and context."""
     manager = ClarificationManager(allow_user_interaction=False)
     result = manager.clarify(text, context)

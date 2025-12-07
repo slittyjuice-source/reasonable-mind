@@ -65,4 +65,3 @@ def get_scenario_bundle(name: str) -> ScenarioBundle:
     if key not in SCENARIO_LIBRARY:
         raise KeyError(f"Scenario '{name}' is not defined in the library")
     return SCENARIO_LIBRARY[key]
-

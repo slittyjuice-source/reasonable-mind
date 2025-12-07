@@ -5,7 +5,11 @@ Tests valid syllogism forms with proper term distribution.
 """
 
 import pytest
-from agents.core.categorical_engine import CategoricalEngine, SyllogismType, SyllogismResult
+from agents.core.categorical_engine import (
+    CategoricalEngine,
+    SyllogismType,
+    SyllogismResult,
+)
 
 
 class TestCategoricalEngine:
@@ -146,9 +150,7 @@ class TestSyllogismResult:
     def test_result_creation(self):
         """Test creating SyllogismResult."""
         result = SyllogismResult(
-            valid=True,
-            form=SyllogismType.BARBARA,
-            explanation="Test explanation"
+            valid=True, form=SyllogismType.BARBARA, explanation="Test explanation"
         )
 
         assert result.valid is True
@@ -158,10 +160,7 @@ class TestSyllogismResult:
     def test_result_invalid(self):
         """Test creating invalid result."""
         result = SyllogismResult(
-            valid=False,
-            form=None,
-            explanation="Invalid form",
-            confidence=0.0
+            valid=False, form=None, explanation="Invalid form", confidence=0.0
         )
 
         assert result.valid is False

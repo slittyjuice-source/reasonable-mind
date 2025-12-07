@@ -29,8 +29,8 @@ class TestCriticSystem:
     def test_initialization(self, critic):
         """Test critic system initialization."""
         assert critic is not None
-        assert hasattr(critic, 'review')
-        assert hasattr(critic, 'self_consistency_check')
+        assert hasattr(critic, "review")
+        assert hasattr(critic, "self_consistency_check")
         assert len(critic.critics) >= 3  # LogicCritic, CompletenessCritic, BiasCritic
 
     @pytest.mark.unit
@@ -42,9 +42,9 @@ class TestCriticSystem:
         result = critic.review(reasoning, conclusion)
 
         assert isinstance(result, CritiqueResult)
-        assert hasattr(result, 'critiques')
-        assert hasattr(result, 'revised_confidence')
-        assert hasattr(result, 'should_revise')
+        assert hasattr(result, "critiques")
+        assert hasattr(result, "revised_confidence")
+        assert hasattr(result, "should_revise")
 
     @pytest.mark.unit
     def test_identify_logical_fallacy(self, critic):
@@ -57,8 +57,7 @@ class TestCriticSystem:
 
         # Should flag logical fallacy
         has_logic_critique = any(
-            c.critique_type == CritiqueType.LOGICAL
-            for c in result.critiques
+            c.critique_type == CritiqueType.LOGICAL for c in result.critiques
         )
         assert has_logic_critique
 
@@ -74,8 +73,9 @@ class TestCriticSystem:
 
         result = critic.review(reasoning, conclusion)
 
-        critical_issues = [c for c in result.critiques
-                          if c.severity == CritiqueSeverity.CRITICAL]
+        critical_issues = [
+            c for c in result.critiques if c.severity == CritiqueSeverity.CRITICAL
+        ]
         assert len(critical_issues) == 0
 
     @pytest.mark.unit
@@ -106,14 +106,17 @@ class TestCriticSystem:
     @pytest.mark.unit
     def test_add_custom_critic(self, critic):
         """Test adding a custom critic."""
+
         class CustomCritic(LogicCritic):
             def critique(self, reasoning, conclusion, context=None):
-                return [Critique(
-                    critique_type=CritiqueType.LOGICAL,
-                    severity=CritiqueSeverity.SUGGESTION,
-                    description="Custom check",
-                    target="test"
-                )]
+                return [
+                    Critique(
+                        critique_type=CritiqueType.LOGICAL,
+                        severity=CritiqueSeverity.SUGGESTION,
+                        description="Custom check",
+                        target="test",
+                    )
+                ]
 
         initial_count = len(critic.critics)
         critic.add_critic(CustomCritic())
@@ -144,7 +147,7 @@ class TestSelfConsistencyCheck:
         responses = [
             "After analysis, the conclusion is definitely X",
             "After analysis, the conclusion is definitely X",
-            "After analysis, the conclusion is definitely X"
+            "After analysis, the conclusion is definitely X",
         ]
 
         is_consistent, score, summary = critic.self_consistency_check(responses)
@@ -158,7 +161,7 @@ class TestSelfConsistencyCheck:
         responses = [
             "The answer is definitely yes.",
             "The answer is absolutely no.",
-            "The answer is maybe perhaps."
+            "The answer is maybe perhaps.",
         ]
 
         is_consistent, score, summary = critic.self_consistency_check(responses)
@@ -175,9 +178,13 @@ class TestSelfConsistencyCheck:
         ]
 
         # High threshold
-        is_consistent_high, _, _ = critic.self_consistency_check(responses, threshold=0.9)
+        is_consistent_high, _, _ = critic.self_consistency_check(
+            responses, threshold=0.9
+        )
         # Low threshold
-        is_consistent_low, _, _ = critic.self_consistency_check(responses, threshold=0.3)
+        is_consistent_low, _, _ = critic.self_consistency_check(
+            responses, threshold=0.3
+        )
 
         # Low threshold should be more permissive
         assert is_consistent_low or not is_consistent_high  # At least one passes
@@ -198,8 +205,9 @@ class TestLogicCritic:
 
         critiques = logic_critic.critique(reasoning, conclusion)
 
-        fallacy_critiques = [c for c in critiques
-                           if "ad hominem" in c.description.lower()]
+        fallacy_critiques = [
+            c for c in critiques if "ad hominem" in c.description.lower()
+        ]
         assert len(fallacy_critiques) > 0
 
     @pytest.mark.unit
@@ -210,8 +218,9 @@ class TestLogicCritic:
 
         critiques = logic_critic.critique(reasoning, conclusion)
 
-        fallacy_critiques = [c for c in critiques
-                           if "authority" in c.description.lower()]
+        fallacy_critiques = [
+            c for c in critiques if "authority" in c.description.lower()
+        ]
         assert len(fallacy_critiques) > 0
 
     @pytest.mark.unit
@@ -226,8 +235,11 @@ class TestLogicCritic:
         critiques = logic_critic.critique(reasoning, conclusion)
 
         # Valid modus ponens should not have major fallacy issues
-        major_fallacies = [c for c in critiques
-                         if c.severity in (CritiqueSeverity.CRITICAL, CritiqueSeverity.MAJOR)]
+        major_fallacies = [
+            c
+            for c in critiques
+            if c.severity in (CritiqueSeverity.CRITICAL, CritiqueSeverity.MAJOR)
+        ]
         # Should have few or no major issues
         assert len(major_fallacies) <= 1
 
@@ -259,6 +271,9 @@ class TestBiasCritic:
         critiques = bias_critic.critique(reasoning, conclusion)
 
         # Balanced language should have fewer/no bias critiques
-        major_bias = [c for c in critiques
-                     if c.severity in (CritiqueSeverity.CRITICAL, CritiqueSeverity.MAJOR)]
+        major_bias = [
+            c
+            for c in critiques
+            if c.severity in (CritiqueSeverity.CRITICAL, CritiqueSeverity.MAJOR)
+        ]
         assert len(major_bias) == 0

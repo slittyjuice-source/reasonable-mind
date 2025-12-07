@@ -21,6 +21,7 @@ import hashlib
 
 class SelectionStrategy(Enum):
     """Strategies for tool selection."""
+
     GREEDY = "greedy"  # Always pick best known
     EPSILON_GREEDY = "epsilon_greedy"  # Explore with probability epsilon
     UCB = "ucb"  # Upper Confidence Bound
@@ -30,6 +31,7 @@ class SelectionStrategy(Enum):
 
 class ToolCategory(Enum):
     """Categories of tools."""
+
     RETRIEVAL = "retrieval"
     COMPUTATION = "computation"
     GENERATION = "generation"
@@ -41,6 +43,7 @@ class ToolCategory(Enum):
 @dataclass
 class ToolProfile:
     """Profile of a tool with usage statistics."""
+
     tool_id: str
     name: str
     category: ToolCategory
@@ -120,7 +123,7 @@ class ToolProfile:
     def ucb_score(self, total_selections: int, c: float = 2.0) -> float:
         """Compute UCB score."""
         if self.total_calls == 0:
-            return float('inf')  # Explore unvisited
+            return float("inf")  # Explore unvisited
 
         exploitation = self.success_rate
         exploration = c * math.sqrt(math.log(total_selections + 1) / self.total_calls)
@@ -130,6 +133,7 @@ class ToolProfile:
 @dataclass
 class ToolInvocation:
     """Record of a tool invocation."""
+
     invocation_id: str
     tool_id: str
     context: Dict[str, Any]
@@ -146,6 +150,7 @@ class ToolInvocation:
 @dataclass
 class ToolRecommendation:
     """Recommendation for tool usage."""
+
     tool_id: str
     score: float
     confidence: float
@@ -160,10 +165,7 @@ class ToolScorer(ABC):
 
     @abstractmethod
     def score(
-        self,
-        tool: ToolProfile,
-        context: Dict[str, Any],
-        total_selections: int
+        self, tool: ToolProfile, context: Dict[str, Any], total_selections: int
     ) -> float:
         """Score a tool for selection."""
 
@@ -178,7 +180,7 @@ class CompositeScorer(ToolScorer):
         latency_weight: float = 0.15,
         cost_weight: float = 0.15,
         max_latency_ms: float = 5000.0,
-        max_cost: float = 1.0
+        max_cost: float = 1.0,
     ):
         self.success_weight = success_weight
         self.quality_weight = quality_weight
@@ -188,10 +190,7 @@ class CompositeScorer(ToolScorer):
         self.max_cost = max_cost
 
     def score(
-        self,
-        tool: ToolProfile,
-        context: Dict[str, Any],
-        total_selections: int
+        self, tool: ToolProfile, context: Dict[str, Any], total_selections: int
     ) -> float:
         """Compute composite score."""
         # Success rate component
@@ -209,10 +208,10 @@ class CompositeScorer(ToolScorer):
         cost_score = 1.0 - cost_ratio
 
         composite = (
-            self.success_weight * success_score +
-            self.quality_weight * quality_score +
-            self.latency_weight * latency_score +
-            self.cost_weight * cost_score
+            self.success_weight * success_score
+            + self.quality_weight * quality_score
+            + self.latency_weight * latency_score
+            + self.cost_weight * cost_score
         )
 
         return composite
@@ -226,10 +225,7 @@ class ContextualScorer(ToolScorer):
         self.context_history: List[Tuple[Dict[str, Any], str, float]] = []
 
     def score(
-        self,
-        tool: ToolProfile,
-        context: Dict[str, Any],
-        total_selections: int
+        self, tool: ToolProfile, context: Dict[str, Any], total_selections: int
     ) -> float:
         """Score with context awareness."""
         base_score = self.base_scorer.score(tool, context, total_selections)
@@ -246,7 +242,9 @@ class ContextualScorer(ToolScorer):
 
         return base_score * 0.6 + context_bonus * 0.2 + cap_overlap * 0.2
 
-    def _compute_context_match(self, tool: ToolProfile, context: Dict[str, Any]) -> float:
+    def _compute_context_match(
+        self, tool: ToolProfile, context: Dict[str, Any]
+    ) -> float:
         """Compute context match score from history."""
         if not self.context_history:
             return 0.5
@@ -288,32 +286,22 @@ class ContextualScorer(ToolScorer):
         return features
 
     def _cosine_similarity(
-        self,
-        features1: Dict[str, float],
-        features2: Dict[str, float]
+        self, features1: Dict[str, float], features2: Dict[str, float]
     ) -> float:
         """Compute cosine similarity between feature vectors."""
         all_keys = set(features1.keys()) | set(features2.keys())
 
-        dot_product = sum(
-            features1.get(k, 0) * features2.get(k, 0)
-            for k in all_keys
-        )
+        dot_product = sum(features1.get(k, 0) * features2.get(k, 0) for k in all_keys)
 
-        norm1 = math.sqrt(sum(v ** 2 for v in features1.values()))
-        norm2 = math.sqrt(sum(v ** 2 for v in features2.values()))
+        norm1 = math.sqrt(sum(v**2 for v in features1.values()))
+        norm2 = math.sqrt(sum(v**2 for v in features2.values()))
 
         if norm1 == 0 or norm2 == 0:
             return 0.0
 
         return dot_product / (norm1 * norm2)
 
-    def record_outcome(
-        self,
-        context: Dict[str, Any],
-        tool_id: str,
-        quality: float
-    ):
+    def record_outcome(self, context: Dict[str, Any], tool_id: str, quality: float):
         """Record outcome for future context matching."""
         self.context_history.append((context, tool_id, quality))
 
@@ -330,7 +318,7 @@ class ToolArbitrator:
         strategy: SelectionStrategy = SelectionStrategy.UCB,
         epsilon: float = 0.1,
         ucb_c: float = 2.0,
-        cache_ttl_seconds: float = 60.0
+        cache_ttl_seconds: float = 60.0,
     ):
         self.strategy = strategy
         self.epsilon = epsilon
@@ -362,7 +350,7 @@ class ToolArbitrator:
         context: Dict[str, Any],
         candidates: Optional[List[str]] = None,
         required_capabilities: Optional[Set[str]] = None,
-        use_cache: bool = True
+        use_cache: bool = True,
     ) -> ToolRecommendation:
         """
         Select the best tool for the given context.
@@ -371,8 +359,13 @@ class ToolArbitrator:
         """
         # Check cache for deterministic strategies
         cache_key = None
-        if use_cache and self.strategy in (SelectionStrategy.GREEDY, SelectionStrategy.UCB):
-            cache_key = self._compute_cache_key(context, candidates, required_capabilities)
+        if use_cache and self.strategy in (
+            SelectionStrategy.GREEDY,
+            SelectionStrategy.UCB,
+        ):
+            cache_key = self._compute_cache_key(
+                context, candidates, required_capabilities
+            )
             cached = self._get_cached(cache_key)
             if cached is not None:
                 self._cache_hits += 1
@@ -390,8 +383,7 @@ class ToolArbitrator:
         # Filter by required capabilities
         if required_capabilities:
             available = [
-                t for t in available
-                if required_capabilities <= t.capabilities
+                t for t in available if required_capabilities <= t.capabilities
             ]
 
         if not available:
@@ -413,10 +405,9 @@ class ToolArbitrator:
 
         # Build recommendation
         score = self.composite_scorer.score(selected, context, self.total_selections)
-        alternatives = [
-            t.tool_id for t in available
-            if t.tool_id != selected.tool_id
-        ][:3]
+        alternatives = [t.tool_id for t in available if t.tool_id != selected.tool_id][
+            :3
+        ]
 
         recommendation = ToolRecommendation(
             tool_id=selected.tool_id,
@@ -425,7 +416,7 @@ class ToolArbitrator:
             rationale=self._generate_rationale(selected, context),
             expected_latency_ms=selected.avg_latency_ms,
             expected_cost=selected.avg_cost,
-            alternative_tools=alternatives
+            alternative_tools=alternatives,
         )
 
         # Cache the result for deterministic strategies
@@ -438,13 +429,13 @@ class ToolArbitrator:
         self,
         context: Dict[str, Any],
         candidates: Optional[List[str]],
-        required_capabilities: Optional[Set[str]]
+        required_capabilities: Optional[Set[str]],
     ) -> str:
         """Compute cache key from selection parameters."""
         parts = [
             str(sorted(context.items())),
             str(sorted(candidates) if candidates else "all"),
-            str(sorted(required_capabilities) if required_capabilities else "none")
+            str(sorted(required_capabilities) if required_capabilities else "none"),
         ]
         return hashlib.md5(":".join(parts).encode()).hexdigest()
 
@@ -473,24 +464,22 @@ class ToolArbitrator:
             "cache_hits": self._cache_hits,
             "cache_misses": self._cache_misses,
             "hit_rate": self._cache_hits / max(1, total),
-            "cache_size": len(self._selection_cache)
+            "cache_size": len(self._selection_cache),
         }
 
     def _greedy_select(
-        self,
-        candidates: List[ToolProfile],
-        context: Dict[str, Any]
+        self, candidates: List[ToolProfile], context: Dict[str, Any]
     ) -> ToolProfile:
         """Greedy selection - always pick best."""
         return max(
             candidates,
-            key=lambda t: self.composite_scorer.score(t, context, self.total_selections)
+            key=lambda t: self.composite_scorer.score(
+                t, context, self.total_selections
+            ),
         )
 
     def _epsilon_greedy_select(
-        self,
-        candidates: List[ToolProfile],
-        context: Dict[str, Any]
+        self, candidates: List[ToolProfile], context: Dict[str, Any]
     ) -> ToolProfile:
         """Epsilon-greedy - explore with probability epsilon."""
         if random.random() < self.epsilon:
@@ -498,14 +487,11 @@ class ToolArbitrator:
         return self._greedy_select(candidates, context)
 
     def _ucb_select(
-        self,
-        candidates: List[ToolProfile],
-        context: Dict[str, Any]
+        self, candidates: List[ToolProfile], context: Dict[str, Any]
     ) -> ToolProfile:
         """UCB selection - balance exploration/exploitation."""
         return max(
-            candidates,
-            key=lambda t: t.ucb_score(self.total_selections, self.ucb_c)
+            candidates, key=lambda t: t.ucb_score(self.total_selections, self.ucb_c)
         )
 
     def _thompson_select(self, candidates: List[ToolProfile]) -> ToolProfile:
@@ -513,21 +499,17 @@ class ToolArbitrator:
         return max(candidates, key=lambda t: t.sample_thompson())
 
     def _contextual_select(
-        self,
-        candidates: List[ToolProfile],
-        context: Dict[str, Any]
+        self, candidates: List[ToolProfile], context: Dict[str, Any]
     ) -> ToolProfile:
         """Contextual selection - use context matching."""
         return max(
             candidates,
-            key=lambda t: self.contextual_scorer.score(t, context, self.total_selections)
+            key=lambda t: self.contextual_scorer.score(
+                t, context, self.total_selections
+            ),
         )
 
-    def _generate_rationale(
-        self,
-        tool: ToolProfile,
-        context: Dict[str, Any]
-    ) -> str:
+    def _generate_rationale(self, tool: ToolProfile, context: Dict[str, Any]) -> str:
         """Generate human-readable rationale."""
         parts = [f"Selected {tool.name}"]
 
@@ -549,7 +531,7 @@ class ToolArbitrator:
         latency_ms: float,
         cost: float = 0.0,
         quality_score: Optional[float] = None,
-        error_message: Optional[str] = None
+        error_message: Optional[str] = None,
     ) -> ToolInvocation:
         """Record a tool invocation outcome."""
         invocation = ToolInvocation(
@@ -562,7 +544,7 @@ class ToolArbitrator:
             latency_ms=latency_ms,
             cost=cost,
             quality_score=quality_score,
-            error_message=error_message
+            error_message=error_message,
         )
 
         self.invocation_log.append(invocation)
@@ -591,24 +573,26 @@ class ToolArbitrator:
             "invocations": len(self.invocation_log),
             "total_selections": self.total_selections,
             "success_rate": (
-                sum(t.success_count for t in self.tools.values()) /
-                max(sum(t.total_calls for t in self.tools.values()), 1)
+                sum(t.success_count for t in self.tools.values())
+                / max(sum(t.total_calls for t in self.tools.values()), 1)
             ),
             "avg_latency_ms": (
-                sum(t.total_latency_ms for t in self.tools.values()) /
-                max(sum(t.total_calls for t in self.tools.values()), 1)
+                sum(t.total_latency_ms for t in self.tools.values())
+                / max(sum(t.total_calls for t in self.tools.values()), 1)
             ),
-            "strategy": self.strategy.value
+            "strategy": self.strategy.value,
         }
 
     def get_tool_ranking(
-        self,
-        context: Optional[Dict[str, Any]] = None
+        self, context: Optional[Dict[str, Any]] = None
     ) -> List[Tuple[str, float]]:
         """Get ranked list of tools."""
         ctx = context or {}
         rankings = [
-            (tool.tool_id, self.composite_scorer.score(tool, ctx, self.total_selections))
+            (
+                tool.tool_id,
+                self.composite_scorer.score(tool, ctx, self.total_selections),
+            )
             for tool in self.tools.values()
         ]
         return sorted(rankings, key=lambda x: x[1], reverse=True)
@@ -622,10 +606,7 @@ class ToolChainPlanner:
         self.chain_history: List[List[str]] = []
 
     def plan_chain(
-        self,
-        goal: str,
-        context: Dict[str, Any],
-        max_steps: int = 5
+        self, goal: str, context: Dict[str, Any], max_steps: int = 5
     ) -> List[ToolRecommendation]:
         """Plan a chain of tool invocations."""
         chain: List[ToolRecommendation] = []
@@ -640,8 +621,7 @@ class ToolChainPlanner:
 
             try:
                 recommendation = self.arbitrator.select_tool(
-                    current_context,
-                    required_capabilities=required_caps
+                    current_context, required_capabilities=required_caps
                 )
                 chain.append(recommendation)
 
@@ -659,10 +639,7 @@ class ToolChainPlanner:
         return chain
 
     def _infer_required_capabilities(
-        self,
-        goal: str,
-        context: Dict[str, Any],
-        step: int
+        self, goal: str, context: Dict[str, Any], step: int
     ) -> Optional[Set[str]]:
         """Infer required capabilities for current step."""
         # This would be more sophisticated in practice
@@ -693,9 +670,7 @@ class AdaptiveToolSelector:
         self.feature_weights: Dict[str, float] = {}
 
     def select_and_learn(
-        self,
-        context: Dict[str, Any],
-        feedback: Optional[float] = None
+        self, context: Dict[str, Any], feedback: Optional[float] = None
     ) -> ToolRecommendation:
         """Select tool and update weights based on feedback."""
         if feedback is not None:
@@ -722,16 +697,15 @@ class ToolCostOptimizer:
         self.spent = 0.0
 
     def select_within_budget(
-        self,
-        context: Dict[str, Any],
-        min_quality: float = 0.5
+        self, context: Dict[str, Any], min_quality: float = 0.5
     ) -> Optional[ToolRecommendation]:
         """Select tool within remaining budget."""
         remaining = self.budget - self.spent
 
         # Filter by cost and quality
         candidates = [
-            t.tool_id for t in self.arbitrator.tools.values()
+            t.tool_id
+            for t in self.arbitrator.tools.values()
             if t.avg_cost <= remaining and t.avg_quality >= min_quality
         ]
 
@@ -752,8 +726,7 @@ class ToolCostOptimizer:
 
 # Factory functions
 def create_tool_arbitrator(
-    strategy: str = "ucb",
-    epsilon: float = 0.1
+    strategy: str = "ucb", epsilon: float = 0.1
 ) -> ToolArbitrator:
     """Create a tool arbitrator with specified strategy."""
     strategy_enum = SelectionStrategy(strategy)
@@ -761,15 +734,12 @@ def create_tool_arbitrator(
 
 
 def create_tool_profile(
-    tool_id: str,
-    name: str,
-    category: str,
-    capabilities: Optional[List[str]] = None
+    tool_id: str, name: str, category: str, capabilities: Optional[List[str]] = None
 ) -> ToolProfile:
     """Create a tool profile."""
     return ToolProfile(
         tool_id=tool_id,
         name=name,
         category=ToolCategory(category),
-        capabilities=set(capabilities or [])
+        capabilities=set(capabilities or []),
     )

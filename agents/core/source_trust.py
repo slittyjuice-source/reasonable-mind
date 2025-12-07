@@ -18,6 +18,7 @@ import math
 
 class TrustLevel(Enum):
     """Levels of source trust."""
+
     VERIFIED = "verified"  # Highly trusted, verified source
     TRUSTED = "trusted"  # Generally reliable
     NEUTRAL = "neutral"  # Unknown or mixed reliability
@@ -27,6 +28,7 @@ class TrustLevel(Enum):
 
 class SourceCategory(Enum):
     """Categories of information sources."""
+
     ACADEMIC = "academic"  # Peer-reviewed, scholarly
     OFFICIAL = "official"  # Government, institutional
     PROFESSIONAL = "professional"  # Industry, expert
@@ -38,6 +40,7 @@ class SourceCategory(Enum):
 @dataclass
 class Source:
     """An information source with trust attributes."""
+
     source_id: str
     name: str
     category: SourceCategory
@@ -89,6 +92,7 @@ class Source:
 @dataclass
 class Claim:
     """A claim from a source."""
+
     claim_id: str
     content: str
     source_id: str
@@ -103,6 +107,7 @@ class Claim:
 @dataclass
 class TrustScore:
     """Computed trust score with breakdown."""
+
     source_id: str
     total_score: float
     base_component: float
@@ -117,6 +122,7 @@ class TrustScore:
 @dataclass
 class ConflictResolution:
     """Result of resolving conflicting claims."""
+
     winning_claim: Claim
     confidence: float
     reasoning: str
@@ -164,17 +170,14 @@ class LinearDecay(RecencyDecay):
 class StepDecay(RecencyDecay):
     """Step-wise decay for recency."""
 
-    def __init__(
-        self,
-        steps: Optional[List[Tuple[int, float]]] = None
-    ):
+    def __init__(self, steps: Optional[List[Tuple[int, float]]] = None):
         # Default steps: (days, factor)
         self.steps = steps or [
-            (7, 1.0),      # Within a week
-            (30, 0.9),     # Within a month
-            (90, 0.7),     # Within 3 months
-            (365, 0.5),    # Within a year
-            (730, 0.3),    # Within 2 years
+            (7, 1.0),  # Within a week
+            (30, 0.9),  # Within a month
+            (90, 0.7),  # Within 3 months
+            (365, 0.5),  # Within a year
+            (730, 0.3),  # Within 2 years
         ]
 
     def compute(self, age: timedelta) -> float:
@@ -194,7 +197,7 @@ class TrustCalculator:
     def __init__(
         self,
         recency_decay: Optional[RecencyDecay] = None,
-        category_priors: Optional[Dict[SourceCategory, float]] = None
+        category_priors: Optional[Dict[SourceCategory, float]] = None,
     ):
         self.recency_decay = recency_decay or ExponentialDecay()
 
@@ -216,9 +219,7 @@ class TrustCalculator:
         self.category_weight = 0.15
 
     def compute_trust(
-        self,
-        source: Source,
-        reference_time: Optional[datetime] = None
+        self, source: Source, reference_time: Optional[datetime] = None
     ) -> TrustScore:
         """Compute comprehensive trust score."""
         ref_time = reference_time or datetime.now()
@@ -244,11 +245,11 @@ class TrustCalculator:
 
         # Weighted combination
         total = (
-            self.base_weight * base +
-            self.accuracy_weight * accuracy +
-            self.recency_weight * recency +
-            self.citation_weight * citation_factor +
-            self.category_weight * category
+            self.base_weight * base
+            + self.accuracy_weight * accuracy
+            + self.recency_weight * recency
+            + self.citation_weight * citation_factor
+            + self.category_weight * category
         )
 
         # Boost for verified sources
@@ -282,7 +283,7 @@ class TrustCalculator:
             citation_component=citation_factor,
             category_component=category,
             trust_level=level,
-            explanation=explanation
+            explanation=explanation,
         )
 
 
@@ -293,16 +294,13 @@ class TrustPropagator:
         self,
         damping_factor: float = 0.85,
         max_iterations: int = 100,
-        tolerance: float = 1e-6
+        tolerance: float = 1e-6,
     ):
         self.damping_factor = damping_factor
         self.max_iterations = max_iterations
         self.tolerance = tolerance
 
-    def propagate(
-        self,
-        sources: Dict[str, Source]
-    ) -> Dict[str, float]:
+    def propagate(self, sources: Dict[str, Source]) -> Dict[str, float]:
         """Propagate trust through citation network (PageRank-style)."""
         n = len(sources)
         if n == 0:
@@ -342,18 +340,12 @@ class TrustPropagator:
 class ConflictResolver:
     """Resolves conflicts between contradicting claims."""
 
-    def __init__(
-        self,
-        trust_calculator: TrustCalculator,
-        recency_weight: float = 0.3
-    ):
+    def __init__(self, trust_calculator: TrustCalculator, recency_weight: float = 0.3):
         self.trust_calculator = trust_calculator
         self.recency_weight = recency_weight
 
     def resolve(
-        self,
-        claims: List[Claim],
-        sources: Dict[str, Source]
+        self, claims: List[Claim], sources: Dict[str, Source]
     ) -> ConflictResolution:
         """Resolve conflicting claims."""
         if not claims:
@@ -367,7 +359,7 @@ class ConflictResolver:
                 reasoning="Single claim, no conflict",
                 supporting_sources=[claim.source_id],
                 opposing_sources=[],
-                uncertainty=0.0
+                uncertainty=0.0,
             )
 
         # Score each claim
@@ -384,7 +376,9 @@ class ConflictResolver:
             # Apply recency boost
             age = datetime.now() - claim.timestamp
             recency_factor = 1.0 / (1.0 + age.days / 365)
-            score = score * (1 - self.recency_weight) + recency_factor * self.recency_weight
+            score = (
+                score * (1 - self.recency_weight) + recency_factor * self.recency_weight
+            )
 
             # Apply claim confidence
             score *= claim.confidence
@@ -403,7 +397,9 @@ class ConflictResolver:
 
         # Determine supporting and opposing
         supporting = [c.source_id for c, s in claim_scores if s >= winner_score * 0.9]
-        opposing = [c.source_id for c, s in claim_scores if c.claim_id != winner.claim_id]
+        opposing = [
+            c.source_id for c, s in claim_scores if c.claim_id != winner.claim_id
+        ]
 
         reasoning = (
             f"Selected claim from {winner.source_id} with score {winner_score:.3f}. "
@@ -416,7 +412,7 @@ class ConflictResolver:
             reasoning=reasoning,
             supporting_sources=supporting,
             opposing_sources=opposing,
-            uncertainty=uncertainty
+            uncertainty=uncertainty,
         )
 
 
@@ -442,11 +438,7 @@ class SourceRegistry:
         """Add a claim from a source."""
         self.claims[claim.claim_id] = claim
 
-    def record_verification(
-        self,
-        source_id: str,
-        correct: bool
-    ):
+    def record_verification(self, source_id: str, correct: bool):
         """Record a verification outcome for a source."""
         source = self.sources.get(source_id)
         if source:
@@ -455,11 +447,7 @@ class SourceRegistry:
             else:
                 source.incorrect_count += 1
 
-    def add_citation(
-        self,
-        citing_id: str,
-        cited_id: str
-    ):
+    def add_citation(self, citing_id: str, cited_id: str):
         """Record a citation between sources."""
         citing = self.sources.get(citing_id)
         cited = self.sources.get(cited_id)
@@ -487,34 +475,22 @@ class SourceRegistry:
 
         return scores
 
-    def resolve_conflict(
-        self,
-        claim_ids: List[str]
-    ) -> ConflictResolution:
+    def resolve_conflict(self, claim_ids: List[str]) -> ConflictResolution:
         """Resolve conflict between claims."""
-        claims = [
-            self.claims[cid] for cid in claim_ids
-            if cid in self.claims
-        ]
+        claims = [self.claims[cid] for cid in claim_ids if cid in self.claims]
         return self.conflict_resolver.resolve(claims, self.sources)
 
     def get_source_ranking(self) -> List[Tuple[str, float]]:
         """Get sources ranked by trust."""
         scores = self.compute_trust_scores()
-        ranking = [
-            (sid, score.total_score)
-            for sid, score in scores.items()
-        ]
+        ranking = [(sid, score.total_score) for sid, score in scores.items()]
         return sorted(ranking, key=lambda x: x[1], reverse=True)
 
 
 class TemporalConsistencyChecker:
     """Checks temporal consistency of claims."""
 
-    def check_consistency(
-        self,
-        claims: List[Claim]
-    ) -> Dict[str, Any]:
+    def check_consistency(self, claims: List[Claim]) -> Dict[str, Any]:
         """Check for temporal inconsistencies."""
         if len(claims) < 2:
             return {"consistent": True, "issues": []}
@@ -533,49 +509,45 @@ class TemporalConsistencyChecker:
                 if ver.timestamp < unv.timestamp:
                     # Check if unverified contradicts verified
                     if unv.claim_id in ver.contradicting_claims:
-                        issues.append({
-                            "type": "contradicts_verified",
-                            "newer_claim": unv.claim_id,
-                            "verified_claim": ver.claim_id,
-                            "time_gap": (unv.timestamp - ver.timestamp).days
-                        })
+                        issues.append(
+                            {
+                                "type": "contradicts_verified",
+                                "newer_claim": unv.claim_id,
+                                "verified_claim": ver.claim_id,
+                                "time_gap": (unv.timestamp - ver.timestamp).days,
+                            }
+                        )
 
         return {
             "consistent": len(issues) == 0,
             "issues": issues,
             "claim_count": len(claims),
-            "verified_count": len(verified)
+            "verified_count": len(verified),
         }
 
 
 # Factory functions
 def create_source(
-    source_id: str,
-    name: str,
-    category: str = "unknown",
-    base_trust: float = 0.5
+    source_id: str, name: str, category: str = "unknown", base_trust: float = 0.5
 ) -> Source:
     """Create a source."""
     return Source(
         source_id=source_id,
         name=name,
         category=SourceCategory(category),
-        base_trust=base_trust
+        base_trust=base_trust,
     )
 
 
 def create_claim(
-    claim_id: str,
-    content: str,
-    source_id: str,
-    timestamp: Optional[datetime] = None
+    claim_id: str, content: str, source_id: str, timestamp: Optional[datetime] = None
 ) -> Claim:
     """Create a claim."""
     return Claim(
         claim_id=claim_id,
         content=content,
         source_id=source_id,
-        timestamp=timestamp or datetime.now()
+        timestamp=timestamp or datetime.now(),
     )
 
 

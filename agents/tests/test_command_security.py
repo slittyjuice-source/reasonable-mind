@@ -37,4 +37,3 @@ def test_block_working_directory_outside_sandbox():
 
     assert not result.allowed
     assert "outside the sandbox" in result.reason
-

@@ -25,21 +25,25 @@ def _utc_now() -> datetime:
 
 class PersonaViolation(Exception):
     """Raised when persona integrity is violated."""
+
     pass
 
 
 class PersonaLockViolation(PersonaViolation):
     """Raised when attempting to modify a locked persona."""
+
     pass
 
 
 class PersonaMismatchViolation(PersonaViolation):
     """Raised when persona doesn't match persisted metadata."""
+
     pass
 
 
 class AgentType(Enum):
     """Supported agent types with capability sets."""
+
     CODING_AGENT = "coding_agent"
     REVIEW_AGENT = "review_agent"
     TEST_AGENT = "test_agent"
@@ -50,22 +54,21 @@ class AgentType(Enum):
 
 # Capability sets for each agent type
 AGENT_CAPABILITIES: Dict[AgentType, FrozenSet[str]] = {
-    AgentType.CODING_AGENT: frozenset({
-        "file_read", "file_write", "file_create",
-        "run_tests", "run_linters", "git_stage", "git_commit"
-    }),
-    AgentType.REVIEW_AGENT: frozenset({
-        "file_read", "run_linters", "add_comments"
-    }),
-    AgentType.TEST_AGENT: frozenset({
-        "file_read", "run_tests", "file_create"
-    }),
-    AgentType.READONLY_AGENT: frozenset({
-        "file_read"
-    }),
-    AgentType.ORCHESTRATOR: frozenset({
-        "file_read", "spawn_agent", "coordinate"
-    }),
+    AgentType.CODING_AGENT: frozenset(
+        {
+            "file_read",
+            "file_write",
+            "file_create",
+            "run_tests",
+            "run_linters",
+            "git_stage",
+            "git_commit",
+        }
+    ),
+    AgentType.REVIEW_AGENT: frozenset({"file_read", "run_linters", "add_comments"}),
+    AgentType.TEST_AGENT: frozenset({"file_read", "run_tests", "file_create"}),
+    AgentType.READONLY_AGENT: frozenset({"file_read"}),
+    AgentType.ORCHESTRATOR: frozenset({"file_read", "spawn_agent", "coordinate"}),
     AgentType.CUSTOM: frozenset(),  # Defined per-instance
 }
 
@@ -98,7 +101,13 @@ class PersonaContext:
     """
 
     # Immutable fields that cannot be changed after creation
-    _IMMUTABLE_FIELDS = {'agent_id', 'agent_type', 'constraint_hash', 'capabilities', 'created_at'}
+    _IMMUTABLE_FIELDS = {
+        "agent_id",
+        "agent_type",
+        "constraint_hash",
+        "capabilities",
+        "created_at",
+    }
 
     # Type annotations for attributes
     agent_id: str
@@ -116,34 +125,34 @@ class PersonaContext:
         constraint_hash: str,
         capabilities: Optional[FrozenSet[str]] = None,
         metadata: Optional[Dict[str, Any]] = None,
-        created_at: Optional[datetime] = None
+        created_at: Optional[datetime] = None,
     ):
         # Validate agent_id format
-        if not re.match(r'^[a-zA-Z0-9_-]+$', agent_id):
+        if not re.match(r"^[a-zA-Z0-9_-]+$", agent_id):
             raise ValueError(f"Invalid agent_id format: {agent_id}")
 
         # Set all attributes before locking
-        object.__setattr__(self, '_locked', False)
-        object.__setattr__(self, 'agent_id', agent_id)
-        object.__setattr__(self, 'agent_type', agent_type)
-        object.__setattr__(self, 'constraint_hash', constraint_hash)
-        object.__setattr__(self, 'metadata', metadata or {})
-        object.__setattr__(self, 'created_at', created_at or _utc_now())
+        object.__setattr__(self, "_locked", False)
+        object.__setattr__(self, "agent_id", agent_id)
+        object.__setattr__(self, "agent_type", agent_type)
+        object.__setattr__(self, "constraint_hash", constraint_hash)
+        object.__setattr__(self, "metadata", metadata or {})
+        object.__setattr__(self, "created_at", created_at or _utc_now())
 
         # Set capabilities from agent type if not provided
         if capabilities is None:
             capabilities = AGENT_CAPABILITIES.get(agent_type, frozenset())
         if not isinstance(capabilities, frozenset):
             capabilities = frozenset(capabilities)
-        object.__setattr__(self, 'capabilities', capabilities)
+        object.__setattr__(self, "capabilities", capabilities)
 
         # Lock the object
-        object.__setattr__(self, '_locked', True)
+        object.__setattr__(self, "_locked", True)
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Prevent modification of locked attributes."""
         # Check if locked
-        if getattr(self, '_locked', False):
+        if getattr(self, "_locked", False):
             if name in self._IMMUTABLE_FIELDS:
                 raise PersonaLockViolation(
                     f"Cannot modify locked field '{name}' on persona '{self.agent_id}'. "
@@ -177,7 +186,7 @@ class PersonaContext:
             "agent_id": self.agent_id,
             "agent_type": self.agent_type.value,
             "constraint_hash": self.constraint_hash,
-            "capabilities": sorted(self.capabilities)
+            "capabilities": sorted(self.capabilities),
         }
         canonical = json.dumps(identity, sort_keys=True)
         return hashlib.sha256(canonical.encode()).hexdigest()
@@ -191,7 +200,7 @@ class PersonaContext:
             "capabilities": sorted(self.capabilities),
             "identity_hash": self.get_identity_hash(),
             "created_at": self.created_at.isoformat(),
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -217,7 +226,7 @@ class PersonaContext:
             constraint_hash=data["constraint_hash"],
             capabilities=capabilities,
             metadata=data.get("metadata", {}),
-            created_at=created_at
+            created_at=created_at,
         )
 
         # Verify identity hash if provided
@@ -278,12 +287,13 @@ class PersonaLock:
 
         try:
             import yaml
-            with open(self.config_path, 'r', encoding='utf-8') as f:
+
+            with open(self.config_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f) or {}
             return config
         except ImportError:
             # Fallback to JSON-like parsing if PyYAML not available
-            with open(self.config_path, 'r', encoding='utf-8') as f:
+            with open(self.config_path, "r", encoding="utf-8") as f:
                 content = f.read()
             # Simple YAML subset parsing
             return self._parse_simple_yaml(content)
@@ -293,24 +303,24 @@ class PersonaLock:
         result: Dict[str, Any] = {"personas": {}}
         current_persona = None
 
-        for line in content.split('\n'):
+        for line in content.split("\n"):
             line = line.rstrip()
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
 
             # Top-level key
-            if not line.startswith(' ') and ':' in line:
-                key = line.split(':')[0].strip()
+            if not line.startswith(" ") and ":" in line:
+                key = line.split(":")[0].strip()
                 if key == "personas":
                     result["personas"] = {}
             # Nested persona
-            elif line.startswith('  ') and not line.startswith('    ') and ':' in line:
-                key = line.strip().split(':')[0].strip()
+            elif line.startswith("  ") and not line.startswith("    ") and ":" in line:
+                key = line.strip().split(":")[0].strip()
                 current_persona = key
                 result["personas"][key] = {}
             # Persona field
-            elif line.startswith('    ') and ':' in line and current_persona:
-                parts = line.strip().split(':', 1)
+            elif line.startswith("    ") and ":" in line and current_persona:
+                parts = line.strip().split(":", 1)
                 key = parts[0].strip()
                 value = parts[1].strip() if len(parts) > 1 else ""
                 # Handle quoted strings
@@ -326,11 +336,12 @@ class PersonaLock:
         """Save sandbox config to YAML file."""
         try:
             import yaml
-            with open(self.config_path, 'w', encoding='utf-8') as f:
+
+            with open(self.config_path, "w", encoding="utf-8") as f:
                 yaml.safe_dump(config, f, default_flow_style=False, sort_keys=True)
         except ImportError:
             # Fallback to simple YAML generation
-            with open(self.config_path, 'w', encoding='utf-8') as f:
+            with open(self.config_path, "w", encoding="utf-8") as f:
                 self._write_simple_yaml(f, config)
 
     def _write_simple_yaml(self, f, config: Dict[str, Any], indent: int = 0) -> None:
@@ -346,7 +357,7 @@ class PersonaLock:
                     f.write(f"{prefix}  - {item}\n")
             else:
                 # Quote strings with special chars
-                if isinstance(value, str) and any(c in value for c in ':{}[],"\''):
+                if isinstance(value, str) and any(c in value for c in ":{}[],\"'"):
                     value = f'"{value}"'
                 f.write(f"{prefix}{key}: {value}\n")
 
@@ -357,7 +368,7 @@ class PersonaLock:
         constraint_hash: str,
         capabilities: Optional[FrozenSet[str]] = None,
         metadata: Optional[Dict[str, Any]] = None,
-        persist: bool = True
+        persist: bool = True,
     ) -> PersonaContext:
         """
         Create a new persona and optionally persist it.
@@ -393,7 +404,7 @@ class PersonaLock:
             agent_type=agent_type,
             constraint_hash=constraint_hash,
             capabilities=capabilities or frozenset(),
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         if persist:

@@ -13,20 +13,21 @@ from datetime import datetime
 # Benchmark Suite Tests
 # ===========================================================
 
+
 class TestBenchmarkSuite:
     """Tests for benchmark_suite.py"""
 
     def test_benchmark_runner(self):
         """Test running a simple benchmark."""
         from agents.core.benchmark_suite import (
-            BenchmarkRunner, BenchmarkConfig, BenchmarkCategory
+            BenchmarkRunner,
+            BenchmarkConfig,
+            BenchmarkCategory,
         )
 
         runner = BenchmarkRunner()
         config = BenchmarkConfig(
-            name="test_benchmark",
-            category=BenchmarkCategory.PERFORMANCE,
-            iterations=10
+            name="test_benchmark", category=BenchmarkCategory.PERFORMANCE, iterations=10
         )
 
         result = runner.run_benchmark(config, lambda: sum(range(1000)))
@@ -38,7 +39,9 @@ class TestBenchmarkSuite:
     def test_regression_detection(self):
         """Test detecting performance regressions."""
         from agents.core.benchmark_suite import (
-            BenchmarkRunner, BenchmarkResult, BenchmarkCategory
+            BenchmarkRunner,
+            BenchmarkResult,
+            BenchmarkCategory,
         )
 
         runner = BenchmarkRunner()
@@ -54,7 +57,7 @@ class TestBenchmarkSuite:
             max_ms=11.0,
             p50_ms=10.0,
             p90_ms=10.5,
-            p99_ms=11.0
+            p99_ms=11.0,
         )
 
         runner.set_baseline("test", baseline)
@@ -70,7 +73,7 @@ class TestBenchmarkSuite:
             max_ms=16.0,
             p50_ms=15.0,
             p90_ms=15.5,
-            p99_ms=16.0
+            p99_ms=16.0,
         )
 
         regression = runner.check_regression("test", current, threshold_percent=10)
@@ -88,9 +91,7 @@ class TestBenchmarkSuite:
         benchmarks.add_test_case("add_2", (10, 20), 30)
         benchmarks.add_test_case("add_3", (0, 0), 0)
 
-        results = benchmarks.run_accuracy_test(
-            lambda args: args[0] + args[1]
-        )
+        results = benchmarks.run_accuracy_test(lambda args: args[0] + args[1])
 
         assert results["accuracy"] == 1.0
         assert results["correct"] == 3
@@ -98,15 +99,15 @@ class TestBenchmarkSuite:
     def test_benchmark_export(self):
         """Test exporting benchmark results."""
         from agents.core.benchmark_suite import (
-            BenchmarkRunner, BenchmarkConfig, BenchmarkCategory
+            BenchmarkRunner,
+            BenchmarkConfig,
+            BenchmarkCategory,
         )
         import json
 
         runner = BenchmarkRunner()
         config = BenchmarkConfig(
-            name="export_test",
-            category=BenchmarkCategory.LATENCY,
-            iterations=5
+            name="export_test", category=BenchmarkCategory.LATENCY, iterations=5
         )
 
         runner.run_benchmark(config, lambda: None)
@@ -132,23 +133,22 @@ class TestBenchmarkSuite:
 # Latency Control Tests
 # ===========================================================
 
+
 class TestLatencyControl:
     """Tests for latency_control.py"""
 
     def test_latency_tracker(self):
         """Test latency measurement tracking."""
-        from agents.core.latency_control import (
-            LatencyTracker, LatencyMeasurement
-        )
+        from agents.core.latency_control import LatencyTracker, LatencyMeasurement
 
         tracker = LatencyTracker()
 
         for i in range(20):
-            tracker.record(LatencyMeasurement(
-                component="test_component",
-                duration_ms=10.0 + i,
-                success=True
-            ))
+            tracker.record(
+                LatencyMeasurement(
+                    component="test_component", duration_ms=10.0 + i, success=True
+                )
+            )
 
         stats = tracker.get_stats("test_component")
 
@@ -202,7 +202,7 @@ class TestLatencyControl:
             max_ms=500.0,
             warning_ms=300.0,
             policy=TimeoutPolicy.RETRY,
-            retry_count=3
+            retry_count=3,
         )
 
         assert budget.max_ms == 500.0
@@ -212,6 +212,7 @@ class TestLatencyControl:
 # ===========================================================
 # UI Hooks Tests
 # ===========================================================
+
 
 class TestUIHooks:
     """Tests for ui_hooks.py"""
@@ -225,10 +226,7 @@ class TestUIHooks:
 
         bus.subscribe(EventType.PROGRESS_UPDATE, lambda e: received.append(e))
 
-        bus.emit(UIEvent(
-            event_type=EventType.PROGRESS_UPDATE,
-            data={"progress": 50}
-        ))
+        bus.emit(UIEvent(event_type=EventType.PROGRESS_UPDATE, data={"progress": 50}))
 
         assert len(received) == 1
         assert received[0].data["progress"] == 50
@@ -296,6 +294,7 @@ class TestUIHooks:
 # ===========================================================
 # Calibration System Tests
 # ===========================================================
+
 
 class TestCalibrationSystem:
     """Tests for calibration_system.py"""
@@ -389,6 +388,7 @@ class TestCalibrationSystem:
 # Constraint System Tests (Using Actual API)
 # ===========================================================
 
+
 class TestConstraintSystemActual:
     """Tests for constraint_system.py with actual API."""
 
@@ -412,6 +412,7 @@ class TestConstraintSystemActual:
 # ===========================================================
 # Retrieval Augmentation Tests (Using Actual API)
 # ===========================================================
+
 
 class TestRetrievalAugmentationActual:
     """Tests for retrieval_augmentation.py with actual API."""
@@ -437,7 +438,7 @@ class TestRetrievalAugmentationActual:
             content="Test content",
             source_id="test.txt",
             start_offset=0,
-            end_offset=12
+            end_offset=12,
         )
 
         assert chunk.content == "Test content"
@@ -447,6 +448,7 @@ class TestRetrievalAugmentationActual:
 # ===========================================================
 # Feedback System Tests (Using Actual API)
 # ===========================================================
+
 
 class TestFeedbackSystemActual:
     """Tests for feedback_system.py with actual API."""
@@ -472,7 +474,7 @@ class TestFeedbackSystemActual:
             chosen_option="option_a",
             alternatives=["option_b", "option_c"],
             scores={"option_a": 0.8, "option_b": 0.6, "option_c": 0.4},
-            confidence=0.75
+            confidence=0.75,
         )
 
         assert record_id is not None
@@ -483,15 +485,14 @@ class TestFeedbackSystemActual:
 # Integration Tests
 # ===========================================================
 
+
 class TestIntegration:
     """Integration tests across new modules."""
 
     def test_benchmark_with_latency_control(self):
         """Test benchmarking with latency tracking."""
         from agents.core.benchmark_suite import quick_benchmark
-        from agents.core.latency_control import (
-            LatencyTracker, LatencyMeasurement
-        )
+        from agents.core.latency_control import LatencyTracker, LatencyMeasurement
 
         tracker = LatencyTracker()
 
@@ -503,11 +504,11 @@ class TestIntegration:
         results = quick_benchmark(tracked_operation, iterations=10)
 
         # Track results
-        tracker.record(LatencyMeasurement(
-            component="sum_operation",
-            duration_ms=results["mean_ms"],
-            success=True
-        ))
+        tracker.record(
+            LatencyMeasurement(
+                component="sum_operation", duration_ms=results["mean_ms"], success=True
+            )
+        )
 
         stats = tracker.get_stats("sum_operation")
         assert stats is not None
@@ -529,9 +530,7 @@ class TestIntegration:
         quality = calibration.get_calibration_quality()
 
         hooks.reasoning.report_step(
-            "calibration_check",
-            f"Calibration quality: {quality}",
-            {"quality": quality}
+            "calibration_check", f"Calibration quality: {quality}", {"quality": quality}
         )
 
         assert len(events) == 1

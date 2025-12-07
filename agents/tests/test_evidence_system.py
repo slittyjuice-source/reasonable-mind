@@ -116,7 +116,7 @@ class TestEvidenceItem:
         )
 
         # 5% decay per step: 0.95^2 = 0.9025, times trust 0.95
-        expected = 1.0 * 0.95 * (0.95 ** 2)
+        expected = 1.0 * 0.95 * (0.95**2)
         assert evidence.effective_confidence == pytest.approx(expected, rel=0.01)
 
 

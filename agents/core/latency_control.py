@@ -20,6 +20,7 @@ import statistics
 
 class TimeoutPolicy(Enum):
     """How to handle timeout situations."""
+
     FAIL_FAST = "fail_fast"
     RETRY = "retry"
     FALLBACK = "fallback"
@@ -28,6 +29,7 @@ class TimeoutPolicy(Enum):
 
 class CircuitState(Enum):
     """Circuit breaker states."""
+
     CLOSED = "closed"  # Normal operation
     OPEN = "open"  # Failing, reject calls
     HALF_OPEN = "half_open"  # Testing recovery
@@ -36,6 +38,7 @@ class CircuitState(Enum):
 @dataclass
 class LatencyBudget:
     """Latency budget for a component or operation."""
+
     name: str
     max_ms: float
     warning_ms: float
@@ -48,6 +51,7 @@ class LatencyBudget:
 @dataclass
 class LatencyMeasurement:
     """A single latency measurement."""
+
     component: str
     duration_ms: float
     success: bool
@@ -59,6 +63,7 @@ class LatencyMeasurement:
 @dataclass
 class LatencyStats:
     """Statistics for a component's latency."""
+
     component: str
     count: int
     mean_ms: float
@@ -111,10 +116,14 @@ class LatencyTracker:
                 min_ms=sorted_durations[0],
                 max_ms=sorted_durations[-1],
                 p50_ms=sorted_durations[n // 2],
-                p90_ms=sorted_durations[int(n * 0.9)] if n >= 10 else sorted_durations[-1],
-                p99_ms=sorted_durations[int(n * 0.99)] if n >= 100 else sorted_durations[-1],
+                p90_ms=sorted_durations[int(n * 0.9)]
+                if n >= 10
+                else sorted_durations[-1],
+                p99_ms=sorted_durations[int(n * 0.99)]
+                if n >= 100
+                else sorted_durations[-1],
                 success_rate=sum(successes) / n,
-                budget_exceeded_rate=sum(exceeded) / n
+                budget_exceeded_rate=sum(exceeded) / n,
             )
 
     def get_all_stats(self) -> Dict[str, LatencyStats]:
@@ -127,11 +136,7 @@ class LatencyTracker:
                     result[component] = stats
         return result
 
-    def get_recent(
-        self,
-        component: str,
-        limit: int = 10
-    ) -> List[LatencyMeasurement]:
+    def get_recent(self, component: str, limit: int = 10) -> List[LatencyMeasurement]:
         """Get recent measurements for a component."""
         with self._lock:
             measurements = self._measurements.get(component)
@@ -147,7 +152,7 @@ class CircuitBreaker:
         self,
         failure_threshold: int = 5,
         recovery_timeout_seconds: float = 30.0,
-        half_open_requests: int = 3
+        half_open_requests: int = 3,
     ):
         self._failure_threshold = failure_threshold
         self._recovery_timeout = recovery_timeout_seconds
@@ -163,7 +168,7 @@ class CircuitBreaker:
                 "state": CircuitState.CLOSED,
                 "failures": 0,
                 "last_failure": None,
-                "half_open_successes": 0
+                "half_open_successes": 0,
             }
         return self._circuits[name]
 
@@ -227,7 +232,7 @@ class CircuitBreaker:
                     "state": CircuitState.CLOSED,
                     "failures": 0,
                     "last_failure": None,
-                    "half_open_successes": 0
+                    "half_open_successes": 0,
                 }
 
 
@@ -239,7 +244,7 @@ class AdaptiveTimeout:
         base_timeout_ms: float,
         min_timeout_ms: float = 100.0,
         max_timeout_ms: float = 60000.0,
-        adjustment_factor: float = 0.1
+        adjustment_factor: float = 0.1,
     ):
         self._base = base_timeout_ms
         self._min = min_timeout_ms
@@ -299,6 +304,7 @@ class AdaptiveTimeout:
 @dataclass
 class LatencyAlert:
     """Alert for latency issues."""
+
     component: str
     alert_type: str
     message: str
@@ -342,7 +348,7 @@ class LatencyMonitor:
                 alert_type="budget_exceeded",
                 message=f"P99 latency ({stats.p99_ms:.1f}ms) exceeds budget ({budget.max_ms}ms)",
                 severity="error",
-                stats=stats
+                stats=stats,
             )
         elif stats.p90_ms > budget.warning_ms:
             alert = LatencyAlert(
@@ -350,7 +356,7 @@ class LatencyMonitor:
                 alert_type="warning_threshold",
                 message=f"P90 latency ({stats.p90_ms:.1f}ms) exceeds warning threshold ({budget.warning_ms}ms)",
                 severity="warning",
-                stats=stats
+                stats=stats,
             )
 
         if alert:
@@ -401,7 +407,7 @@ class LatencyController:
         self,
         component: str,
         func: Callable[[], Any],
-        timeout_ms: Optional[float] = None
+        timeout_ms: Optional[float] = None,
     ) -> Tuple[Any, LatencyMeasurement]:
         """Execute a function with timeout and tracking."""
         # Check circuit breaker
@@ -411,7 +417,7 @@ class LatencyController:
                 component=component,
                 duration_ms=0,
                 success=False,
-                metadata={"circuit_open": True}
+                metadata={"circuit_open": True},
             )
             raise CircuitOpenError(f"Circuit breaker open for {component}")
 
@@ -434,7 +440,7 @@ class LatencyController:
                 component=component,
                 duration_ms=duration_ms,
                 success=True,
-                budget_exceeded=budget_exceeded
+                budget_exceeded=budget_exceeded,
             )
 
             self._tracker.record(measurement)
@@ -451,7 +457,7 @@ class LatencyController:
                 duration_ms=duration_ms,
                 success=False,
                 budget_exceeded=True,
-                metadata={"timeout": True}
+                metadata={"timeout": True},
             )
 
             self._tracker.record(measurement)
@@ -470,7 +476,7 @@ class LatencyController:
                 component=component,
                 duration_ms=duration_ms,
                 success=False,
-                metadata={"error": str(e)}
+                metadata={"error": str(e)},
             )
 
             self._tracker.record(measurement)
@@ -479,9 +485,7 @@ class LatencyController:
             raise
 
     def _execute_with_timeout_internal(
-        self,
-        func: Callable[[], Any],
-        timeout_ms: float
+        self, func: Callable[[], Any], timeout_ms: float
     ) -> Any:
         """Execute function with timeout."""
         # Simple synchronous execution
@@ -493,7 +497,7 @@ class LatencyController:
         self,
         budget: LatencyBudget,
         func: Callable[[], Any],
-        measurement: LatencyMeasurement
+        measurement: LatencyMeasurement,
     ) -> Tuple[Any, LatencyMeasurement]:
         """Handle timeout based on policy."""
         if budget.policy == TimeoutPolicy.FAIL_FAST:
@@ -545,10 +549,12 @@ class LatencyController:
 
 class CircuitOpenError(Exception):
     """Raised when circuit breaker is open."""
+
     pass
 
 
 # Convenience functions
+
 
 def create_latency_controller() -> LatencyController:
     """Create a latency controller with default settings."""
@@ -557,6 +563,7 @@ def create_latency_controller() -> LatencyController:
 
 def with_timeout(timeout_ms: float):
     """Decorator for adding timeout to functions."""
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             start = time.perf_counter()
@@ -567,7 +574,9 @@ def with_timeout(timeout_ms: float):
                     f"Function took {elapsed:.1f}ms, exceeding {timeout_ms}ms limit"
                 )
             return result
+
         return wrapper
+
     return decorator
 
 

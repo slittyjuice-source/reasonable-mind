@@ -25,10 +25,7 @@ class TestLogicEngine:
 
     def test_modus_ponens_valid(self, engine):
         """Test valid Modus Ponens detection."""
-        premises = [
-            "If it rains, then the ground is wet",
-            "It rains"
-        ]
+        premises = ["If it rains, then the ground is wet", "It rains"]
         conclusion = "The ground is wet"
 
         result = engine.validate_argument(premises, conclusion)
@@ -40,10 +37,7 @@ class TestLogicEngine:
 
     def test_modus_tollens_valid(self, engine):
         """Test valid Modus Tollens detection."""
-        premises = [
-            "If it rains, then the ground is wet",
-            "The ground is not wet"
-        ]
+        premises = ["If it rains, then the ground is wet", "The ground is not wet"]
         conclusion = "It does not rain"
 
         result = engine.validate_argument(premises, conclusion)
@@ -57,7 +51,7 @@ class TestLogicEngine:
         """Test valid Hypothetical Syllogism detection."""
         premises = [
             "If it rains, then the ground is wet",
-            "If the ground is wet, then plants grow"
+            "If the ground is wet, then plants grow",
         ]
         conclusion = "If it rains, then plants grow"
 
@@ -69,10 +63,7 @@ class TestLogicEngine:
 
     def test_disjunctive_syllogism_valid(self, engine):
         """Test valid Disjunctive Syllogism detection."""
-        premises = [
-            "Either it's raining or it's snowing",
-            "It's not raining"
-        ]
+        premises = ["Either it's raining or it's snowing", "It's not raining"]
         conclusion = "It's snowing"
 
         result = engine.validate_argument(premises, conclusion)
@@ -126,7 +117,7 @@ class TestLogicEngine:
         """Test that valid results always have 100% confidence."""
         premises = [
             "If all software engineers write code, then Alice writes code",
-            "All software engineers write code"
+            "All software engineers write code",
         ]
         conclusion = "Alice writes code"
 
@@ -142,9 +133,7 @@ class TestLogicResult:
     def test_result_creation(self):
         """Test creating LogicResult."""
         result = LogicResult(
-            valid=True,
-            form=ArgumentForm.MODUS_PONENS,
-            explanation="Test explanation"
+            valid=True, form=ArgumentForm.MODUS_PONENS, explanation="Test explanation"
         )
 
         assert result.valid is True
@@ -154,10 +143,7 @@ class TestLogicResult:
     def test_result_with_custom_confidence(self):
         """Test LogicResult with custom confidence."""
         result = LogicResult(
-            valid=False,
-            form=None,
-            explanation="Uncertain",
-            confidence=0.5
+            valid=False, form=None, explanation="Uncertain", confidence=0.5
         )
 
         assert result.confidence == 0.5

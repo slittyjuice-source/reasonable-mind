@@ -33,17 +33,19 @@ def _utc_now() -> datetime:
 
 class ViolationCode(Enum):
     """Constitutional violation codes from Article VII."""
+
     V001_PERSONA_MODIFICATION = "V001"  # Persona modification attempt
-    V002_CROSS_BRANCH_POWER = "V002"    # Cross-branch power exercise
+    V002_CROSS_BRANCH_POWER = "V002"  # Cross-branch power exercise
     V003_EXECUTION_WITHOUT_PLAN = "V003"  # Execution without valid plan
-    V004_MISSING_CONSTRAINT = "V004"    # Missing constraint binding
-    V005_EXCEEDING_AUTHORITY = "V005"   # Exceeding minimal authority
-    V006_EPISTEMIC_MISREP = "V006"      # Epistemic misrepresentation
+    V004_MISSING_CONSTRAINT = "V004"  # Missing constraint binding
+    V005_EXCEEDING_AUTHORITY = "V005"  # Exceeding minimal authority
+    V006_EPISTEMIC_MISREP = "V006"  # Epistemic misrepresentation
 
 
 @dataclass
 class Violation:
     """Record of a constitutional violation."""
+
     code: ViolationCode
     description: str
     plan_id: Optional[str] = None
@@ -59,7 +61,7 @@ class Violation:
             "plan_id": self.plan_id,
             "persona_id": self.persona_id,
             "constraint_hash": self.constraint_hash,
-            "timestamp": self.timestamp.isoformat()
+            "timestamp": self.timestamp.isoformat(),
         }
 
 
@@ -73,6 +75,7 @@ class ExecutionContext:
     - persona_id: locked agent identity
     - constraint_hash: SHA-256 of constraint profile
     """
+
     plan_id: str
     persona_id: str
     constraint_hash: str
@@ -84,7 +87,7 @@ class ExecutionContext:
             "plan_id": self.plan_id,
             "persona_id": self.persona_id,
             "constraint_hash": self.constraint_hash,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
         }
 
 
@@ -124,7 +127,7 @@ class GovernedCodingAgent:
         executor: ExecutionProxy,
         validator: PlanValidator,
         sandbox_root: Path,
-        governance_dir: Path
+        governance_dir: Path,
     ):
         """
         Initialize governed agent.
@@ -163,7 +166,7 @@ class GovernedCodingAgent:
         governance_dir: Path,
         profile_id: str = "coding_agent_profile",
         mode: ExecutionMode = ExecutionMode.LIVE,
-        persist_persona: bool = True
+        persist_persona: bool = True,
     ) -> "GovernedCodingAgent":
         """
         Create a governed coding agent with constitutional enforcement.
@@ -196,27 +199,23 @@ class GovernedCodingAgent:
             agent_id=agent_id,
             agent_type=AgentType.CODING_AGENT,
             constraint_hash=profile.integrity_hash,
-            persist=persist_persona
+            persist=persist_persona,
         )
 
         # Load governance matrix for plan validation
         matrix_path = governance_dir / "governance_matrix.json"
-        with open(matrix_path, 'r', encoding='utf-8') as f:
+        with open(matrix_path, "r", encoding="utf-8") as f:
             governance_matrix = json.load(f)
 
         # Initialize execution proxy
-        executor = ExecutionProxy(
-            profile=profile,
-            sandbox_root=sandbox_root,
-            mode=mode
-        )
+        executor = ExecutionProxy(profile=profile, sandbox_root=sandbox_root, mode=mode)
 
         # Initialize plan validator (§1.6 Plan-Before-Action)
         validator = PlanValidator(
             governance_matrix=governance_matrix,
             profile=profile,
             sandbox_root=sandbox_root,
-            strict_mode=True
+            strict_mode=True,
         )
 
         return cls(
@@ -225,7 +224,7 @@ class GovernedCodingAgent:
             executor=executor,
             validator=validator,
             sandbox_root=sandbox_root,
-            governance_dir=governance_dir
+            governance_dir=governance_dir,
         )
 
     @property
@@ -248,10 +247,7 @@ class GovernedCodingAgent:
         return self._profile.integrity_hash
 
     def _log_violation(
-        self,
-        code: ViolationCode,
-        description: str,
-        plan_id: Optional[str] = None
+        self, code: ViolationCode, description: str, plan_id: Optional[str] = None
     ) -> None:
         """
         Log a constitutional violation (§7.1).
@@ -266,7 +262,7 @@ class GovernedCodingAgent:
             description=description,
             plan_id=plan_id,
             persona_id=self._persona.agent_id,
-            constraint_hash=self._profile.integrity_hash
+            constraint_hash=self._profile.integrity_hash,
         )
         self._violations.append(violation)
 
@@ -275,7 +271,7 @@ class GovernedCodingAgent:
         log_dir.mkdir(exist_ok=True)
         log_file = log_dir / f"violations_{_utc_now().strftime('%Y%m%d')}.jsonl"
 
-        with open(log_file, 'a', encoding='utf-8') as f:
+        with open(log_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(violation.to_dict()) + "\n")
 
     def _create_execution_context(self, plan_id: str) -> ExecutionContext:
@@ -291,7 +287,7 @@ class GovernedCodingAgent:
         context = ExecutionContext(
             plan_id=plan_id,
             persona_id=self._persona.agent_id,
-            constraint_hash=self._profile.integrity_hash
+            constraint_hash=self._profile.integrity_hash,
         )
         self._active_context = context
         return context
@@ -331,14 +327,16 @@ class GovernedCodingAgent:
 
         try:
             # §1.6 Plan-Before-Action: validate before execution
-            outcome = self._validator.validate_text(task_description, goal=task_description)
+            outcome = self._validator.validate_text(
+                task_description, goal=task_description
+            )
 
             response = {
                 "plan_id": plan_id,
                 "persona_id": self._persona.agent_id,
                 "constraint_hash": self._profile.integrity_hash,
                 "status": outcome.result.value,
-                "rationale": outcome.rationale
+                "rationale": outcome.rationale,
             }
 
             if outcome.result == ValidationResult.BLOCKED:
@@ -346,7 +344,7 @@ class GovernedCodingAgent:
                 self._log_violation(
                     code=ViolationCode.V003_EXECUTION_WITHOUT_PLAN,
                     description=f"Blocked: {outcome.rationale}",
-                    plan_id=plan_id
+                    plan_id=plan_id,
                 )
 
                 response["result"] = f"BLOCKED: {outcome.rationale}"
@@ -360,7 +358,7 @@ class GovernedCodingAgent:
                     {
                         "action": action.category.value,
                         "target": action.target,
-                        "reason": reason
+                        "reason": reason,
                     }
                     for action, reason in outcome.escalation_requests
                 ]
@@ -384,7 +382,7 @@ class GovernedCodingAgent:
                             allowed=True,
                             reason="Mock execution in v1",
                             executed=False,
-                            result="Would write file (need content parameter)"
+                            result="Would write file (need content parameter)",
                         )
                     elif action.category.value == "shell_command":
                         exec_result = self._executor.run_command(action.target)
@@ -394,17 +392,19 @@ class GovernedCodingAgent:
                             decision=None,
                             allowed=True,
                             reason=f"Unsupported action type in v1: {action.category}",
-                            executed=False
+                            executed=False,
                         )
 
-                    results.append({
-                        "tool": tool_call.tool_name,
-                        "target": action.target,
-                        "executed": exec_result.executed,
-                        "success": exec_result.error is None,
-                        "result": exec_result.result,
-                        "error": exec_result.error
-                    })
+                    results.append(
+                        {
+                            "tool": tool_call.tool_name,
+                            "target": action.target,
+                            "executed": exec_result.executed,
+                            "success": exec_result.error is None,
+                            "result": exec_result.result,
+                            "error": exec_result.error,
+                        }
+                    )
 
                 response["result"] = results
                 response["approved_actions"] = len(outcome.approved_calls)
@@ -450,7 +450,7 @@ class GovernedCodingAgent:
                 "reason": e.reason,
                 "policy_hash": e.policy_hash,
                 "executed": e.executed,
-                "success": e.success
+                "success": e.success,
             }
             for e in entries
         ]
@@ -477,7 +477,7 @@ class GovernedCodingAgent:
             if loaded.get_identity_hash() != current_hash:
                 self._log_violation(
                     code=ViolationCode.V001_PERSONA_MODIFICATION,
-                    description="Persona identity hash mismatch - possible tampering detected"
+                    description="Persona identity hash mismatch - possible tampering detected",
                 )
                 return False
 

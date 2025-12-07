@@ -20,6 +20,7 @@ import statistics
 
 class OutcomeType(Enum):
     """Classification of decision outcomes."""
+
     SUCCESS = "success"
     PARTIAL_SUCCESS = "partial_success"
     FAILURE = "failure"
@@ -30,6 +31,7 @@ class OutcomeType(Enum):
 
 class AdjustmentDirection(Enum):
     """Direction of weight adjustment."""
+
     INCREASE = "increase"
     DECREASE = "decrease"
     MAINTAIN = "maintain"
@@ -38,6 +40,7 @@ class AdjustmentDirection(Enum):
 @dataclass
 class FeedbackEntry:
     """A feedback entry for a decision."""
+
     entry_id: str
     decision_id: str
     feedback_type: str
@@ -48,6 +51,7 @@ class FeedbackEntry:
 
 class FeedbackType(Enum):
     """Types of feedback."""
+
     POSITIVE = "positive"
     NEGATIVE = "negative"
     NEUTRAL = "neutral"
@@ -56,6 +60,7 @@ class FeedbackType(Enum):
 @dataclass
 class DecisionRecord:
     """Record of a decision made by the system."""
+
     record_id: str
     decision_type: str  # e.g., "tool_selection", "strategy_choice"
     chosen_option: str
@@ -76,6 +81,7 @@ class DecisionRecord:
 @dataclass
 class WeightUpdate:
     """Record of a weight update."""
+
     weight_name: str
     old_value: float
     new_value: float
@@ -87,6 +93,7 @@ class WeightUpdate:
 @dataclass
 class CalibrationMetric:
     """Metrics for confidence calibration."""
+
     confidence_bucket: float  # e.g., 0.8 means 80-90% confidence
     predicted_count: int
     actual_success_count: int
@@ -96,6 +103,7 @@ class CalibrationMetric:
 @dataclass
 class PerformanceTrend:
     """Performance trend over time."""
+
     period: str  # "hourly", "daily", "weekly"
     success_rate: float
     avg_confidence: float
@@ -112,7 +120,7 @@ class WeightManager:
         learning_rate: float = 0.1,
         min_weight: float = 0.01,
         max_weight: float = 1.0,
-        momentum: float = 0.9
+        momentum: float = 0.9,
     ):
         self.learning_rate = learning_rate
         self.min_weight = min_weight
@@ -141,7 +149,7 @@ class WeightManager:
         outcome: OutcomeType,
         outcome_score: float,
         confidence: float,
-        record_id: str
+        record_id: str,
     ) -> WeightUpdate:
         """
         Adjust a weight based on outcome.
@@ -157,7 +165,9 @@ class WeightManager:
         # Calculate gradient with momentum
         old_gradient = self._gradients.get(name, 0)
         new_gradient = error * self.learning_rate
-        smoothed_gradient = self.momentum * old_gradient + (1 - self.momentum) * new_gradient
+        smoothed_gradient = (
+            self.momentum * old_gradient + (1 - self.momentum) * new_gradient
+        )
         self._gradients[name] = smoothed_gradient
 
         # Adjust weight
@@ -176,7 +186,7 @@ class WeightManager:
             old_value=current,
             new_value=new_value,
             reason=f"{outcome.value}: score={outcome_score:.2f}, conf={confidence:.2f}",
-            trigger_record_id=record_id
+            trigger_record_id=record_id,
         )
 
         self._weights[name] = new_value
@@ -185,8 +195,7 @@ class WeightManager:
         return update
 
     def batch_adjust(
-        self,
-        updates: List[Tuple[str, OutcomeType, float, float, str]]
+        self, updates: List[Tuple[str, OutcomeType, float, float, str]]
     ) -> List[WeightUpdate]:
         """Adjust multiple weights at once."""
         results = []
@@ -196,9 +205,7 @@ class WeightManager:
         return results
 
     def get_update_history(
-        self,
-        weight_name: Optional[str] = None,
-        limit: int = 100
+        self, weight_name: Optional[str] = None, limit: int = 100
     ) -> List[WeightUpdate]:
         """Get weight update history."""
         history = self._update_history
@@ -232,9 +239,7 @@ class ConfidenceCalibrator:
         # bucket -> list of (predicted_confidence, actual_outcome)
 
     def record_prediction(
-        self,
-        predicted_confidence: float,
-        actual_outcome_score: float
+        self, predicted_confidence: float, actual_outcome_score: float
     ) -> None:
         """Record a prediction and its outcome."""
         bucket = self._get_bucket(predicted_confidence)
@@ -255,12 +260,14 @@ class ConfidenceCalibrator:
             predicted_avg = sum(p[0] for p in predictions) / len(predictions)
             actual_avg = sum(p[1] for p in predictions) / len(predictions)
 
-            metrics.append(CalibrationMetric(
-                confidence_bucket=bucket,
-                predicted_count=len(predictions),
-                actual_success_count=sum(1 for p in predictions if p[1] >= 0.5),
-                calibration_error=predicted_avg - actual_avg
-            ))
+            metrics.append(
+                CalibrationMetric(
+                    confidence_bucket=bucket,
+                    predicted_count=len(predictions),
+                    actual_success_count=sum(1 for p in predictions if p[1] >= 0.5),
+                    calibration_error=predicted_avg - actual_avg,
+                )
+            )
 
         return metrics
 
@@ -333,7 +340,7 @@ class OutcomeTracker:
         outcome: OutcomeType,
         outcome_score: float,
         details: Optional[str] = None,
-        duration_ms: Optional[float] = None
+        duration_ms: Optional[float] = None,
     ) -> bool:
         """Record the outcome of a decision."""
         if record_id not in self._records:
@@ -353,27 +360,20 @@ class OutcomeTracker:
         return self._records.get(record_id)
 
     def get_records_by_type(
-        self,
-        decision_type: str,
-        limit: int = 100
+        self, decision_type: str, limit: int = 100
     ) -> List[DecisionRecord]:
         """Get records of a specific decision type."""
         record_ids = self._by_type.get(decision_type, [])[-limit:]
         return [self._records[rid] for rid in record_ids if rid in self._records]
 
     def get_records_by_option(
-        self,
-        option: str,
-        limit: int = 100
+        self, option: str, limit: int = 100
     ) -> List[DecisionRecord]:
         """Get records where a specific option was chosen."""
         record_ids = self._by_option.get(option, [])[-limit:]
         return [self._records[rid] for rid in record_ids if rid in self._records]
 
-    def get_outcome_stats(
-        self,
-        decision_type: Optional[str] = None
-    ) -> Dict[str, Any]:
+    def get_outcome_stats(self, decision_type: Optional[str] = None) -> Dict[str, Any]:
         """Get outcome statistics."""
         records = list(self._records.values())
         if decision_type:
@@ -394,7 +394,7 @@ class OutcomeTracker:
             "avg_score": sum(scores) / len(scores) if scores else 0,
             "avg_confidence": sum(confidences) / len(confidences),
             "score_std": statistics.stdev(scores) if len(scores) > 1 else 0,
-            "by_outcome": {o.value: outcomes.count(o) for o in OutcomeType}
+            "by_outcome": {o.value: outcomes.count(o) for o in OutcomeType},
         }
 
     def get_option_performance(self, option: str) -> Dict[str, Any]:
@@ -413,14 +413,13 @@ class OutcomeTracker:
             "count": len(completed),
             "success_rate": success_count / len(completed),
             "avg_score": sum(scores) / len(scores) if scores else 0,
-            "score_std": statistics.stdev(scores) if len(scores) > 1 else 0
+            "score_std": statistics.stdev(scores) if len(scores) > 1 else 0,
         }
 
     def _prune_oldest(self, count: int) -> None:
         """Remove oldest records."""
         sorted_ids = sorted(
-            self._records.keys(),
-            key=lambda rid: self._records[rid].timestamp
+            self._records.keys(), key=lambda rid: self._records[rid].timestamp
         )
 
         for rid in sorted_ids[:count]:
@@ -444,28 +443,25 @@ class TrendAnalyzer:
         """Get daily performance trends."""
         return self._get_trends("daily", days)
 
-    def _get_trends(
-        self,
-        period: str,
-        count: int
-    ) -> List[PerformanceTrend]:
+    def _get_trends(self, period: str, count: int) -> List[PerformanceTrend]:
         """Calculate trends for a time period."""
         now = datetime.now()
         trends = []
 
         for i in range(count):
             if period == "hourly":
-                start = now - timedelta(hours=i+1)
+                start = now - timedelta(hours=i + 1)
                 end = now - timedelta(hours=i)
             else:  # daily
-                start = now - timedelta(days=i+1)
+                start = now - timedelta(days=i + 1)
                 end = now - timedelta(days=i)
 
             # Get records in this period
             records = [
-                r for r in self.tracker._records.values()
-                if r.outcome is not None and
-                start.isoformat() <= r.timestamp <= end.isoformat()
+                r
+                for r in self.tracker._records.values()
+                if r.outcome is not None
+                and start.isoformat() <= r.timestamp <= end.isoformat()
             ]
 
             if not records:
@@ -475,14 +471,16 @@ class TrendAnalyzer:
             confidences = [r.confidence for r in records]
             success_count = sum(1 for r in records if r.outcome == OutcomeType.SUCCESS)
 
-            trends.append(PerformanceTrend(
-                period=period,
-                success_rate=success_count / len(records),
-                avg_confidence=sum(confidences) / len(confidences),
-                avg_outcome_score=sum(scores) / len(scores) if scores else 0,
-                decision_count=len(records),
-                trend_direction="stable"  # Will be calculated
-            ))
+            trends.append(
+                PerformanceTrend(
+                    period=period,
+                    success_rate=success_count / len(records),
+                    avg_confidence=sum(confidences) / len(confidences),
+                    avg_outcome_score=sum(scores) / len(scores) if scores else 0,
+                    decision_count=len(records),
+                    trend_direction="stable",  # Will be calculated
+                )
+            )
 
         # Calculate trend directions
         for i in range(len(trends) - 1):
@@ -500,10 +498,7 @@ class TrendAnalyzer:
 
         return trends
 
-    def detect_anomalies(
-        self,
-        threshold_std: float = 2.0
-    ) -> List[Dict[str, Any]]:
+    def detect_anomalies(self, threshold_std: float = 2.0) -> List[Dict[str, Any]]:
         """Detect anomalous performance periods."""
         daily_trends = self.get_daily_trend(30)
         if len(daily_trends) < 7:
@@ -519,15 +514,19 @@ class TrendAnalyzer:
         anomalies = []
         for i, trend in enumerate(daily_trends):
             if abs(trend.avg_outcome_score - mean_score) > threshold_std * std_score:
-                anomalies.append({
-                    "day_offset": i,
-                    "score": trend.avg_outcome_score,
-                    "expected_range": (
-                        mean_score - threshold_std * std_score,
-                        mean_score + threshold_std * std_score
-                    ),
-                    "type": "low" if trend.avg_outcome_score < mean_score else "high"
-                })
+                anomalies.append(
+                    {
+                        "day_offset": i,
+                        "score": trend.avg_outcome_score,
+                        "expected_range": (
+                            mean_score - threshold_std * std_score,
+                            mean_score + threshold_std * std_score,
+                        ),
+                        "type": "low"
+                        if trend.avg_outcome_score < mean_score
+                        else "high",
+                    }
+                )
 
         return anomalies
 
@@ -548,12 +547,14 @@ class FeedbackLoop:
         self,
         learning_rate: float = 0.1,
         enable_calibration: bool = True,
-        enable_trend_analysis: bool = True
+        enable_trend_analysis: bool = True,
     ):
         self.weight_manager = WeightManager(learning_rate=learning_rate)
         self.calibrator = ConfidenceCalibrator() if enable_calibration else None
         self.tracker = OutcomeTracker()
-        self.trend_analyzer = TrendAnalyzer(self.tracker) if enable_trend_analysis else None
+        self.trend_analyzer = (
+            TrendAnalyzer(self.tracker) if enable_trend_analysis else None
+        )
 
         self._decision_counter = 0
 
@@ -564,7 +565,7 @@ class FeedbackLoop:
         alternatives: List[str],
         scores: Dict[str, float],
         confidence: float,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Record a decision.
@@ -572,7 +573,9 @@ class FeedbackLoop:
         Returns the record ID for later outcome tracking.
         """
         self._decision_counter += 1
-        record_id = f"dec_{self._decision_counter}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        record_id = (
+            f"dec_{self._decision_counter}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        )
 
         # Apply calibration if available
         calibrated_confidence = confidence
@@ -586,7 +589,7 @@ class FeedbackLoop:
             alternatives=alternatives,
             scores=scores,
             confidence=calibrated_confidence,
-            context=context or {}
+            context=context or {},
         )
 
         self.tracker.record_decision(record)
@@ -599,7 +602,7 @@ class FeedbackLoop:
         outcome: OutcomeType,
         outcome_score: float,
         details: Optional[str] = None,
-        duration_ms: Optional[float] = None
+        duration_ms: Optional[float] = None,
     ) -> List[WeightUpdate]:
         """
         Record the outcome of a decision and update weights.
@@ -631,7 +634,7 @@ class FeedbackLoop:
             outcome,
             outcome_score,
             record.confidence,
-            record_id
+            record_id,
         )
         updates.append(type_update)
 
@@ -641,7 +644,7 @@ class FeedbackLoop:
             outcome,
             outcome_score,
             record.confidence,
-            record_id
+            record_id,
         )
         updates.append(option_update)
 
@@ -654,10 +657,7 @@ class FeedbackLoop:
             for option in options
         }
 
-    def get_adjusted_scores(
-        self,
-        base_scores: Dict[str, float]
-    ) -> Dict[str, float]:
+    def get_adjusted_scores(self, base_scores: Dict[str, float]) -> Dict[str, float]:
         """
         Adjust base scores using learned weights.
 
@@ -686,11 +686,13 @@ class FeedbackLoop:
             "avg_score": stats.get("avg_score", 0),
             "avg_confidence": stats.get("avg_confidence", 0),
             "weight_count": len(self.weight_manager._weights),
-            "outcomes": stats.get("by_outcome", {})
+            "outcomes": stats.get("by_outcome", {}),
         }
 
         if self.calibrator:
-            summary["calibration_error"] = self.calibrator.get_expected_calibration_error()
+            summary["calibration_error"] = (
+                self.calibrator.get_expected_calibration_error()
+            )
 
         if self.trend_analyzer:
             trends = self.trend_analyzer.get_daily_trend(7)
@@ -700,7 +702,7 @@ class FeedbackLoop:
                     {
                         "success_rate": t.success_rate,
                         "avg_score": t.avg_outcome_score,
-                        "count": t.decision_count
+                        "count": t.decision_count,
                     }
                     for t in trends[:7]
                 ]
@@ -747,11 +749,14 @@ class FeedbackLoop:
 
     def export_state(self) -> str:
         """Export feedback loop state to JSON."""
-        return json.dumps({
-            "weights": self.weight_manager.get_all_weights(),
-            "decision_count": self._decision_counter,
-            "exported_at": datetime.now().isoformat()
-        }, indent=2)
+        return json.dumps(
+            {
+                "weights": self.weight_manager.get_all_weights(),
+                "decision_count": self._decision_counter,
+                "exported_at": datetime.now().isoformat(),
+            },
+            indent=2,
+        )
 
     def import_state(self, json_str: str) -> None:
         """Import feedback loop state from JSON."""
@@ -762,15 +767,15 @@ class FeedbackLoop:
 
 # Convenience factory functions
 
+
 def create_feedback_loop(
-    learning_rate: float = 0.1,
-    enable_all_features: bool = True
+    learning_rate: float = 0.1, enable_all_features: bool = True
 ) -> FeedbackLoop:
     """Create a feedback loop with standard configuration."""
     return FeedbackLoop(
         learning_rate=learning_rate,
         enable_calibration=enable_all_features,
-        enable_trend_analysis=enable_all_features
+        enable_trend_analysis=enable_all_features,
     )
 
 
@@ -779,5 +784,5 @@ def create_lightweight_feedback_loop(learning_rate: float = 0.1) -> FeedbackLoop
     return FeedbackLoop(
         learning_rate=learning_rate,
         enable_calibration=True,
-        enable_trend_analysis=False
+        enable_trend_analysis=False,
     )

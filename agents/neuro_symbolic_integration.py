@@ -25,12 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from agent import Agent, ModelConfig
 from tools.base import Tool
 from tools.extended_thinking import ExtendedThinkingTool
-from logic import (
-    ReasoningAgent,
-    LogicType,
-    ReasoningStep,
-    InferenceRule
-)
+from logic import ReasoningAgent, LogicType, ReasoningStep, InferenceRule
 
 
 class LogicTool(Tool):
@@ -45,9 +40,7 @@ class LogicTool(Tool):
     """
 
     def __init__(
-        self,
-        logic_agent: ReasoningAgent,
-        extended_thinking: ExtendedThinkingTool
+        self, logic_agent: ReasoningAgent, extended_thinking: ExtendedThinkingTool
     ):
         self.logic_agent = logic_agent
         self.extended_thinking = extended_thinking
@@ -63,7 +56,7 @@ class LogicTool(Tool):
                 "formal logic validation (symbolic frontend). Returns both natural "
                 "language reasoning and formal logical proofs."
             ),
-            input_schema=et_schema["input_schema"]
+            input_schema=et_schema["input_schema"],
         )
 
     async def execute(self, **kwargs) -> str:
@@ -94,8 +87,7 @@ class LogicTool(Tool):
 
             # Step 4: Validate conclusion against knowledge base
             validation = self.logic_agent.knowledge_base.validate(
-                et_result.get("recommendation", ""),
-                use_ml=False
+                et_result.get("recommendation", ""), use_ml=False
             )
 
             # Step 5: Format result combining both representations
@@ -104,20 +96,19 @@ class LogicTool(Tool):
                     "thinking_chain": et_result["thinking_chain"],
                     "key_insights": et_result["key_insights"],
                     "confidence": et_result["confidence"],
-                    "recommendation": et_result.get("recommendation")
+                    "recommendation": et_result.get("recommendation"),
                 },
                 "formal_logic": {
                     "premises": [
-                        {
-                            "natural": p.natural_language,
-                            "formal": p.formal_notation
-                        }
+                        {"natural": p.natural_language, "formal": p.formal_notation}
                         for p in formal_argument.premises
                     ],
-                    "inference_rules": [r.value for r in formal_argument.inference_steps],
+                    "inference_rules": [
+                        r.value for r in formal_argument.inference_steps
+                    ],
                     "conclusion": {
                         "natural": formal_argument.conclusion.natural_language,
-                        "formal": formal_argument.conclusion.formal_notation
+                        "formal": formal_argument.conclusion.formal_notation,
                     },
                     "overall_confidence": formal_argument.overall_confidence,
                 },
@@ -125,13 +116,13 @@ class LogicTool(Tool):
                     "valid": validation.valid,
                     "kb_confidence": validation.confidence,
                     "sources": validation.sources,
-                    "reasoning_chain": validation.reasoning_chain
+                    "reasoning_chain": validation.reasoning_chain,
                 },
                 "combined_confidence": self._calculate_combined_confidence(
                     et_result["confidence"],
                     formal_argument.overall_confidence,
-                    validation.confidence
-                )
+                    validation.confidence,
+                ),
             }
 
             return self._format_output(result)
@@ -139,10 +130,7 @@ class LogicTool(Tool):
             # Fallback to just extended thinking result
             return str(et_result)
 
-    def _convert_to_logic_steps(
-        self,
-        et_result: Dict[str, Any]
-    ) -> List[ReasoningStep]:
+    def _convert_to_logic_steps(self, et_result: Dict[str, Any]) -> List[ReasoningStep]:
         """
         Convert extended thinking output to formal reasoning steps.
 
@@ -174,7 +162,7 @@ class LogicTool(Tool):
                 conclusion=conclusion,
                 confidence=confidence,
                 supporting_evidence=[thought.get("name", "extended_thinking")],
-                layer_id=thought.get("step")
+                layer_id=thought.get("step"),
             )
             steps.append(step)
 
@@ -197,10 +185,7 @@ class LogicTool(Tool):
             return InferenceRule.MODUS_PONENS
 
     def _calculate_combined_confidence(
-        self,
-        ml_confidence: float,
-        logic_confidence: float,
-        kb_confidence: float
+        self, ml_confidence: float, logic_confidence: float, kb_confidence: float
     ) -> float:
         """
         Calculate combined confidence from all sources.
@@ -212,16 +197,11 @@ class LogicTool(Tool):
         """
         if kb_confidence > 0:
             combined = (
-                ml_confidence * 0.40 +
-                logic_confidence * 0.35 +
-                kb_confidence * 0.25
+                ml_confidence * 0.40 + logic_confidence * 0.35 + kb_confidence * 0.25
             )
         else:
             # No KB validation available
-            combined = (
-                ml_confidence * 0.55 +
-                logic_confidence * 0.45
-            )
+            combined = ml_confidence * 0.55 + logic_confidence * 0.45
 
         return combined
 
@@ -250,7 +230,7 @@ class LogicTool(Tool):
         lines.append("\n✓ KNOWLEDGE BASE VALIDATION:")
         lines.append(f"  Valid: {val['valid']}")
         lines.append(f"  KB Confidence: {val['kb_confidence']:.1%}")
-        if val['sources']:
+        if val["sources"]:
             lines.append(f"  Sources: {', '.join(val['sources'])}")
 
         # Combined Assessment
@@ -275,42 +255,29 @@ async def demo_integrated_agent():
         logic_framework=LogicType.FIRST_ORDER,
         reasoning_depth=4,
         logic_weight=0.75,
-        verbose=False
+        verbose=False,
     )
 
     # Add domain knowledge
     print("   Adding domain knowledge to KB...")
     logic_agent.add_knowledge(
-        "All ML models trained on biased data produce biased outputs",
-        confidence=0.95
+        "All ML models trained on biased data produce biased outputs", confidence=0.95
     )
-    logic_agent.add_knowledge(
-        "GPT-4 is an ML model",
-        confidence=1.0
-    )
-    logic_agent.add_knowledge(
-        "GPT-4 was trained on internet data",
-        confidence=0.95
-    )
-    logic_agent.add_knowledge(
-        "Internet data contains bias",
-        confidence=0.90
-    )
+    logic_agent.add_knowledge("GPT-4 is an ML model", confidence=1.0)
+    logic_agent.add_knowledge("GPT-4 was trained on internet data", confidence=0.95)
+    logic_agent.add_knowledge("Internet data contains bias", confidence=0.90)
 
     # Step 2: Create extended thinking tool (ML backend)
     print("\n2️⃣ Initializing Extended Thinking Tool...")
     extended_thinking = ExtendedThinkingTool(
         layers=8,  # 8-layer architecture
         verbose=False,
-        logic_weight=0.75
+        logic_weight=0.75,
     )
 
     # Step 3: Create integrated logic tool
     print("\n3️⃣ Creating Integrated Logic Tool...")
-    logic_tool = LogicTool(
-        logic_agent=logic_agent,
-        extended_thinking=extended_thinking
-    )
+    logic_tool = LogicTool(logic_agent=logic_agent, extended_thinking=extended_thinking)
 
     # Step 4: Create Agent with logic tool
     print("\n4️⃣ Initializing Claude Agent with Logic Tool...")
@@ -324,11 +291,8 @@ async def demo_integrated_agent():
             "perspectives in your final answer."
         ),
         tools=[logic_tool],
-        config=ModelConfig(
-            model="claude-sonnet-4-20250514",
-            max_tokens=4096
-        ),
-        verbose=True
+        config=ModelConfig(model="claude-sonnet-4-20250514", max_tokens=4096),
+        verbose=True,
     )
 
     # Step 5: Query the integrated agent
@@ -364,6 +328,7 @@ async def demo_integrated_agent():
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
 
     # Step 6: Show knowledge base stats
@@ -389,7 +354,7 @@ def demo_without_api():
         name="Standalone Logic",
         system_prompt="Pure symbolic reasoning",
         logic_framework=LogicType.FIRST_ORDER,
-        verbose=True
+        verbose=True,
     )
 
     # Add knowledge
@@ -434,7 +399,7 @@ def main():
     print("The next demo requires ANTHROPIC_API_KEY to be set.")
     response = input("Run integrated agent demo? (y/n): ")
 
-    if response.lower() == 'y':
+    if response.lower() == "y":
         try:
             asyncio.run(demo_integrated_agent())
         except Exception as e:

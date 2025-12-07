@@ -20,6 +20,7 @@ from functools import wraps
 
 class ValidationResult(Enum):
     """Result of input validation."""
+
     VALID = "valid"
     INVALID = "invalid"
     SANITIZED = "sanitized"
@@ -28,6 +29,7 @@ class ValidationResult(Enum):
 
 class CircuitState(Enum):
     """Circuit breaker states."""
+
     CLOSED = "closed"  # Normal operation
     OPEN = "open"  # Failing, reject calls
     HALF_OPEN = "half_open"  # Testing recovery
@@ -35,6 +37,7 @@ class CircuitState(Enum):
 
 class GuardrailType(Enum):
     """Types of output guardrails."""
+
     CONTENT = "content"  # Content filtering
     LENGTH = "length"  # Length limits
     FORMAT = "format"  # Format requirements
@@ -44,6 +47,7 @@ class GuardrailType(Enum):
 @dataclass
 class ValidationReport:
     """Report from input validation."""
+
     result: ValidationResult
     original_input: str
     sanitized_input: Optional[str]
@@ -54,6 +58,7 @@ class ValidationReport:
 @dataclass
 class GuardrailReport:
     """Report from output guardrail check."""
+
     passed: bool
     guardrail_type: GuardrailType
     original_output: str
@@ -64,6 +69,7 @@ class GuardrailReport:
 @dataclass
 class CircuitBreakerStats:
     """Statistics for circuit breaker."""
+
     state: CircuitState
     failure_count: int
     success_count: int
@@ -88,14 +94,18 @@ class InputValidator:
     def _add_default_patterns(self) -> None:
         """Add default security patterns."""
         # Potential injection patterns
-        self.forbidden_patterns.extend([
-            # Improved pattern: matches <script> blocks with flexible closing tags and attributes
-            re.compile(r"<script\b[^>]*>.*?</script\b[^>]*>", re.IGNORECASE | re.DOTALL),
-            re.compile(r"javascript:", re.IGNORECASE),
-            re.compile(r"on\w+\s*=", re.IGNORECASE),  # Event handlers
-            re.compile(r"\{\{.*?\}\}"),  # Template injection
-            re.compile(r"\$\{.*?\}"),  # Template literals
-        ])
+        self.forbidden_patterns.extend(
+            [
+                # Improved pattern: matches <script> blocks with flexible closing tags and attributes
+                re.compile(
+                    r"<script\b[^>]*>.*?</script\b[^>]*>", re.IGNORECASE | re.DOTALL
+                ),
+                re.compile(r"javascript:", re.IGNORECASE),
+                re.compile(r"on\w+\s*=", re.IGNORECASE),  # Event handlers
+                re.compile(r"\{\{.*?\}\}"),  # Template injection
+                re.compile(r"\$\{.*?\}"),  # Template literals
+            ]
+        )
 
     def add_forbidden_pattern(self, pattern: str) -> None:
         """Add a forbidden regex pattern."""
@@ -105,11 +115,7 @@ class InputValidator:
         """Add a required regex pattern."""
         self.required_patterns.append(re.compile(pattern))
 
-    def validate(
-        self,
-        input_text: str,
-        sanitize: bool = True
-    ) -> ValidationReport:
+    def validate(self, input_text: str, sanitize: bool = True) -> ValidationReport:
         """Validate and optionally sanitize input."""
         issues = []
         sanitized = input_text
@@ -118,13 +124,13 @@ class InputValidator:
         if len(input_text) > self.max_input_length:
             issues.append(f"Input exceeds maximum length ({self.max_input_length})")
             if sanitize:
-                sanitized = input_text[:self.max_input_length]
+                sanitized = input_text[: self.max_input_length]
             else:
                 return ValidationReport(
                     result=ValidationResult.REJECTED,
                     original_input=input_text[:100] + "...",
                     sanitized_input=None,
-                    issues_found=issues
+                    issues_found=issues,
                 )
 
         # Check forbidden patterns
@@ -139,7 +145,7 @@ class InputValidator:
                         result=ValidationResult.REJECTED,
                         original_input=input_text[:500],
                         sanitized_input=None,
-                        issues_found=issues
+                        issues_found=issues,
                     )
 
         # Check required patterns
@@ -153,7 +159,7 @@ class InputValidator:
                 result=ValidationResult.REJECTED,
                 original_input=input_text[:500],
                 sanitized_input=None,
-                issues_found=["Input empty after sanitization"]
+                issues_found=["Input empty after sanitization"],
             )
 
         # Determine result
@@ -168,14 +174,18 @@ class InputValidator:
             result=result,
             original_input=input_text[:500],
             sanitized_input=sanitized if sanitize else None,
-            issues_found=issues
+            issues_found=issues,
         )
 
     def sanitize_for_logging(self, text: str, max_length: int = 500) -> str:
         """Sanitize text for safe logging."""
         # Remove potential secrets
-        sanitized = re.sub(r"(api[_-]?key|password|secret|token)\s*[:=]\s*\S+",
-                          r"\1=***", text, flags=re.IGNORECASE)
+        sanitized = re.sub(
+            r"(api[_-]?key|password|secret|token)\s*[:=]\s*\S+",
+            r"\1=***",
+            text,
+            flags=re.IGNORECASE,
+        )
 
         # Truncate
         if len(sanitized) > max_length:
@@ -199,11 +209,13 @@ class OutputGuardrail:
     def _add_default_filters(self) -> None:
         """Add default content filters."""
         # Potentially harmful content patterns
-        self.content_filters.extend([
-            re.compile(r"password\s*[:=]\s*\S+", re.IGNORECASE),
-            re.compile(r"api[_-]?key\s*[:=]\s*\S+", re.IGNORECASE),
-            re.compile(r"secret[_-]?key\s*[:=]\s*\S+", re.IGNORECASE),
-        ])
+        self.content_filters.extend(
+            [
+                re.compile(r"password\s*[:=]\s*\S+", re.IGNORECASE),
+                re.compile(r"api[_-]?key\s*[:=]\s*\S+", re.IGNORECASE),
+                re.compile(r"secret[_-]?key\s*[:=]\s*\S+", re.IGNORECASE),
+            ]
+        )
 
     def add_content_filter(self, pattern: str) -> None:
         """Add a content filter pattern."""
@@ -213,20 +225,18 @@ class OutputGuardrail:
         """Add a required disclaimer."""
         self.required_disclaimers.append(disclaimer)
 
-    def check(
-        self,
-        output: str,
-        filter_violations: bool = True
-    ) -> GuardrailReport:
+    def check(self, output: str, filter_violations: bool = True) -> GuardrailReport:
         """Check output against guardrails."""
         violations = []
         filtered = output
 
         # Check length
         if len(output) > self.max_output_length:
-            violations.append(f"Output exceeds maximum length ({self.max_output_length})")
+            violations.append(
+                f"Output exceeds maximum length ({self.max_output_length})"
+            )
             if filter_violations:
-                filtered = output[:self.max_output_length]
+                filtered = output[: self.max_output_length]
 
         # Check content filters
         for pattern in self.content_filters:
@@ -248,20 +258,17 @@ class OutputGuardrail:
             guardrail_type=GuardrailType.CONTENT,
             original_output=output[:1000] if len(output) > 1000 else output,
             filtered_output=filtered if filter_violations else None,
-            violations=violations
+            violations=violations,
         )
 
-    def check_format(
-        self,
-        output: str,
-        expected_format: str
-    ) -> GuardrailReport:
+    def check_format(self, output: str, expected_format: str) -> GuardrailReport:
         """Check output format."""
         violations = []
 
         if expected_format == "json":
             try:
                 import json
+
                 json.loads(output)
             except json.JSONDecodeError as e:
                 violations.append(f"Invalid JSON: {str(e)[:100]}")
@@ -276,7 +283,7 @@ class OutputGuardrail:
             guardrail_type=GuardrailType.FORMAT,
             original_output=output[:500],
             filtered_output=None,
-            violations=violations
+            violations=violations,
         )
 
 
@@ -289,7 +296,7 @@ class CircuitBreaker:
         self,
         failure_threshold: int = 5,
         recovery_timeout: float = 30.0,
-        half_open_max_calls: int = 3
+        half_open_max_calls: int = 3,
     ):
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
@@ -373,10 +380,15 @@ class CircuitBreaker:
                 state=self.state,
                 failure_count=self.failure_count,
                 success_count=self.success_count,
-                last_failure_time=datetime.fromtimestamp(self.last_failure_time).isoformat()
-                                  if self.last_failure_time else None,
-                last_state_change=datetime.fromtimestamp(self.last_state_change).isoformat(),
-                total_rejected=self.total_rejected
+                last_failure_time=datetime.fromtimestamp(
+                    self.last_failure_time
+                ).isoformat()
+                if self.last_failure_time
+                else None,
+                last_state_change=datetime.fromtimestamp(
+                    self.last_state_change
+                ).isoformat(),
+                total_rejected=self.total_rejected,
             )
 
     def reset(self) -> None:
@@ -395,7 +407,7 @@ class RateLimiter:
     def __init__(
         self,
         rate: float = 10.0,  # Requests per second
-        burst: int = 20  # Maximum burst size
+        burst: int = 20,  # Maximum burst size
     ):
         self.rate = rate
         self.burst = burst
@@ -477,7 +489,9 @@ class TimeoutManager:
                         raise TimeoutError(
                             f"Operation '{operation}' timed out after {timeout}s"
                         )
+
             return wrapper
+
         return decorator
 
 
@@ -524,7 +538,8 @@ class ResourceManager:
             return {
                 "current": self.usage.get(resource, 0),
                 "limit": self.limits.get(resource, -1),
-                "available": self.limits.get(resource, -1) - self.usage.get(resource, 0)
+                "available": self.limits.get(resource, -1)
+                - self.usage.get(resource, 0),
             }
 
     def reset(self, resource: Optional[str] = None) -> None:
@@ -546,13 +561,12 @@ class RobustnessSystem:
         failure_threshold: int = 5,
         recovery_timeout: float = 30.0,
         rate_limit: float = 10.0,
-        default_timeout: float = 30.0
+        default_timeout: float = 30.0,
     ):
         self.validator = InputValidator()
         self.guardrail = OutputGuardrail()
         self.circuit_breaker = CircuitBreaker(
-            failure_threshold=failure_threshold,
-            recovery_timeout=recovery_timeout
+            failure_threshold=failure_threshold, recovery_timeout=recovery_timeout
         )
         self.rate_limiter = RateLimiter(rate=rate_limit)
         self.timeout_manager = TimeoutManager(default_timeout=default_timeout)
@@ -562,11 +576,7 @@ class RobustnessSystem:
         self.resource_manager.set_limit("concurrent_requests", 100)
         self.resource_manager.set_limit("tokens_per_minute", 100000)
 
-    def validate_request(
-        self,
-        input_text: str,
-        sanitize: bool = True
-    ) -> tuple:
+    def validate_request(self, input_text: str, sanitize: bool = True) -> tuple:
         """
         Validate incoming request.
 
@@ -584,22 +594,20 @@ class RobustnessSystem:
         report = self.validator.validate(input_text, sanitize)
 
         if report.result == ValidationResult.REJECTED:
-            return False, None, {
-                "error": "Input rejected",
-                "issues": report.issues_found
-            }
+            return (
+                False,
+                None,
+                {"error": "Input rejected", "issues": report.issues_found},
+            )
 
         processed = report.sanitized_input if sanitize else input_text
-        return True, processed, {
-            "validation": report.result.value,
-            "issues": report.issues_found
-        }
+        return (
+            True,
+            processed,
+            {"validation": report.result.value, "issues": report.issues_found},
+        )
 
-    def process_response(
-        self,
-        output: str,
-        filter_violations: bool = True
-    ) -> tuple:
+    def process_response(self, output: str, filter_violations: bool = True) -> tuple:
         """
         Process and validate response.
 
@@ -609,10 +617,7 @@ class RobustnessSystem:
 
         processed = report.filtered_output if filter_violations else output
 
-        return processed, {
-            "passed": report.passed,
-            "violations": report.violations
-        }
+        return processed, {"passed": report.passed, "violations": report.violations}
 
     def record_success(self) -> None:
         """Record successful operation."""
@@ -630,23 +635,17 @@ class RobustnessSystem:
             "circuit_breaker": {
                 "state": cb_stats.state.value,
                 "failure_count": cb_stats.failure_count,
-                "total_rejected": cb_stats.total_rejected
+                "total_rejected": cb_stats.total_rejected,
             },
-            "rate_limiter": {
-                "wait_time": self.rate_limiter.get_wait_time()
-            },
+            "rate_limiter": {"wait_time": self.rate_limiter.get_wait_time()},
             "resources": {
                 r: self.resource_manager.get_usage(r)
                 for r in self.resource_manager.limits
-            }
+            },
         }
 
     def safe_execute(
-        self,
-        func: Callable,
-        input_text: str,
-        operation: str = "default",
-        **kwargs
+        self, func: Callable, input_text: str, operation: str = "default", **kwargs
     ) -> Dict[str, Any]:
         """
         Safely execute a function with all protections.
@@ -658,21 +657,19 @@ class RobustnessSystem:
             return {
                 "success": False,
                 "error": validation_report.get("error"),
-                "validation": validation_report
+                "validation": validation_report,
             }
 
         # Try to acquire resources
         if not self.resource_manager.try_acquire("concurrent_requests"):
-            return {
-                "success": False,
-                "error": "Resource limit exceeded"
-            }
+            return {"success": False, "error": "Resource limit exceeded"}
 
         try:
             # Execute with timeout
             timeout = self.timeout_manager.get_timeout(operation)
 
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(func, processed_input, **kwargs)
                 try:
@@ -681,7 +678,7 @@ class RobustnessSystem:
                     self.record_failure()
                     return {
                         "success": False,
-                        "error": f"Operation timed out after {timeout}s"
+                        "error": f"Operation timed out after {timeout}s",
                     }
 
             # Process response
@@ -693,22 +690,18 @@ class RobustnessSystem:
                     "success": True,
                     "output": processed_output,
                     "validation": validation_report,
-                    "guardrail": output_report
+                    "guardrail": output_report,
                 }
             else:
                 self.record_success()
                 return {
                     "success": True,
                     "output": result,
-                    "validation": validation_report
+                    "validation": validation_report,
                 }
 
         except Exception as e:
             self.record_failure()
-            return {
-                "success": False,
-                "error": str(e),
-                "validation": validation_report
-            }
+            return {"success": False, "error": str(e), "validation": validation_report}
         finally:
             self.resource_manager.release("concurrent_requests")
