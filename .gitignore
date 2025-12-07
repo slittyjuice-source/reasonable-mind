@@ -28,3 +28,7 @@ node_modules/
 # Test artifacts
 trainer/tests/screenshots/*.png
 !trainer/tests/screenshots/.gitkeep
+
+
+#Ignore cursor AI rules
+.cursor/rules/codacy.mdc

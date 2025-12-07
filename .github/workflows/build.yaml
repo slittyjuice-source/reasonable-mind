@@ -13,23 +13,25 @@ on:
       - .github/**
       - computer-use-demo/**
 jobs:
-  check-computer-use-demo:
+  changes:
     runs-on: ubuntu-latest
     outputs:
-      present: ${{ steps.detect.outputs.present }}
+      computer_use_demo: ${{ steps.filter.outputs.computer_use_demo }}
     steps:
-      - uses: actions/checkout@v4
-      - id: detect
-        run: |
-          if [ -d computer-use-demo ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for computer-use-demo changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            computer_use_demo:
+              - 'computer-use-demo/**'
 
   build-amd64:
-    needs: check-computer-use-demo
-    if: needs.check-computer-use-demo.outputs.present == 'true'
+    needs: changes
+    if: ${{ needs.changes.outputs.computer_use_demo == 'true' }}
     uses: ./.github/workflows/reusable_build_step.yaml
     with:
       platform: amd64
@@ -41,8 +43,8 @@ jobs:
       contents: read
       packages: write
   build-arm64:
-    needs: check-computer-use-demo
-    if: needs.check-computer-use-demo.outputs.present == 'true'
+    needs: changes
+    if: ${{ needs.changes.outputs.computer_use_demo == 'true' }}
     uses: ./.github/workflows/reusable_build_step.yaml
     with:
       platform: arm64
@@ -54,8 +56,10 @@ jobs:
       contents: read
       packages: write
   merge:
+    if: ${{ needs.changes.outputs.computer_use_demo == 'true' }}
+    runs-on: ubuntu-latest
     needs:
-      - check-computer-use-demo
+      - changes
       - build-arm64
       - build-amd64
     if: needs.check-computer-use-demo.outputs.present == 'true'
