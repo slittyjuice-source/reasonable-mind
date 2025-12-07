@@ -89,7 +89,8 @@ class InputValidator:
         """Add default security patterns."""
         # Potential injection patterns
         self.forbidden_patterns.extend([
-            re.compile(r"<script.*?>.*?</script>", re.IGNORECASE | re.DOTALL),
+            # Improved pattern: matches <script> blocks with flexible closing tags and attributes
+            re.compile(r"<script\b[^>]*>.*?</script\b[^>]*>", re.IGNORECASE | re.DOTALL),
             re.compile(r"javascript:", re.IGNORECASE),
             re.compile(r"on\w+\s*=", re.IGNORECASE),  # Event handlers
             re.compile(r"\{\{.*?\}\}"),  # Template injection
