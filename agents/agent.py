@@ -6,7 +6,12 @@ from contextlib import AsyncExitStack
 from dataclasses import dataclass
 from typing import Any
 
-from anthropic import Anthropic
+try:
+    from anthropic import Anthropic
+except ModuleNotFoundError as exc:  # pragma: no cover - dependency should be installed
+    raise ModuleNotFoundError(
+        "The anthropic package is required. Install dependencies via `pip install -r requirements.txt`."
+    ) from exc
 
 from .utils.connections import setup_mcp_connections
 from .utils.history_util import MessageHistory
