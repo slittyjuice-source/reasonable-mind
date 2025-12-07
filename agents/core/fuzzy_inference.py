@@ -457,7 +457,7 @@ class BayesianBeliefTracker:
         self._default_prior = default_prior
 
     def initialize_belief(
-        self, statement: str, prior: float = None
+        self, statement: str, prior: Optional[float] = None
     ) -> ProbabilisticStatement:
         """Initialize a belief with prior probability."""
         prior = prior or self._default_prior

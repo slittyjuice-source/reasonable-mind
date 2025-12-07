@@ -63,7 +63,7 @@ class Plan:
     steps: List[PlanStep]
     constraint_profile: Optional[str] = None
     persona_id: Optional[str] = None
-    max_steps: int = 20
+    max_steps: Optional[int] = None
 
 
 class PlanValidator:

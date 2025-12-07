@@ -315,9 +315,12 @@ class TriadicSynthesis:
 
         # Compute synthesis confidence
         # Not just AI confidence - weighted by user preferences
-        synth_confidence = sum(w for _, w in top_perspectives) / len(
-            weighted_perspectives
-        )
+        if weighted_perspectives:
+            synth_confidence = sum(w for _, w in top_perspectives) / len(
+                weighted_perspectives
+            )
+        else:
+            synth_confidence = 0.0
 
         recommendation = (
             f"Consider this argument through {top_perspectives[0][0].profile.value.capitalize()} "

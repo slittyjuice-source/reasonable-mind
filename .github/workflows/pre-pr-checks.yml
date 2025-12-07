@@ -7,7 +7,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
-    branches: ['**']
+    branches: ["**"]
 
 jobs:
   trivy-scan:
@@ -50,7 +50,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
@@ -61,7 +61,7 @@ jobs:
 
       - name: Ruff format (checkable)
         run: |
-          ruff format . --quiet || true
+          ruff format --check . --quiet
           ruff check .
 
       - name: Type check (pyright)
@@ -72,7 +72,7 @@ jobs:
           pytest agents/tests/ -v --cov=agents.governance --cov=agents.core_logic --cov-report=term-missing --cov-fail-under=45
 
       - name: Codacy analysis (required when configured)
-        if: ${{ secrets.CODACY_TOKEN != '' }}
+        if: ${{ env.CODACY_TOKEN != '' }}
         env:
           CODACY_TOKEN: ${{ secrets.CODACY_TOKEN }}
           PROVIDER: gh
