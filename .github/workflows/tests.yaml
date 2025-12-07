@@ -38,9 +38,11 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           pip install pytest pytest-cov pytest-asyncio
-          pip install -r agents/requirements.txt || true
+          pip install -r agents/requirements.txt
       - name: Add venv to PATH
         run: echo "$PWD/.venv/bin" >> $GITHUB_PATH
+      - name: Prepare junit directory
+        run: mkdir -p junit
       - name: Run tests
         run: pytest agents/tests -v --junitxml=junit/agents-test-results.xml
       - name: Upload test results
