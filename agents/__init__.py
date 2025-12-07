@@ -39,9 +39,6 @@ def __getattr__(name: str):
         return globals()[name]
 
     if name == "Tool":
-        from .tools.base import Tool
-
-        globals()["Tool"] = Tool
         return Tool
 
-    raise AttributeError(name)
+    raise AttributeError(f"module 'agents' has no attribute '{name}'")
