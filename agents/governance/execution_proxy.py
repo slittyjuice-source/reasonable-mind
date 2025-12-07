@@ -216,9 +216,11 @@ class ExecutionProxy:
                             message=result.message,
                             blocked=result.blocked,
                             block_reason=result.block_reason,
-                            constraint_hash=result.constraint_hash or getattr(ctx, "constraint_hash", None),
+                            constraint_hash=result.constraint_hash
+                            or getattr(ctx, "constraint_hash", None),
                             plan_id=result.plan_id or getattr(ctx, "plan_id", None),
-                            persona_id=result.persona_id or getattr(ctx, "persona_id", None),
+                            persona_id=result.persona_id
+                            or getattr(ctx, "persona_id", None),
                             execution_context=result.execution_context or ctx,
                         )
                     return ExecutionResult(
@@ -232,9 +234,11 @@ class ExecutionProxy:
                         message=result.message,
                         blocked=result.blocked,
                         block_reason=result.block_reason,
-                        constraint_hash=result.constraint_hash or getattr(ctx, "constraint_hash", None),
+                        constraint_hash=result.constraint_hash
+                        or getattr(ctx, "constraint_hash", None),
                         plan_id=result.plan_id or getattr(ctx, "plan_id", None),
-                        persona_id=result.persona_id or getattr(ctx, "persona_id", None),
+                        persona_id=result.persona_id
+                        or getattr(ctx, "persona_id", None),
                         execution_context=result.execution_context or ctx,
                     )
             # No mock matched

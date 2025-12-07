@@ -111,7 +111,6 @@ class ProcessGate:
             "stages_completed": len(self._results),
             "stages": [stage.name for stage in self._results.keys()],
             "confidence_scores": {
-            "confidence_scores": {
                 stage.name: res.confidence for stage, res in self._results.items()
             },
             "min_confidence": self.min_confidence,

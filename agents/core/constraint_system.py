@@ -177,7 +177,7 @@ class ValueConstraint(Constraint):
             f"{field_path} {operator} {expected_value}",
             f"Value constraint: {field_path} {operator} {expected_value}",
             priority,
-            RelaxationStrategy.NONE
+            RelaxationStrategy.NONE,
         )
         self.field_path = field_path
         self.operator = operator
