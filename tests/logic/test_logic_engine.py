@@ -133,6 +133,18 @@ class TestTruthTable:
             # Counterexample should have P=False (makes premise true, conclusion false)
             assert result.counterexample.get("P") is False
 
+    def test_truth_table_used_when_no_pattern_matches(self):
+        """Ensure truth table evaluation runs after pattern analysis when needed."""
+        # This form does not match a predefined pattern but is valid
+        arg = parse_argument(["P ∧ Q", "R"], "P")
+        engine = LogicEngine()
+
+        result = engine.validate(arg)
+
+        assert result.method == "truth_table"
+        assert result.is_valid is True
+        assert result.truth_table_valid is True
+
 
 class TestEdgeCases:
     """Test edge cases and error handling."""
