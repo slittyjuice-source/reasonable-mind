@@ -13,8 +13,24 @@ on:
       - .github/**
       - computer-use-demo/**
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      computer_use_demo: ${{ steps.filter.outputs.computer_use_demo }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            computer_use_demo:
+              - 'computer-use-demo/**'
+
   build-amd64:
-    if: ${{ always() && hashFiles('computer-use-demo/**') != '' }}
+    if: ${{ needs.changes.outputs.computer_use_demo == 'true' }}
+    needs: changes
     uses: ./.github/workflows/reusable_build_step.yaml
     with:
       platform: amd64
@@ -26,7 +42,8 @@ jobs:
       contents: read
       packages: write
   build-arm64:
-    if: ${{ always() && hashFiles('computer-use-demo/**') != '' }}
+    if: ${{ needs.changes.outputs.computer_use_demo == 'true' }}
+    needs: changes
     uses: ./.github/workflows/reusable_build_step.yaml
     with:
       platform: arm64
@@ -38,9 +55,10 @@ jobs:
       contents: read
       packages: write
   merge:
-    if: ${{ always() && hashFiles('computer-use-demo/**') != '' }}
+    if: ${{ needs.changes.outputs.computer_use_demo == 'true' }}
     runs-on: ubuntu-latest
     needs:
+      - changes
       - build-arm64
       - build-amd64
     permissions:
