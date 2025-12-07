@@ -24,6 +24,7 @@ pytestmark = pytest.mark.skipif(
 
 
 class TestMessageParams:
+    __test__ = False  # Prevent pytest collection (requires live API key)
     """Test cases for message_params functionality."""
 
     def setup_method(self) -> None:
