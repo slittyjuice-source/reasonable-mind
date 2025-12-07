@@ -37,7 +37,7 @@ def __getattr__(name: str):
             if exc.name == "anthropic":
                 raise ImportError(
                     "The 'anthropic' package is required to use agents.Agent. "
-                    "Install it or provide a compatible client instance."
+                    "Install it or provide a compatible client instance.",
                 ) from exc
             raise
 
