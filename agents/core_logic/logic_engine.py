@@ -218,15 +218,6 @@ class LogicEngine:
                 warnings=warnings,
             )
 
-        # Method 2: Truth table evaluation (slow but complete)
-        if len(argument.propositions) <= 5:
-            return self._truth_table_validate(argument)
-
-        warnings.append(
-            f"Too many variables ({len(argument.propositions)}) for truth table evaluation"
-        )
-
-        # Method 3: Heuristic (fallback)
         # Method 2: Truth table evaluation (slow but complete) or heuristic fallback
         if len(argument.propositions) > 5:
             warnings.append(
