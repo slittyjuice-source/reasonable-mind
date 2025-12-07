@@ -7,8 +7,39 @@ on:
     branches: ['**']
 
 jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch main
+        run: git fetch origin main --depth=1 || true
+
+      - name: Detect dependency changes
+        id: changed
+        run: |
+          CHANGED=$(git diff --name-only origin/main...HEAD || git diff --name-only ${{ github.sha }} || true)
+          echo "changed_files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "Changed files: $CHANGED"
+          echo "$CHANGED" > changed.txt
+          if ! echo "$CHANGED" | grep -E '(^|/)(requirements.txt|pyproject.toml|package.json)$' >/dev/null; then
+            echo "No dependency manifest changes detected; skipping trivy scan."
+            exit 0
+          fi
+
+      - name: Trivy scan for dependency vulnerabilities
+        env:
+          ROOT: ${{ github.workspace }}
+        run: |
+          echo "Dependency manifests changed — running Trivy"
+          docker run --rm -v "$ROOT":/repo aquasec/trivy:0.44.0 fs --security-checks vuln --severity CRITICAL,HIGH --exit-code 1 /repo
+
   pre-pr:
     runs-on: ubuntu-latest
+    needs: trivy-scan
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,9 +68,20 @@ jobs:
         run: |
           pytest agents/tests/ -v --cov=agents.governance --cov=agents.core_logic --cov-report=term-missing --cov-fail-under=45
 
-      - name: Codacy analysis (optional)
-        if: env.CODACY_TOKEN != ''
+      - name: Codacy analysis (required when configured)
+        if: ${{ secrets.CODACY_TOKEN != '' }}
         env:
           CODACY_TOKEN: ${{ secrets.CODACY_TOKEN }}
+          PROVIDER: gh
+          ORGANIZATION: slittyjuice-source
+          REPOSITORY: reasonable-mind
+          ROOT_PATH: ${{ github.workspace }}
         run: |
-          echo "Codacy analysis placeholder — configure Codacy CLI in CI to run codacy_cli_analyze per .github/instructions/codacy.instructions.md"
+          echo "Running Codacy analysis via Dockerized codacy-analysis-cli (requires CODACY_TOKEN)"
+          # This step runs Codacy's analysis CLI in Docker. Ensure the repository
+          # has set the secret 'CODACY_TOKEN'. The codacy CLI image and flags may need
+          # adjustment depending on your Codacy setup; treat this as a wiring template.
+          docker run --rm \
+            -v "$ROOT_PATH":/src \
+            -e CODACY_API_TOKEN="$CODACY_TOKEN" \
+            codacy/codacy-analysis-cli:latest analyze --rootPath /src --provider "$PROVIDER" --organization "$ORGANIZATION" --repository "$REPOSITORY"
