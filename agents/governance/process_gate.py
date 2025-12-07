@@ -97,7 +97,11 @@ class ProcessGate:
         if self._failed_stage is not None:
             raise ValueError(f"{self._failed_stage.name} failed; cannot continue")
 
-        expected_stage = list(ProcessStage)[len(self._results)]
+        stages = list(ProcessStage)
+        if len(self._results) >= len(stages):
+            raise ValueError("All stages already recorded")
+
+        expected_stage = stages[len(self._results)]
         if result.stage != expected_stage:
             raise ValueError(f"{expected_stage.name} not completed before {result.stage.name}")
 

@@ -1,0 +1,36 @@
+{
+	"folders": [
+		{
+			"path": "../../../claude-quickstarts"
+		},
+		{
+			"path": "../../../WG Test"
+		},
+		{
+			"name": "WG-Test",
+			"path": "../../../WG-Test"
+		},
+		{
+			"path": "../.."
+		}
+	],
+	"settings": {
+		"python-envs.defaultEnvManager": "ms-python.python:system",
+		"githubPullRequests.ignoredPullRequestBranches": [
+			"main"
+		],
+		"python-envs.pythonProjects": [
+			{
+				"path": "${workspaceFolder}",
+				"envManager": "ms-python.python:system",
+				"packageManager": "ms-python.python:pip"
+			},
+			{
+				"path": "",
+				"envManager": "ms-python.python:venv",
+				"packageManager": "ms-python.python:pip"
+			}
+		],
+		"chatgpt.openOnStartup": true
+	}
+}
