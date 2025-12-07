@@ -70,5 +70,5 @@ class ProcessGate:
             "stages": [stage.name for stage in self._results.keys()],
             "confidence_scores": {
                 stage.name: res.confidence for stage, res in self._results.items()
-            },
+            }
         }
