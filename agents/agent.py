@@ -6,7 +6,12 @@ from contextlib import AsyncExitStack
 from dataclasses import dataclass
 from typing import Any
 
-from anthropic import Anthropic
+try:
+    from anthropic import Anthropic
+except ModuleNotFoundError as exc:  # pragma: no cover - dependency should be installed
+    raise ModuleNotFoundError(
+        "The anthropic package is required. Install dependencies via `pip install -r requirements.txt`."
+    ) from exc
 
 from .utils.connections import setup_mcp_connections
 from .utils.history_util import MessageHistory
@@ -44,7 +49,7 @@ class Agent:
         message_params: dict[str, Any] | None = None,
     ):
         """Initialize an Agent.
-        
+
         Args:
             name: Agent identifier for logging
             system: System prompt for the agent
@@ -78,7 +83,7 @@ class Agent:
 
     def _prepare_message_params(self) -> dict[str, Any]:
         """Prepare parameters for client.messages.create() call.
-        
+
         Returns a dict with base parameters from config, with any
         message_params overriding conflicting keys.
         """

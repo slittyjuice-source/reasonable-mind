@@ -39,7 +39,7 @@ class TestPIIDetector:
 
         assert len(findings) >= 1
         # Check that email was found
-        has_email = any(f[0] == "email" or "email" in str(f).lower() 
+        has_email = any(f[0] == "email" or "email" in str(f).lower()
                        for f in findings)
         assert has_email
 
@@ -103,7 +103,7 @@ class TestContentPolicyChecker:
         violations = checker.check(text)
 
         # Should have no severe violations
-        severe = [v for v in violations 
+        severe = [v for v in violations
                  if hasattr(v, 'severity') and v.severity in ['high', 'critical']]
         assert len(severe) == 0
 
@@ -214,7 +214,7 @@ class TestErrorHandler:
             message="Invalid input format",
             severity=ErrorSeverity.WARNING
         )
-        
+
         assert isinstance(error, StructuredError)
         assert error.category == ErrorCategory.VALIDATION
 
@@ -229,9 +229,9 @@ class TestErrorHandler:
             category=ErrorCategory.PARSING,
             message="Parse failed"
         )
-        
+
         stats = handler.get_error_stats()
-        
+
         assert stats["total_errors"] == 2
 
 
@@ -247,7 +247,7 @@ class TestStructuredError:
             severity=ErrorSeverity.ERROR,
             message="Failed to parse input"
         )
-        
+
         assert error.error_id == "test_001"
         assert error.category == ErrorCategory.PARSING
         assert error.severity == ErrorSeverity.ERROR
@@ -261,9 +261,9 @@ class TestStructuredError:
             severity=ErrorSeverity.WARNING,
             message="Low confidence result"
         )
-        
+
         as_dict = error.to_dict()
-        
+
         assert isinstance(as_dict, dict)
         assert as_dict["error_id"] == "test_002"
         assert as_dict["category"] == "inference"
@@ -278,7 +278,7 @@ class TestStructuredError:
             message="Tool failed",
             recovery_suggestions=[RecoveryAction.RETRY, RecoveryAction.FALLBACK]
         )
-        
+
         assert RecoveryAction.RETRY in error.recovery_suggestions
         assert error.is_recoverable is True
 

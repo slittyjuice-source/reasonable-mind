@@ -38,7 +38,7 @@ class TestInferenceEngine:
     def test_add_fact(self, engine):
         """Test adding facts to knowledge base."""
         engine.add_fact("f1", "Socrates is mortal", confidence=0.95)
-        
+
         assert "f1" in engine.facts
         assert engine.facts["f1"]["statement"] == "Socrates is mortal"
         assert engine.facts["f1"]["confidence"] == 0.95
@@ -47,7 +47,7 @@ class TestInferenceEngine:
     def test_add_rule(self, engine):
         """Test adding rules to knowledge base."""
         engine.add_rule("modus_ponens_test", ["P"], "Q", confidence=1.0)
-        
+
         assert len(engine.rules) >= 1
 
     @pytest.mark.unit
@@ -55,9 +55,9 @@ class TestInferenceEngine:
         """Test inference with explicit premises."""
         engine.add_fact("p1", "All men are mortal")
         engine.add_fact("p2", "Socrates is a man")
-        
+
         result = engine.infer("Socrates is mortal")
-        
+
         assert isinstance(result, InferenceResult)
         assert hasattr(result, 'success')
         assert hasattr(result, 'confidence')
@@ -68,9 +68,9 @@ class TestInferenceEngine:
         """Test modus ponens inference: P, P→Q ⊢ Q"""
         engine.add_fact("f1", "P")
         engine.add_rule("mp_rule", ["P"], "Q", confidence=1.0)
-        
+
         result = engine.infer("Q")
-        
+
         # Check result structure - patterns_used may or may not contain MODUS_PONENS
         assert isinstance(result, InferenceResult)
         assert hasattr(result, 'patterns_used')
@@ -80,9 +80,9 @@ class TestInferenceEngine:
         """Test modus tollens inference: ¬Q, P→Q ⊢ ¬P"""
         engine.add_fact("f1", "not Q")
         engine.add_rule("mt_rule", ["P"], "Q", confidence=1.0)
-        
+
         result = engine.infer("not P")
-        
+
         # Check result structure
         assert isinstance(result, InferenceResult)
         assert hasattr(result, 'patterns_used')
@@ -92,9 +92,9 @@ class TestInferenceEngine:
         """Test that inference result has all required fields."""
         engine.add_fact("f1", "All birds fly")
         engine.add_fact("f2", "Tweety is a bird")
-        
+
         result = engine.infer("Tweety flies")
-        
+
         assert hasattr(result, 'success')
         assert hasattr(result, 'conclusion')
         assert hasattr(result, 'confidence')
@@ -108,9 +108,9 @@ class TestInferenceEngine:
         """Test proof-or-flag behavior."""
         # Unsupported conclusion should be flagged
         engine.add_fact("f1", "Some random fact")
-        
+
         result = engine.infer("Completely unrelated conclusion")
-        
+
         # If no proof found, should either fail or flag
         if not result.proof_found:
             assert not result.success or result.needs_flag
@@ -127,7 +127,7 @@ class TestFormalParser:
     def test_parse_implication(self, parser):
         """Test parsing of implications (if-then)."""
         result = parser.parse("If it rains then the ground is wet")
-        
+
         assert result is not None
         assert result.get("type") in ["implication", "atomic"]
 
@@ -135,7 +135,7 @@ class TestFormalParser:
     def test_parse_universal_quantifier(self, parser):
         """Test parsing of universal quantifiers (all X are Y)."""
         result = parser.parse("All men are mortal")
-        
+
         assert result is not None
         # Should recognize universal pattern
         if result.get("type") == "universal":
@@ -145,7 +145,7 @@ class TestFormalParser:
     def test_parse_existential_quantifier(self, parser):
         """Test parsing of existential quantifiers (some X are Y)."""
         result = parser.parse("Some birds are flightless")
-        
+
         assert result is not None
         if result.get("type") == "existential":
             assert result.get("quantifier") == "∃"
@@ -154,7 +154,7 @@ class TestFormalParser:
     def test_parse_negation(self, parser):
         """Test parsing of negated statements."""
         result = parser.parse("No fish are mammals")
-        
+
         assert result is not None
         # Should handle negation
 
@@ -162,14 +162,14 @@ class TestFormalParser:
     def test_parse_predicate(self, parser):
         """Test parsing of predicate statements (X is Y)."""
         result = parser.parse("Socrates is mortal")
-        
+
         assert result is not None
 
     @pytest.mark.unit
     def test_parse_formal_notation(self, parser):
         """Test parsing of formal logical notation."""
         result = parser.parse("P → Q")
-        
+
         assert result is not None
         if result.get("type") == "implication":
             assert "antecedent" in result
@@ -183,7 +183,7 @@ class TestLogicalTerm:
     def test_variable_term(self):
         """Test variable logical term."""
         term = LogicalTerm(name="x", is_variable=True)
-        
+
         assert term.name == "x"
         assert term.is_variable is True
         assert str(term) == "x"
@@ -192,7 +192,7 @@ class TestLogicalTerm:
     def test_constant_term(self):
         """Test constant logical term."""
         term = LogicalTerm(name="Socrates", is_constant=True)
-        
+
         assert term.name == "Socrates"
         assert term.is_constant is True
 
@@ -201,7 +201,7 @@ class TestLogicalTerm:
         """Test that terms are hashable for sets/dicts."""
         term1 = LogicalTerm(name="x", is_variable=True)
         term2 = LogicalTerm(name="x", is_variable=True)
-        
+
         # Same terms should hash equally
         assert hash(term1) == hash(term2)
 
@@ -218,7 +218,7 @@ class TestQuantifiedPredicate:
             predicate_name="Mortal",
             arguments=[LogicalTerm("x", is_variable=True)]
         )
-        
+
         assert pred.quantifier == QuantifierType.UNIVERSAL
         assert pred.variable == "x"
         assert "Mortal" in str(pred)
@@ -233,7 +233,7 @@ class TestQuantifiedPredicate:
             arguments=[LogicalTerm("penguin", is_constant=True)],
             negated=True
         )
-        
+
         assert pred.negated is True
         assert "¬" in str(pred)
 
@@ -252,7 +252,7 @@ class TestInferenceStep:
             confidence=0.95,
             justification="Applied modus ponens"
         )
-        
+
         assert step.step_id == 1
         assert step.pattern_used == InferencePattern.MODUS_PONENS
         assert step.confidence == 0.95
@@ -272,7 +272,7 @@ class TestInferencePatterns:
             InferencePattern.CATEGORICAL_SYLLOGISM,
             InferencePattern.UNIVERSAL_INSTANTIATION,
         ]
-        
+
         for p in patterns:
             assert p in InferencePattern
 

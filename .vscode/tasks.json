@@ -6,12 +6,12 @@
 			"label": "docker-build",
 			"platform": "node",
 			"dockerBuild": {
-				"dockerfile": "${workspaceFolder}/watson-glaser-trainer/Dockerfile",
-				"context": "${workspaceFolder}/watson-glaser-trainer",
+				"dockerfile": "${workspaceFolder}/trainer/Dockerfile",
+				"context": "${workspaceFolder}/trainer",
 				"pull": true
 			},
 			"node": {
-				"package": "${workspaceFolder}/watson-glaser-trainer/package.json"
+				"package": "${workspaceFolder}/trainer/package.json"
 			}
 		},
 		{
@@ -22,7 +22,7 @@
 			],
 			"platform": "node",
 			"node": {
-				"package": "${workspaceFolder}/watson-glaser-trainer/package.json"
+				"package": "${workspaceFolder}/trainer/package.json"
 			}
 		},
 		{
@@ -38,9 +38,28 @@
 				}
 			},
 			"node": {
-				"package": "${workspaceFolder}/watson-glaser-trainer/package.json",
+				"package": "${workspaceFolder}/trainer/package.json",
 				"enableDebugging": true
 			}
+		},
+		{
+			"type": "shell",
+			"label": "pytest: run all tests",
+			"command": "python",
+			"args": ["-m", "pytest", "agents/tests/", "-v"],
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			},
+			"problemMatcher": ["$python"]
+		},
+		{
+			"type": "shell",
+			"label": "pytest: run with coverage",
+			"command": "python",
+			"args": ["-m", "pytest", "agents/tests/", "--cov=agents", "--cov-report=html"],
+			"group": "test",
+			"problemMatcher": ["$python"]
 		}
 	]
 }

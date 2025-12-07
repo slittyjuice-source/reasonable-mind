@@ -120,8 +120,10 @@ def create_mcp_connection(config: dict[str, Any]) -> MCPConnection:
 async def setup_mcp_connections(
     mcp_servers: list[dict[str, Any]] | None,
     stack: AsyncExitStack,
-) -> list[MCPTool]:
+) -> list["MCPTool"]:
     """Set up MCP server connections and create tool interfaces."""
+    from ..tools.mcp_tool import MCPTool  # Local import to avoid circular dependency
+
     if not mcp_servers:
         return []
 

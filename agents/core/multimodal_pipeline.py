@@ -43,7 +43,7 @@ class ModalityInput:
     content_id: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
     timestamp: datetime = field(default_factory=datetime.now)
-    
+
     def __post_init__(self):
         if not self.content_id:
             # Generate ID from content hash
@@ -63,10 +63,10 @@ class EmbeddingVector:
     source_id: str
     dimension: int = 0
     model_name: str = "unknown"
-    
+
     def __post_init__(self):
         self.dimension = len(self.vector)
-    
+
     def normalize(self) -> "EmbeddingVector":
         """Return L2-normalized vector."""
         norm = math.sqrt(sum(x*x for x in self.vector))
@@ -91,7 +91,7 @@ class FusedEmbedding:
     weights: Dict[ModalityType, float] = field(default_factory=dict)
     confidence: float = 1.0
     dimension: int = 0
-    
+
     def __post_init__(self):
         self.dimension = len(self.vector)
 
@@ -103,7 +103,7 @@ class MultimodalQuery:
     text_query: Optional[str] = None
     fusion_strategy: FusionStrategy = FusionStrategy.ATTENTION
     modality_weights: Dict[ModalityType, float] = field(default_factory=dict)
-    
+
     def __post_init__(self):
         # Extract text query from inputs if not provided
         if self.text_query is None:
@@ -115,24 +115,24 @@ class MultimodalQuery:
 
 class EmbeddingEncoder(ABC):
     """Abstract base for modality-specific encoders."""
-    
+
     @property
     @abstractmethod
     def modality(self) -> ModalityType:
         """Which modality this encoder handles."""
         pass
-    
+
     @property
     @abstractmethod
     def dimension(self) -> int:
         """Output embedding dimension."""
         pass
-    
+
     @abstractmethod
     def encode(self, content: Any) -> EmbeddingVector:
         """Encode content to embedding vector."""
         pass
-    
+
     @abstractmethod
     def encode_batch(self, contents: List[Any]) -> List[EmbeddingVector]:
         """Encode multiple contents."""
@@ -141,18 +141,18 @@ class EmbeddingEncoder(ABC):
 
 class MockTextEncoder(EmbeddingEncoder):
     """Mock text encoder for testing (simulates BERT/sentence-transformers)."""
-    
+
     def __init__(self, dim: int = 768):
         self._dim = dim
-    
+
     @property
     def modality(self) -> ModalityType:
         return ModalityType.TEXT
-    
+
     @property
     def dimension(self) -> int:
         return self._dim
-    
+
     def encode(self, content: str) -> EmbeddingVector:
         """Generate deterministic embedding from text hash."""
         # Use content hash to generate reproducible embedding
@@ -163,32 +163,32 @@ class MockTextEncoder(EmbeddingEncoder):
             byte_idx = i % len(h)
             val = (h[byte_idx] / 127.5) - 1.0
             vector.append(val)
-        
+
         return EmbeddingVector(
             vector=vector,
             modality=ModalityType.TEXT,
             source_id=hashlib.md5(content.encode()).hexdigest()[:12],
             model_name="mock_text_encoder"
         )
-    
+
     def encode_batch(self, contents: List[str]) -> List[EmbeddingVector]:
         return [self.encode(c) for c in contents]
 
 
 class MockImageEncoder(EmbeddingEncoder):
     """Mock image encoder for testing (simulates CLIP vision encoder)."""
-    
+
     def __init__(self, dim: int = 512):
         self._dim = dim
-    
+
     @property
     def modality(self) -> ModalityType:
         return ModalityType.IMAGE
-    
+
     @property
     def dimension(self) -> int:
         return self._dim
-    
+
     def encode(self, content: Union[bytes, str]) -> EmbeddingVector:
         """Generate deterministic embedding from image content hash."""
         if isinstance(content, str):
@@ -196,24 +196,24 @@ class MockImageEncoder(EmbeddingEncoder):
             h = hashlib.sha256(content.encode()).digest()
         else:
             h = hashlib.sha256(content).digest()
-        
+
         vector = []
         for i in range(self._dim):
             byte_idx = i % len(h)
             val = (h[byte_idx] / 127.5) - 1.0
             vector.append(val)
-        
+
         source_id = hashlib.md5(
             content.encode() if isinstance(content, str) else content
         ).hexdigest()[:12]
-        
+
         return EmbeddingVector(
             vector=vector,
             modality=ModalityType.IMAGE,
             source_id=source_id,
             model_name="mock_image_encoder"
         )
-    
+
     def encode_batch(self, contents: List[Union[bytes, str]]) -> List[EmbeddingVector]:
         return [self.encode(c) for c in contents]
 
@@ -221,10 +221,10 @@ class MockImageEncoder(EmbeddingEncoder):
 class CLIPStyleEncoder:
     """
     CLIP-style joint encoder for text and images.
-    
+
     Projects both modalities to a shared embedding space.
     """
-    
+
     def __init__(
         self,
         shared_dim: int = 512,
@@ -234,7 +234,7 @@ class CLIPStyleEncoder:
         self.shared_dim = shared_dim
         self.text_encoder = text_encoder or MockTextEncoder(dim=768)
         self.image_encoder = image_encoder or MockImageEncoder(dim=512)
-        
+
         # Projection matrices (mock - in reality would be learned)
         self._text_projection = self._create_projection_matrix(
             self.text_encoder.dimension, shared_dim
@@ -242,7 +242,7 @@ class CLIPStyleEncoder:
         self._image_projection = self._create_projection_matrix(
             self.image_encoder.dimension, shared_dim
         )
-    
+
     def _create_projection_matrix(self, in_dim: int, out_dim: int) -> List[List[float]]:
         """Create a deterministic projection matrix."""
         matrix = []
@@ -254,7 +254,7 @@ class CLIPStyleEncoder:
                 row.append(val)
             matrix.append(row)
         return matrix
-    
+
     def _project(
         self,
         vector: List[float],
@@ -266,31 +266,31 @@ class CLIPStyleEncoder:
             dot = sum(v * p for v, p in zip(vector, row))
             result.append(dot)
         return result
-    
+
     def encode_text(self, text: str) -> EmbeddingVector:
         """Encode text to shared space."""
         raw_emb = self.text_encoder.encode(text)
         projected = self._project(raw_emb.vector, self._text_projection)
-        
+
         return EmbeddingVector(
             vector=projected,
             modality=ModalityType.TEXT,
             source_id=raw_emb.source_id,
             model_name="clip_text"
         ).normalize()
-    
+
     def encode_image(self, image: Union[bytes, str]) -> EmbeddingVector:
         """Encode image to shared space."""
         raw_emb = self.image_encoder.encode(image)
         projected = self._project(raw_emb.vector, self._image_projection)
-        
+
         return EmbeddingVector(
             vector=projected,
             modality=ModalityType.IMAGE,
             source_id=raw_emb.source_id,
             model_name="clip_image"
         ).normalize()
-    
+
     def similarity(self, emb1: EmbeddingVector, emb2: EmbeddingVector) -> float:
         """Compute cosine similarity between embeddings."""
         dot = sum(a * b for a, b in zip(emb1.vector, emb2.vector))
@@ -299,10 +299,10 @@ class CLIPStyleEncoder:
 
 class EmbeddingFuser:
     """Fuses embeddings from multiple modalities."""
-    
+
     def __init__(self, strategy: FusionStrategy = FusionStrategy.ATTENTION):
         self.strategy = strategy
-    
+
     def fuse(
         self,
         embeddings: List[EmbeddingVector],
@@ -311,7 +311,7 @@ class EmbeddingFuser:
         """Fuse multiple embeddings into one."""
         if not embeddings:
             raise ValueError("No embeddings to fuse")
-        
+
         if len(embeddings) == 1:
             emb = embeddings[0]
             return FusedEmbedding(
@@ -321,18 +321,18 @@ class EmbeddingFuser:
                 fusion_strategy=self.strategy,
                 weights={emb.modality: 1.0}
             )
-        
+
         # Default equal weights
         if weights is None:
             weights = {}
             for emb in embeddings:
                 if emb.modality not in weights:
                     weights[emb.modality] = 1.0 / len(embeddings)
-        
+
         # Normalize weights
         total_weight = sum(weights.values())
         weights = {k: v / total_weight for k, v in weights.items()}
-        
+
         if self.strategy == FusionStrategy.CONCATENATE:
             return self._fuse_concatenate(embeddings, weights)
         elif self.strategy == FusionStrategy.AVERAGE:
@@ -343,7 +343,7 @@ class EmbeddingFuser:
             return self._fuse_gated(embeddings, weights)
         else:
             return self._fuse_average(embeddings, weights)
-    
+
     def _fuse_concatenate(
         self,
         embeddings: List[EmbeddingVector],
@@ -353,7 +353,7 @@ class EmbeddingFuser:
         combined = []
         for emb in embeddings:
             combined.extend(emb.vector)
-        
+
         return FusedEmbedding(
             vector=combined,
             modalities=[e.modality for e in embeddings],
@@ -361,7 +361,7 @@ class EmbeddingFuser:
             fusion_strategy=FusionStrategy.CONCATENATE,
             weights=weights
         )
-    
+
     def _fuse_average(
         self,
         embeddings: List[EmbeddingVector],
@@ -370,16 +370,16 @@ class EmbeddingFuser:
         """Weighted average of embeddings (requires same dimension)."""
         target_dim = embeddings[0].dimension
         result = [0.0] * target_dim
-        
+
         for emb in embeddings:
             w = weights.get(emb.modality, 1.0 / len(embeddings))
             # Pad or truncate to target dim
             vec = emb.vector[:target_dim]
             vec = vec + [0.0] * (target_dim - len(vec))
-            
+
             for i, v in enumerate(vec):
                 result[i] += v * w
-        
+
         return FusedEmbedding(
             vector=result,
             modalities=[e.modality for e in embeddings],
@@ -387,7 +387,7 @@ class EmbeddingFuser:
             fusion_strategy=FusionStrategy.AVERAGE,
             weights=weights
         )
-    
+
     def _fuse_attention(
         self,
         embeddings: List[EmbeddingVector],
@@ -396,11 +396,11 @@ class EmbeddingFuser:
         """Cross-modal attention fusion."""
         # Simplified: compute attention scores based on similarity
         target_dim = embeddings[0].dimension
-        
+
         # Compute pairwise similarities
         n = len(embeddings)
         attention_weights = []
-        
+
         for i, emb_i in enumerate(embeddings):
             score = weights.get(emb_i.modality, 1.0 / n)
             # Add cross-modal attention boost
@@ -416,11 +416,11 @@ class EmbeddingFuser:
                     )
                     score += sim * 0.1
             attention_weights.append(max(0.01, score))
-        
+
         # Normalize attention
         total = sum(attention_weights)
         attention_weights = [w / total for w in attention_weights]
-        
+
         # Weighted combination
         result = [0.0] * target_dim
         for emb, attn in zip(embeddings, attention_weights):
@@ -428,7 +428,7 @@ class EmbeddingFuser:
             vec = vec + [0.0] * (target_dim - len(vec))
             for i, v in enumerate(vec):
                 result[i] += v * attn
-        
+
         return FusedEmbedding(
             vector=result,
             modalities=[e.modality for e in embeddings],
@@ -437,7 +437,7 @@ class EmbeddingFuser:
             weights=dict(zip([e.modality for e in embeddings], attention_weights)),
             confidence=max(attention_weights)
         )
-    
+
     def _fuse_gated(
         self,
         embeddings: List[EmbeddingVector],
@@ -445,18 +445,18 @@ class EmbeddingFuser:
     ) -> FusedEmbedding:
         """Gated fusion with learned gates (simplified)."""
         target_dim = embeddings[0].dimension
-        
+
         # Compute gate values based on embedding magnitudes
         gates = []
         for emb in embeddings:
             magnitude = math.sqrt(sum(x*x for x in emb.vector))
             gate = 1.0 / (1.0 + math.exp(-magnitude))  # Sigmoid
             gates.append(gate * weights.get(emb.modality, 1.0 / len(embeddings)))
-        
+
         # Normalize gates
         total = sum(gates)
         gates = [g / total for g in gates]
-        
+
         # Gated combination
         result = [0.0] * target_dim
         for emb, gate in zip(embeddings, gates):
@@ -464,7 +464,7 @@ class EmbeddingFuser:
             vec = vec + [0.0] * (target_dim - len(vec))
             for i, v in enumerate(vec):
                 result[i] += v * gate
-        
+
         return FusedEmbedding(
             vector=result,
             modalities=[e.modality for e in embeddings],
@@ -487,10 +487,10 @@ class MultimodalRetrievalResult:
 class MultimodalRetriever:
     """
     Retriever that handles multimodal queries.
-    
+
     Fuses text and image embeddings for joint retrieval.
     """
-    
+
     def __init__(
         self,
         encoder: Optional[CLIPStyleEncoder] = None,
@@ -500,7 +500,7 @@ class MultimodalRetriever:
         self.encoder = encoder or CLIPStyleEncoder()
         self.fuser = fuser or EmbeddingFuser(strategy=fusion_strategy)
         self._index: List[Tuple[FusedEmbedding, Dict[str, Any]]] = []
-    
+
     def index_document(
         self,
         doc_id: str,
@@ -510,20 +510,20 @@ class MultimodalRetriever:
     ) -> None:
         """Index a document with text and/or image."""
         embeddings = []
-        
+
         if text:
             text_emb = self.encoder.encode_text(text)
             embeddings.append(text_emb)
-        
+
         if image:
             image_emb = self.encoder.encode_image(image)
             embeddings.append(image_emb)
-        
+
         if not embeddings:
             return
-        
+
         fused = self.fuser.fuse(embeddings)
-        
+
         self._index.append((fused, {
             "doc_id": doc_id,
             "text": text,
@@ -531,7 +531,7 @@ class MultimodalRetriever:
             "metadata": metadata or {},
             "modalities": [e.modality.value for e in embeddings]
         }))
-    
+
     def retrieve(
         self,
         query: MultimodalQuery,
@@ -540,7 +540,7 @@ class MultimodalRetriever:
         """Retrieve documents matching multimodal query."""
         import time
         start = time.perf_counter()
-        
+
         # Encode query modalities
         query_embeddings = []
         for inp in query.inputs:
@@ -550,7 +550,7 @@ class MultimodalRetriever:
             elif inp.modality == ModalityType.IMAGE:
                 emb = self.encoder.encode_image(inp.content)
                 query_embeddings.append(emb)
-        
+
         if not query_embeddings:
             return MultimodalRetrievalResult(
                 query=query,
@@ -562,10 +562,10 @@ class MultimodalRetriever:
                 retrieval_time_ms=0,
                 modality_contributions={}
             )
-        
+
         # Fuse query embeddings
         fused_query = self.fuser.fuse(query_embeddings, query.modality_weights)
-        
+
         # Score all indexed documents
         scored = []
         for fused_doc, doc_info in self._index:
@@ -575,13 +575,13 @@ class MultimodalRetriever:
                 "score": score,
                 "doc_modalities": fused_doc.modalities
             })
-        
+
         # Sort by score
         scored.sort(key=lambda x: x["score"], reverse=True)
         results = scored[:top_k]
-        
+
         elapsed = (time.perf_counter() - start) * 1000
-        
+
         return MultimodalRetrievalResult(
             query=query,
             fused_query_embedding=fused_query,
@@ -589,20 +589,20 @@ class MultimodalRetriever:
             retrieval_time_ms=elapsed,
             modality_contributions=fused_query.weights
         )
-    
+
     def _similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """Compute cosine similarity."""
         min_dim = min(len(vec1), len(vec2))
         if min_dim == 0:
             return 0.0
-        
+
         dot = sum(a * b for a, b in zip(vec1[:min_dim], vec2[:min_dim]))
         norm1 = math.sqrt(sum(x*x for x in vec1[:min_dim]))
         norm2 = math.sqrt(sum(x*x for x in vec2[:min_dim]))
-        
+
         if norm1 == 0 or norm2 == 0:
             return 0.0
-        
+
         return dot / (norm1 * norm2)
 
 
@@ -619,10 +619,10 @@ class MultimodalDecisionContext:
 class MultimodalDecisionScorer:
     """
     Scores decisions using multimodal context.
-    
+
     Adjusts scores based on cross-modal grounding.
     """
-    
+
     def __init__(
         self,
         cross_modal_weight: float = 0.2,
@@ -630,7 +630,7 @@ class MultimodalDecisionScorer:
     ):
         self.cross_modal_weight = cross_modal_weight
         self.require_grounding = require_grounding
-    
+
     def score_with_context(
         self,
         base_score: float,
@@ -638,25 +638,25 @@ class MultimodalDecisionScorer:
     ) -> Tuple[float, Dict[str, Any]]:
         """
         Adjust decision score based on multimodal context.
-        
+
         Returns adjusted score and scoring details.
         """
         adjustments = {}
         final_score = base_score
-        
+
         # Cross-modal alignment bonus/penalty
         if context.cross_modal_alignment > 0:
             alignment_factor = 1.0 + (context.cross_modal_alignment * self.cross_modal_weight)
             final_score *= alignment_factor
             adjustments["alignment_boost"] = context.cross_modal_alignment * self.cross_modal_weight
-        
+
         # Modality confidence weighting
         if context.modality_confidences:
             avg_conf = sum(context.modality_confidences.values()) / len(context.modality_confidences)
             conf_factor = 0.5 + (avg_conf * 0.5)  # Scale 0.5-1.0
             final_score *= conf_factor
             adjustments["confidence_factor"] = conf_factor
-        
+
         # Evidence grounding bonus
         if context.retrieved_evidence:
             evidence_boost = min(0.2, len(context.retrieved_evidence) * 0.05)
@@ -666,7 +666,7 @@ class MultimodalDecisionScorer:
             # Penalty for lack of grounding
             final_score *= 0.8
             adjustments["grounding_penalty"] = -0.2
-        
+
         return min(1.0, max(0.0, final_score)), adjustments
 
 
@@ -681,7 +681,7 @@ def create_multimodal_pipeline(
     encoder = CLIPStyleEncoder(shared_dim=shared_dim)
     fuser = EmbeddingFuser(strategy=strategy)
     retriever = MultimodalRetriever(encoder=encoder, fuser=fuser)
-    
+
     return encoder, fuser, retriever
 
 
@@ -692,24 +692,24 @@ def create_multimodal_query(
 ) -> MultimodalQuery:
     """Create a multimodal query from text and/or image."""
     inputs = []
-    
+
     if text:
         inputs.append(ModalityInput(
             modality=ModalityType.TEXT,
             content=text
         ))
-    
+
     if image:
         inputs.append(ModalityInput(
             modality=ModalityType.IMAGE,
             content=image
         ))
-    
+
     weights = {}
     if modality_weights:
         for k, v in modality_weights.items():
             weights[ModalityType[k.upper()]] = v
-    
+
     return MultimodalQuery(
         inputs=inputs,
         text_query=text,

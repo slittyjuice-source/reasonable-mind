@@ -60,6 +60,64 @@ def test_extract_commands():
         print(f"  PASS: {cmd!r} -> {result}")
 
 
+def test_command_substitution_blocking():
+    """Test that command substitution patterns are blocked."""
+    print("\nTesting command substitution blocking:\n")
+
+    # All of these should return empty list (fail-safe block)
+    dangerous_patterns = [
+        # $() syntax
+        ("echo $(whoami)", "basic $() substitution"),
+        ("ls $(id)", "$() with id command"),
+        ("cat $(pwd)/file.txt", "$() in path"),
+        ("ls $(echo 'malicious')", "$() with nested command"),
+        ('cat "$(cat /etc/passwd)"', '$() inside quotes'),
+        ("$(rm -rf /)", "dangerous command in $()"),
+        # Backtick syntax
+        ("echo `whoami`", "basic backtick substitution"),
+        ("ls `id`", "backtick with id command"),
+        ("cat `pwd`/file.txt", "backtick in path"),
+        ("`rm -rf /`", "dangerous command in backticks"),
+        # Nested patterns
+        ("echo $(echo $(whoami))", "nested $() substitution"),
+        ("echo `echo `whoami``", "nested backtick substitution"),
+        # Mixed patterns
+        ("$(echo `id`)", "mixed $() and backtick"),
+        # Edge cases
+        ("ls && $(whoami)", "$() after && operator"),
+        ("$(whoami) && ls", "$() before && operator"),
+        ("ls; `id`", "backtick after semicolon"),
+    ]
+
+    for cmd, description in dangerous_patterns:
+        result = extract_commands(cmd)
+        assert result == [], f"Command substitution not blocked for {cmd!r} ({description}): got {result}"
+        print(f"  PASS: {cmd!r} ({description}) -> blocked")
+
+    print("\n✓ Command substitution blocking tests passed")
+
+
+def test_legitimate_dollar_signs():
+    """Test that legitimate $ usage doesn't trigger false positives."""
+    print("\nTesting legitimate dollar sign usage:\n")
+
+    # These should NOT be blocked (no command substitution)
+    legitimate_cases = [
+        ("echo $HOME", ["echo"], "simple variable"),
+        ("ls $PWD", ["ls"], "PWD variable"),
+        ('echo "$PATH"', ["echo"], "quoted variable"),
+        ("VAR=$VALUE ls", ["ls"], "variable assignment with command"),
+        ("grep '$pattern' file", ["grep"], "literal $ in quotes"),
+    ]
+
+    for cmd, expected, description in legitimate_cases:
+        result = extract_commands(cmd)
+        assert result == expected, f"Legitimate $ usage incorrectly handled for {cmd!r} ({description}): expected {expected}, got {result}"
+        print(f"  PASS: {cmd!r} ({description}) -> {result}")
+
+    print("\n✓ Legitimate dollar sign tests passed")
+
+
 def test_validate_chmod():
     """Test chmod command validation."""
     print("\nTesting chmod validation:\n")
@@ -131,6 +189,20 @@ def main():
         print("✓ Command extraction tests passed\n")
     except AssertionError as e:
         print(f"✗ Command extraction tests failed: {e}\n")
+        failed += 1
+
+    try:
+        test_command_substitution_blocking()
+        print("✓ Command substitution blocking tests passed\n")
+    except AssertionError as e:
+        print(f"✗ Command substitution blocking tests failed: {e}\n")
+        failed += 1
+
+    try:
+        test_legitimate_dollar_signs()
+        print("✓ Legitimate dollar sign tests passed\n")
+    except AssertionError as e:
+        print(f"✗ Legitimate dollar sign tests failed: {e}\n")
         failed += 1
 
     try:

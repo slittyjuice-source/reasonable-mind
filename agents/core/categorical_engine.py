@@ -35,7 +35,7 @@ class SyllogismResult:
 
 class CategoricalEngine:
     """Validates categorical syllogisms using Aristotelian logic."""
-    
+
     def __init__(self):
         self.valid_forms = {
             SyllogismType.BARBARA: {
@@ -95,16 +95,16 @@ class CategoricalEngine:
                 "example": "All dogs are mammals; some pets are not mammals; therefore some pets are not dogs"
             }
         }
-    
+
     def validate_syllogism(self, major: str, minor: str, conclusion: str) -> SyllogismResult:
         """
         Validate a categorical syllogism.
-        
+
         Args:
             major: Major premise (contains predicate of conclusion)
             minor: Minor premise (contains subject of conclusion)
             conclusion: Conclusion statement
-            
+
         Returns:
             SyllogismResult with validity, form, and explanation
         """
@@ -112,9 +112,9 @@ class CategoricalEngine:
         major_type = self._classify_proposition(major)
         minor_type = self._classify_proposition(minor)
         conclusion_type = self._classify_proposition(conclusion)
-        
+
         form_code = f"{major_type}{minor_type}{conclusion_type}"
-        
+
         # Check for Barbara form (AAA-1)
         if form_code == "AAA" and self._is_first_figure(major, minor, conclusion):
             return SyllogismResult(
@@ -122,7 +122,7 @@ class CategoricalEngine:
                 form=SyllogismType.BARBARA,
                 explanation="Valid: Barbara form (AAA-1) - All M are P; All S are M; therefore All S are P"
             )
-        
+
         # Check for Celarent form (EAE-1)
         if form_code == "EAE" and self._is_first_figure(major, minor, conclusion):
             return SyllogismResult(
@@ -130,7 +130,7 @@ class CategoricalEngine:
                 form=SyllogismType.CELARENT,
                 explanation="Valid: Celarent form (EAE-1) - No M are P; All S are M; therefore No S are P"
             )
-        
+
         # Check for Darii form (AII-1)
         if form_code == "AII" and self._is_first_figure(major, minor, conclusion):
             return SyllogismResult(
@@ -138,7 +138,7 @@ class CategoricalEngine:
                 form=SyllogismType.DARII,
                 explanation="Valid: Darii form (AII-1) - All M are P; Some S are M; therefore Some S are P"
             )
-        
+
         # Check for Ferio form (EIO-1)
         if form_code == "EIO" and self._is_first_figure(major, minor, conclusion):
             return SyllogismResult(
@@ -146,18 +146,18 @@ class CategoricalEngine:
                 form=SyllogismType.FERIO,
                 explanation="Valid: Ferio form (EIO-1) - No M are P; Some S are M; therefore Some S are not P"
             )
-        
+
         return SyllogismResult(
             valid=False,
             form=None,
             explanation=f"Does not match known valid syllogistic forms (detected {form_code})",
             confidence=0.0
         )
-    
+
     def _classify_proposition(self, statement: str) -> str:
         """
         Classify a categorical proposition.
-        
+
         Returns:
             'A' for universal affirmative (All S are P)
             'E' for universal negative (No S are P)
@@ -165,7 +165,7 @@ class CategoricalEngine:
             'O' for particular negative (Some S are not P)
         """
         statement_lower = statement.lower()
-        
+
         if statement_lower.startswith("all "):
             return "A"
         elif statement_lower.startswith("no "):
@@ -178,29 +178,29 @@ class CategoricalEngine:
         else:
             # Default to universal affirmative if unclear
             return "A"
-    
+
     def _is_first_figure(self, major: str, minor: str, conclusion: str) -> bool:
         """
         Check if syllogism is in first figure.
         First figure: Middle term is subject of major, predicate of minor.
-        
+
         This is a simplified check - full implementation would need semantic parsing.
         """
         # For now, assume first figure
         return True
-    
+
     def get_form_description(self, form: SyllogismType) -> str:
         """Get description of a syllogism form."""
         if form in self.valid_forms:
             return self.valid_forms[form]["description"]
         return "Unknown form"
-    
+
     def get_example(self, form: SyllogismType) -> str:
         """Get example of a syllogism form."""
         if form in self.valid_forms:
             return self.valid_forms[form]["example"]
         return "No example available"
-    
+
     def list_valid_forms(self) -> list[SyllogismType]:
         """List all valid syllogism forms."""
         return list(self.valid_forms.keys())

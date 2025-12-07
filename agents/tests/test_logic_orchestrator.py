@@ -26,7 +26,7 @@ class TestStructuredArgument:
             conclusion="All dogs are animals",
             argument_type=ArgumentType.CATEGORICAL
         )
-        
+
         assert len(arg.premises) == 2
         assert arg.conclusion == "All dogs are animals"
         assert arg.argument_type == ArgumentType.CATEGORICAL
@@ -62,7 +62,7 @@ class TestLogicAnalysisResult:
     def test_default_result_values(self):
         """Test default values for result."""
         result = LogicAnalysisResult()
-        
+
         assert result.is_valid is None
         assert result.engine_used == "unknown"
         assert result.syllogism_form is None
@@ -77,7 +77,7 @@ class TestLogicAnalysisResult:
         """Test has_fallacies property."""
         result = LogicAnalysisResult()
         assert result.has_fallacies is False
-        
+
         # Add a mock fallacy - would need actual FallacyPattern
         # For now just test empty case
 
@@ -85,10 +85,10 @@ class TestLogicAnalysisResult:
         """Test is_sound property."""
         result = LogicAnalysisResult(is_valid=True)
         assert result.is_sound is True
-        
+
         result_invalid = LogicAnalysisResult(is_valid=False)
         assert result_invalid.is_sound is False
-        
+
         result_unknown = LogicAnalysisResult(is_valid=None)
         assert result_unknown.is_sound is None
 
@@ -100,9 +100,9 @@ class TestLogicAnalysisResult:
             confidence=0.85,
             notes=["Test note"]
         )
-        
+
         d = result.to_dict()
-        
+
         assert d["is_valid"] is True
         assert d["engine_used"] == "categorical"
         assert d["confidence"] == 0.85
@@ -130,9 +130,9 @@ class TestLogicOrchestrator:
             conclusion="All dogs are animals",
             argument_type=ArgumentType.CATEGORICAL
         )
-        
+
         result = orchestrator.analyze(arg)
-        
+
         assert isinstance(result, LogicAnalysisResult)
         assert result.engine_used == "categorical"
         assert "CategoricalEngine" in str(result.notes)
@@ -144,9 +144,9 @@ class TestLogicOrchestrator:
             conclusion="Ground is wet",
             argument_type=ArgumentType.PROPOSITIONAL
         )
-        
+
         result = orchestrator.analyze(arg)
-        
+
         assert isinstance(result, LogicAnalysisResult)
         assert result.engine_used == "propositional"
         assert "InferenceEngine" in str(result.notes)
@@ -157,18 +157,18 @@ class TestLogicOrchestrator:
             premises=["All birds can fly", "Penguins are birds"],
             conclusion="Penguins can fly"
         )
-        
+
         result = orchestrator.analyze(arg)
-        
+
         assert isinstance(result, LogicAnalysisResult)
         # Should attempt classification
-        assert any("classification" in note.lower() or "heuristic" in note.lower() 
+        assert any("classification" in note.lower() or "heuristic" in note.lower()
                    for note in result.notes)
 
     def test_analyze_text_returns_not_implemented(self, orchestrator):
         """Test that analyze_text returns proper stub response."""
         result = orchestrator.analyze_text("This is a logical argument.")
-        
+
         assert result.is_valid is None
         assert result.engine_used == "unknown"
         assert "not yet implemented" in str(result.notes).lower()
@@ -181,7 +181,7 @@ class TestLogicOrchestrator:
             conclusion="All A are C",
             argument_type=ArgumentType.CATEGORICAL
         )
-        
+
         assert isinstance(is_valid, bool)
         assert isinstance(confidence, float)
         assert 0.0 <= confidence <= 1.0
@@ -189,9 +189,9 @@ class TestLogicOrchestrator:
     def test_detect_fallacies_only(self, orchestrator):
         """Test fallacy-only detection."""
         text = "You can't trust his argument because he's a fool."
-        
+
         fallacies = orchestrator.detect_fallacies_only(text)
-        
+
         assert isinstance(fallacies, list)
         # Should detect ad hominem or similar
         # Exact result depends on fallacy_detector implementation
@@ -204,9 +204,9 @@ class TestLogicOrchestrator:
             conclusion="Therefore it must be true",
             argument_type=ArgumentType.PROPOSITIONAL
         )
-        
+
         result = orchestrator.analyze(arg)
-        
+
         # Fallacy detection should have run
         # (may or may not find fallacies depending on patterns)
         assert isinstance(result.fallacies, list)
@@ -218,7 +218,7 @@ class TestFactoryFunctions:
     def test_create_orchestrator(self):
         """Test factory function creates orchestrator."""
         orchestrator = create_orchestrator()
-        
+
         assert isinstance(orchestrator, LogicOrchestrator)
 
     def test_analyze_argument_convenience_function(self):
@@ -228,7 +228,7 @@ class TestFactoryFunctions:
             conclusion="Q",
             argument_type="propositional"
         )
-        
+
         assert isinstance(result, LogicAnalysisResult)
 
     def test_analyze_argument_handles_invalid_type(self):
@@ -238,7 +238,7 @@ class TestFactoryFunctions:
             conclusion="Some conclusion",
             argument_type="invalid_type"
         )
-        
+
         assert isinstance(result, LogicAnalysisResult)
         # Should default to unknown type
 

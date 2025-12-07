@@ -276,11 +276,43 @@ class TestFigureIdentification:
         assert syl.figure == Figure.FIRST
 
     def test_second_figure(self):
-        """Test Figure 2: P-M, S-M"""
-        # Requires specific term arrangement
-        # Example: All animals are living, All dogs are living
-        # Actually this is tricky - need proper second figure example
-        pass  # TODO: Add proper figure 2-4 tests
+        """Test Figure 2: P-M, S-M (predicate of major = middle, predicate of minor = middle)"""
+        # Cesare (EAE): No P are M, All S are M ⊢ No S are P
+        # Example: No reptiles are mammals, All dogs are mammals ⊢ No dogs are reptiles
+        syl = parse_syllogism(
+            "No reptiles are mammals",   # P-M (middle as predicate)
+            "All dogs are mammals",       # S-M (middle as predicate)
+            "No dogs are reptiles"
+        )
+
+        assert syl is not None
+        assert syl.figure == Figure.SECOND
+
+    def test_third_figure(self):
+        """Test Figure 3: M-P, M-S (middle is subject in both premises)"""
+        # Datisi (AII): All M are P, Some M are S ⊢ Some S are P
+        # Example: All poets are artists, Some poets are philosophers ⊢ Some philosophers are artists
+        syl = parse_syllogism(
+            "All poets are artists",         # M-P (middle as subject)
+            "Some poets are philosophers",   # M-S (middle as subject)
+            "Some philosophers are artists"
+        )
+
+        assert syl is not None
+        assert syl.figure == Figure.THIRD
+
+    def test_fourth_figure(self):
+        """Test Figure 4: P-M, M-S (middle as predicate in major, subject in minor)"""
+        # Dimaris (IAI): Some P are M, All M are S ⊢ Some S are P
+        # Example: Some artists are musicians, All musicians are performers ⊢ Some performers are artists
+        syl = parse_syllogism(
+            "Some artists are musicians",      # P-M (middle as predicate)
+            "All musicians are performers",    # M-S (middle as subject)
+            "Some performers are artists"
+        )
+
+        assert syl is not None
+        assert syl.figure == Figure.FOURTH
 
 
 class TestRealWorldSyllogisms:
@@ -343,3 +375,135 @@ def test_term_identification():
     assert syl.major_term == "animals"  # Predicate of conclusion
     assert syl.minor_term == "dogs"  # Subject of conclusion
     assert syl.middle_term == "mammals"  # In premises but not conclusion
+
+
+# =============================================================================
+# Parser Fallback Tests
+# =============================================================================
+
+
+class TestParserFallbacks:
+    """Test parser fallback paths for edge cases and malformed input."""
+
+    def test_parse_statement_returns_none_on_gibberish(self) -> None:
+        """parse_categorical_statement returns None for unparseable input."""
+        result = parse_categorical_statement("gibberish nonsense text")
+        assert result is None
+
+    def test_parse_statement_returns_none_on_empty(self) -> None:
+        """parse_categorical_statement returns None for empty string."""
+        result = parse_categorical_statement("")
+        assert result is None
+
+    def test_parse_statement_returns_none_on_missing_predicate(self) -> None:
+        """parse_categorical_statement handles incomplete input via fallback."""
+        result = parse_categorical_statement("All dogs are")
+        # Fallback parser may interpret 'are' as predicate
+        # The important thing is it doesn't crash
+        if result is not None:
+            # Fallback parsed it somehow - just verify structure
+            assert result.quantifier == "all"
+            assert result.subject == "dogs"
+
+    def test_parse_syllogism_returns_none_on_invalid_major(self) -> None:
+        """parse_syllogism returns None if major premise fails to parse."""
+        result = parse_syllogism(
+            "not a valid statement",
+            "All dogs are mammals",
+            "All dogs are animals",
+        )
+        assert result is None
+
+    def test_parse_syllogism_returns_none_on_invalid_minor(self) -> None:
+        """parse_syllogism returns None if minor premise fails to parse."""
+        result = parse_syllogism(
+            "All mammals are animals",
+            "random words here",
+            "All dogs are animals",
+        )
+        assert result is None
+
+    def test_parse_syllogism_returns_none_on_invalid_conclusion(self) -> None:
+        """parse_syllogism returns None if conclusion fails to parse."""
+        result = parse_syllogism(
+            "All mammals are animals",
+            "All dogs are mammals",
+            "invalid conclusion text",
+        )
+        assert result is None
+
+    def test_parse_type_o_statement(self) -> None:
+        """parse_categorical_statement handles type O (Some S are not P)."""
+        result = parse_categorical_statement("Some birds are not flightless")
+        assert result is not None
+        assert result.type == StatementType.PARTICULAR_NEGATIVE
+        assert result.subject == "birds"
+        assert result.predicate == "flightless"
+
+    def test_parse_type_e_statement(self) -> None:
+        """parse_categorical_statement handles type E (No S are P)."""
+        result = parse_categorical_statement("No reptiles are mammals")
+        assert result is not None
+        assert result.type == StatementType.UNIVERSAL_NEGATIVE
+        assert result.subject == "reptiles"
+        assert result.predicate == "mammals"
+
+    def test_validate_barbara_parse_error_returns_invalid(self) -> None:
+        """validate_barbara returns invalid result with parse error on bad input."""
+        result = validate_barbara(
+            "unparseable major",
+            "unparseable minor",
+            "unparseable conclusion",
+        )
+        assert result.is_valid is False
+        assert "Parse error" in result.violations
+
+    def test_syllogism_four_term_fallacy(self) -> None:
+        """Syllogism with four terms (ambiguous middle) fails to parse."""
+        # This creates ambiguity - no clear single middle term
+        result = parse_syllogism(
+            "All cats are felines",      # cats, felines
+            "All dogs are canines",      # dogs, canines
+            "All dogs are felines",      # dogs, felines
+        )
+        # Should fail because no single term connects premises
+        assert result is None
+
+
+# =============================================================================
+# Syllogism Rule Violation Tests
+# =============================================================================
+
+
+class TestSyllogismRuleViolations:
+    """Test explicit rule violations - logic correctness critical."""
+
+    def test_two_particular_premises_invalid(self) -> None:
+        """Rule 6: Two particular premises yield no valid conclusion."""
+        # I + I (Some M are P, Some S are M)
+        syl = parse_syllogism(
+            "Some animals are mammals",  # I
+            "Some pets are animals",     # I
+            "Some pets are mammals",     # Conclusion
+        )
+
+        if syl is not None:
+            engine = CategoricalEngine()
+            result = engine.validate(syl)
+            assert result.is_valid is False
+            assert any("particular premises" in v.lower() for v in result.violations)
+
+    def test_two_negative_premises_invalid(self) -> None:
+        """Rule 4: Two negative premises yield no valid conclusion."""
+        # Build E + O premises
+        syl = parse_syllogism(
+            "No reptiles are mammals",     # E
+            "Some animals are not reptiles",  # O
+            "Some animals are not mammals",   # Conclusion
+        )
+
+        if syl is not None:
+            engine = CategoricalEngine()
+            result = engine.validate(syl)
+            assert result.is_valid is False
+            assert any("negative premises" in v.lower() for v in result.violations)

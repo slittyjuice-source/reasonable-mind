@@ -8,15 +8,11 @@ Provides multi-sample self-consistency:
 - Chain-of-Verification (CoVe) patterns
 """
 
-from typing import List, Dict, Any, Optional, Tuple, Callable, Union
+from typing import List, Dict, Any, Optional, Tuple, Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
 from enum import Enum
-from abc import ABC, abstractmethod
-from functools import lru_cache
 import math
 import hashlib
-import statistics
 import time
 
 
@@ -47,7 +43,7 @@ class ReasoningChain:
     confidence: float
     metadata: Dict[str, Any] = field(default_factory=dict)
     generation_time_ms: float = 0.0
-    
+
     def fingerprint(self) -> str:
         """Generate fingerprint for deduplication."""
         content = f"{self.conclusion}::{':'.join(self.steps)}"
@@ -62,7 +58,7 @@ class Vote:
     confidence: float
     reasoning_steps: int
     normalized_answer: str = ""
-    
+
     def __post_init__(self):
         if not self.normalized_answer:
             # Normalize answer for comparison
@@ -97,50 +93,50 @@ class VerificationResult:
 
 class AnswerNormalizer:
     """Normalizes answers for comparison."""
-    
+
     def __init__(self, case_sensitive: bool = False):
         self.case_sensitive = case_sensitive
         self._equivalences: Dict[str, str] = {}
-    
+
     def add_equivalence(self, canonical: str, variants: List[str]) -> None:
         """Add equivalent forms of an answer."""
         for variant in variants:
             key = variant if self.case_sensitive else variant.lower()
             self._equivalences[key] = canonical
-    
+
     def normalize(self, answer: str) -> str:
         """Normalize an answer to canonical form."""
         answer = answer.strip()
         key = answer if self.case_sensitive else answer.lower()
-        
+
         # Check explicit equivalences
         if key in self._equivalences:
             return self._equivalences[key]
-        
+
         # Basic normalization
         normalized = key
-        
+
         # Remove common prefixes
         prefixes = ["the answer is", "answer:", "result:", "therefore"]
         for prefix in prefixes:
             if normalized.startswith(prefix):
                 normalized = normalized[len(prefix):].strip()
-        
+
         # Remove punctuation at end
         while normalized and normalized[-1] in ".,!?;:":
             normalized = normalized[:-1]
-        
+
         return normalized
 
 
 class SelfConsistencyVoter:
     """
     Aggregates multiple reasoning chains through voting.
-    
+
     Implements various voting schemes for self-consistency.
     Token optimization: Caches results for identical chain sets.
     """
-    
+
     def __init__(
         self,
         method: VotingMethod = VotingMethod.WEIGHTED,
@@ -157,14 +153,14 @@ class SelfConsistencyVoter:
         self._cache: Dict[str, Tuple[ConsistencyResult, float]] = {}
         self._cache_hits = 0
         self._cache_misses = 0
-    
+
     def aggregate(
         self,
         chains: List[ReasoningChain]
     ) -> ConsistencyResult:
         """
         Aggregate reasoning chains through voting.
-        
+
         Token optimization: Uses caching and early termination.
         """
         if not chains:
@@ -178,7 +174,7 @@ class SelfConsistencyVoter:
                 alternative_answers=[],
                 voting_method=self.method
             )
-        
+
         # Check cache for identical chain fingerprints
         cache_key = self._compute_cache_key(chains)
         cached = self._get_cached(cache_key)
@@ -186,7 +182,7 @@ class SelfConsistencyVoter:
             self._cache_hits += 1
             return cached
         self._cache_misses += 1
-        
+
         # Convert chains to votes
         votes = [
             Vote(
@@ -197,7 +193,7 @@ class SelfConsistencyVoter:
             )
             for chain in chains
         ]
-        
+
         # Normalize and count
         answer_votes: Dict[str, List[Vote]] = {}
         for vote in votes:
@@ -206,7 +202,7 @@ class SelfConsistencyVoter:
             if normalized not in answer_votes:
                 answer_votes[normalized] = []
             answer_votes[normalized].append(vote)
-        
+
         # Apply voting method
         if self.method == VotingMethod.MAJORITY:
             result = self._majority_vote(answer_votes, len(votes))
@@ -220,16 +216,16 @@ class SelfConsistencyVoter:
             result = self._consensus_vote(answer_votes, len(votes))
         else:
             result = self._majority_vote(answer_votes, len(votes))
-        
+
         # Cache the result
         self._set_cached(cache_key, result)
         return result
-    
+
     def _compute_cache_key(self, chains: List[ReasoningChain]) -> str:
         """Compute cache key from chain fingerprints."""
         fps = sorted(c.fingerprint() for c in chains)
         return hashlib.md5(":".join(fps).encode()).hexdigest()
-    
+
     def _get_cached(self, key: str) -> Optional[ConsistencyResult]:
         """Get cached result if not expired."""
         if key not in self._cache:
@@ -239,15 +235,15 @@ class SelfConsistencyVoter:
             del self._cache[key]
             return None
         return result
-    
+
     def _set_cached(self, key: str, result: ConsistencyResult) -> None:
         """Cache a result with timestamp."""
         self._cache[key] = (result, time.time())
-    
+
     def clear_cache(self) -> None:
         """Clear the result cache."""
         self._cache.clear()
-    
+
     def cache_stats(self) -> Dict[str, Any]:
         """Return cache statistics for monitoring token usage."""
         return {
@@ -256,7 +252,7 @@ class SelfConsistencyVoter:
             "cache_size": len(self._cache),
             "hit_rate": self._cache_hits / max(1, self._cache_hits + self._cache_misses)
         }
-    
+
     def _majority_vote(
         self,
         answer_votes: Dict[str, List[Vote]],
@@ -268,11 +264,11 @@ class SelfConsistencyVoter:
             key=lambda x: len(x[1]),
             reverse=True
         )
-        
+
         winner, winner_votes = sorted_answers[0]
         vote_count = len(winner_votes)
         agreement = vote_count / total
-        
+
         return ConsistencyResult(
             winner=winner,
             vote_count=vote_count,
@@ -286,7 +282,7 @@ class SelfConsistencyVoter:
             ],
             voting_method=VotingMethod.MAJORITY
         )
-    
+
     def _weighted_vote(
         self,
         answer_votes: Dict[str, List[Vote]],
@@ -294,23 +290,23 @@ class SelfConsistencyVoter:
     ) -> ConsistencyResult:
         """Confidence-weighted voting."""
         weighted_scores: Dict[str, float] = {}
-        
+
         for answer, votes in answer_votes.items():
             # Sum of confidences
             weighted_scores[answer] = sum(v.confidence for v in votes)
-        
+
         total_weight = sum(weighted_scores.values())
-        
+
         sorted_answers = sorted(
             weighted_scores.items(),
             key=lambda x: x[1],
             reverse=True
         )
-        
+
         winner, winner_score = sorted_answers[0]
         vote_count = len(answer_votes[winner])
         agreement = winner_score / total_weight if total_weight > 0 else 0
-        
+
         return ConsistencyResult(
             winner=winner,
             vote_count=vote_count,
@@ -326,7 +322,7 @@ class SelfConsistencyVoter:
             voting_method=VotingMethod.WEIGHTED,
             details={"weighted_scores": weighted_scores}
         )
-    
+
     def _logit_vote(
         self,
         answer_votes: Dict[str, List[Vote]],
@@ -334,7 +330,7 @@ class SelfConsistencyVoter:
     ) -> ConsistencyResult:
         """Logit-based voting (log-odds aggregation)."""
         logit_scores: Dict[str, float] = {}
-        
+
         for answer, votes in answer_votes.items():
             # Sum of log-odds
             log_odds_sum = 0.0
@@ -342,7 +338,7 @@ class SelfConsistencyVoter:
                 p = max(0.01, min(0.99, vote.confidence))
                 log_odds_sum += math.log(p / (1 - p))
             logit_scores[answer] = log_odds_sum
-        
+
         # Convert back to probabilities via softmax
         max_logit = max(logit_scores.values())
         exp_scores = {
@@ -354,16 +350,16 @@ class SelfConsistencyVoter:
             ans: exp / total_exp
             for ans, exp in exp_scores.items()
         }
-        
+
         sorted_answers = sorted(
             probabilities.items(),
             key=lambda x: x[1],
             reverse=True
         )
-        
+
         winner, winner_prob = sorted_answers[0]
         vote_count = len(answer_votes[winner])
-        
+
         return ConsistencyResult(
             winner=winner,
             vote_count=vote_count,
@@ -379,7 +375,7 @@ class SelfConsistencyVoter:
             voting_method=VotingMethod.LOGIT,
             details={"probabilities": probabilities}
         )
-    
+
     def _borda_count(
         self,
         chains: List[ReasoningChain]
@@ -387,17 +383,17 @@ class SelfConsistencyVoter:
         """Borda count ranking (rank-based voting)."""
         # Sort chains by confidence to get rankings
         sorted_chains = sorted(chains, key=lambda c: c.confidence, reverse=True)
-        
+
         # Assign Borda points
         n = len(chains)
         borda_points: Dict[str, float] = {}
         answer_votes: Dict[str, List[Vote]] = {}
-        
+
         for rank, chain in enumerate(sorted_chains):
             normalized = self.normalizer.normalize(chain.conclusion)
             points = n - rank
             borda_points[normalized] = borda_points.get(normalized, 0) + points
-            
+
             if normalized not in answer_votes:
                 answer_votes[normalized] = []
             answer_votes[normalized].append(Vote(
@@ -406,17 +402,17 @@ class SelfConsistencyVoter:
                 confidence=chain.confidence,
                 reasoning_steps=len(chain.steps)
             ))
-        
+
         sorted_answers = sorted(
             borda_points.items(),
             key=lambda x: x[1],
             reverse=True
         )
-        
+
         winner, winner_points = sorted_answers[0]
         vote_count = len(answer_votes[winner])
         max_points = n * len(answer_votes[winner])  # Maximum possible for this answer
-        
+
         return ConsistencyResult(
             winner=winner,
             vote_count=vote_count,
@@ -431,7 +427,7 @@ class SelfConsistencyVoter:
             voting_method=VotingMethod.BORDA,
             details={"borda_points": borda_points}
         )
-    
+
     def _consensus_vote(
         self,
         answer_votes: Dict[str, List[Vote]],
@@ -443,11 +439,11 @@ class SelfConsistencyVoter:
             key=lambda x: len(x[1]),
             reverse=True
         )
-        
+
         winner, winner_votes = sorted_answers[0]
         vote_count = len(winner_votes)
         agreement = vote_count / total
-        
+
         # Check if consensus threshold is met
         if agreement < self.consensus_threshold:
             # No consensus - mark as uncertain
@@ -465,7 +461,7 @@ class SelfConsistencyVoter:
                 voting_method=VotingMethod.CONSENSUS,
                 details={"consensus_met": False}
             )
-        
+
         return ConsistencyResult(
             winner=winner,
             vote_count=vote_count,
@@ -480,7 +476,7 @@ class SelfConsistencyVoter:
             voting_method=VotingMethod.CONSENSUS,
             details={"consensus_met": True}
         )
-    
+
     def _get_consistency_level(self, agreement: float) -> ConsistencyLevel:
         """Map agreement ratio to consistency level."""
         if agreement >= 1.0:
@@ -498,10 +494,10 @@ class SelfConsistencyVoter:
 class ChainOfVerification:
     """
     Chain-of-Verification (CoVe) pattern.
-    
+
     After drafting an answer, runs verification checks.
     """
-    
+
     def __init__(
         self,
         evidence_retriever: Optional[Callable[[str], List[str]]] = None,
@@ -509,7 +505,7 @@ class ChainOfVerification:
     ):
         self.evidence_retriever = evidence_retriever
         self.min_evidence = min_evidence
-    
+
     def verify(
         self,
         claim: str,
@@ -517,12 +513,12 @@ class ChainOfVerification:
     ) -> VerificationResult:
         """
         Verify a claim against evidence.
-        
+
         Returns verification result with confidence.
         """
         evidence: List[str] = []
         contradictions: List[str] = []
-        
+
         # Retrieve evidence if retriever available
         if self.evidence_retriever:
             try:
@@ -530,7 +526,7 @@ class ChainOfVerification:
                 evidence.extend(retrieved)
             except Exception:
                 pass
-        
+
         # Check context for supporting evidence
         if context:
             for key, value in context.items():
@@ -539,11 +535,11 @@ class ChainOfVerification:
                         evidence.append(f"Context[{key}]: {value[:100]}...")
                     elif self._contradicts_claim(claim, value):
                         contradictions.append(f"Context[{key}]: {value[:100]}...")
-        
+
         # Determine verification status
         has_evidence = len(evidence) >= self.min_evidence
         has_contradictions = len(contradictions) > 0
-        
+
         if has_evidence and not has_contradictions:
             verified = True
             confidence = min(1.0, 0.5 + 0.1 * len(evidence))
@@ -554,9 +550,9 @@ class ChainOfVerification:
             # No evidence - speculative
             verified = False
             confidence = 0.3
-        
+
         speculative = not has_evidence and not has_contradictions
-        
+
         return VerificationResult(
             original_claim=claim,
             verified=verified,
@@ -566,28 +562,28 @@ class ChainOfVerification:
             speculative=speculative,
             revision=None if verified else self._suggest_revision(claim, contradictions)
         )
-    
+
     def _supports_claim(self, claim: str, evidence: str) -> bool:
         """Check if evidence supports claim (simplified)."""
         claim_words = set(claim.lower().split())
         evidence_words = set(evidence.lower().split())
         overlap = len(claim_words & evidence_words)
         return overlap >= 3
-    
+
     def _contradicts_claim(self, claim: str, evidence: str) -> bool:
         """Check for contradiction indicators."""
         negation_words = {"not", "no", "never", "false", "incorrect", "wrong"}
         evidence_lower = evidence.lower()
-        
+
         # Check if evidence contains claim + negation
         claim_words = set(claim.lower().split())
         evidence_words = set(evidence_lower.split())
-        
+
         has_overlap = len(claim_words & evidence_words) >= 2
         has_negation = bool(negation_words & evidence_words)
-        
+
         return has_overlap and has_negation
-    
+
     def _suggest_revision(
         self,
         claim: str,
@@ -613,7 +609,7 @@ class HallucinationCheck:
 
 class HallucinationDetector:
     """Detects potential hallucinations in generated text."""
-    
+
     def __init__(self):
         self._speculative_markers = [
             "might", "could", "possibly", "perhaps", "maybe",
@@ -624,7 +620,7 @@ class HallucinationDetector:
             "definitely", "certainly", "clearly", "obviously",
             "without doubt", "absolutely"
         ]
-    
+
     def check_text(
         self,
         text: str,
@@ -633,45 +629,45 @@ class HallucinationDetector:
     ) -> List[HallucinationCheck]:
         """
         Check text for potential hallucinations.
-        
+
         Returns list of checks for each sentence/span.
         """
         results = []
         sentences = self._split_sentences(text)
-        
+
         cited_spans = cited_spans or []
         verified_facts = verified_facts or []
-        
+
         offset = 0
         for sentence in sentences:
             start = text.find(sentence, offset)
             end = start + len(sentence)
             offset = end
-            
+
             # Check if span is cited
             is_cited = any(
                 cs[0] <= start and cs[1] >= end
                 for cs in cited_spans
             )
-            
+
             # Check if matches verified fact
             is_verified = any(
                 self._matches_fact(sentence, fact)
                 for fact in verified_facts
             )
-            
+
             # Check for speculative language
             is_speculative = any(
                 marker in sentence.lower()
                 for marker in self._speculative_markers
             )
-            
+
             # Check for overconfident language
             is_overconfident = any(
                 marker in sentence.lower()
                 for marker in self._confidence_markers
             )
-            
+
             # Determine status
             if is_cited:
                 status = "cited"
@@ -685,7 +681,7 @@ class HallucinationDetector:
             else:
                 status = "unverified"
                 confidence = 0.5
-            
+
             # Generate label
             if status == "cited":
                 label = "[CITED]"
@@ -697,7 +693,7 @@ class HallucinationDetector:
                 label = "[NEEDS_VERIFICATION]"
             else:
                 label = "[UNVERIFIED]"
-            
+
             results.append(HallucinationCheck(
                 text=sentence,
                 span_start=start,
@@ -707,16 +703,16 @@ class HallucinationDetector:
                 evidence_status=status,
                 label=label
             ))
-        
+
         return results
-    
+
     def _split_sentences(self, text: str) -> List[str]:
         """Split text into sentences."""
         # Simple sentence splitting
         import re
         sentences = re.split(r'[.!?]+\s*', text)
         return [s.strip() for s in sentences if s.strip()]
-    
+
     def _matches_fact(self, sentence: str, fact: str) -> bool:
         """Check if sentence matches a verified fact."""
         sentence_words = set(sentence.lower().split())
@@ -739,10 +735,10 @@ class SelfConsistencyConfig:
 class SelfConsistencyPipeline:
     """
     Complete self-consistency pipeline.
-    
+
     Generates multiple samples, votes, verifies, and flags hallucinations.
     """
-    
+
     def __init__(self, config: Optional[SelfConsistencyConfig] = None):
         self.config = config or SelfConsistencyConfig()
         self.voter = SelfConsistencyVoter(
@@ -751,7 +747,7 @@ class SelfConsistencyPipeline:
         )
         self.verifier = ChainOfVerification()
         self.hallucination_detector = HallucinationDetector()
-    
+
     def process(
         self,
         chains: List[ReasoningChain],
@@ -759,12 +755,12 @@ class SelfConsistencyPipeline:
     ) -> Dict[str, Any]:
         """
         Process multiple reasoning chains through full pipeline.
-        
+
         Returns aggregated result with verification and hallucination checks.
         """
         # Step 1: Vote for best answer
         consistency_result = self.voter.aggregate(chains)
-        
+
         # Step 2: Verify the winning answer
         verification = None
         if self.config.enable_verification:
@@ -772,19 +768,19 @@ class SelfConsistencyPipeline:
                 consistency_result.winner,
                 context
             )
-        
+
         # Step 3: Check for hallucinations in the answer
         hallucination_checks = self.hallucination_detector.check_text(
             consistency_result.winner
         )
-        
+
         # Step 4: Compute overall quality score
         quality_score = self._compute_quality(
             consistency_result,
             verification,
             hallucination_checks
         )
-        
+
         return {
             "answer": consistency_result.winner,
             "confidence": consistency_result.confidence,
@@ -794,7 +790,7 @@ class SelfConsistencyPipeline:
             "quality_score": quality_score,
             "needs_human_review": quality_score < 0.5
         }
-    
+
     def _compute_quality(
         self,
         consistency: ConsistencyResult,
@@ -803,12 +799,12 @@ class SelfConsistencyPipeline:
     ) -> float:
         """Compute overall quality score."""
         score = consistency.confidence * 0.4
-        
+
         if verification:
             score += verification.verification_confidence * 0.3
         else:
             score += 0.15  # Neutral without verification
-        
+
         # Hallucination penalty
         if hallucination_checks:
             unverified_ratio = sum(
@@ -818,7 +814,7 @@ class SelfConsistencyPipeline:
             score += (1 - unverified_ratio) * 0.3
         else:
             score += 0.15
-        
+
         return min(1.0, max(0.0, score))
 
 

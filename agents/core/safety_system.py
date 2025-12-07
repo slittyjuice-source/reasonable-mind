@@ -9,13 +9,11 @@ Implements:
 - Safety gates for tool execution
 """
 
-from typing import List, Dict, Any, Optional, Callable, Set, Tuple
+from typing import List, Dict, Any, Optional, Callable, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from abc import ABC, abstractmethod
 import re
-import json
 
 
 class ErrorSeverity(Enum):
@@ -84,7 +82,7 @@ class StructuredError:
     retry_count: int = 0
     max_retries: int = 3
     context: Dict[str, Any] = field(default_factory=dict)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for logging."""
         return {
@@ -136,7 +134,7 @@ class PIIDetector:
     """
     Detects and redacts Personally Identifiable Information.
     """
-    
+
     def __init__(self):
         # PII patterns
         self.patterns = {
@@ -148,18 +146,18 @@ class PIIDetector:
             "date_of_birth": r'\b(?:0?[1-9]|1[0-2])[/-](?:0?[1-9]|[12]\d|3[01])[/-](?:19|20)\d{2}\b',
             "address": r'\b\d+\s+[\w\s]+(?:street|st|avenue|ave|road|rd|drive|dr|lane|ln|court|ct)\b',
         }
-        
+
         self.redaction_placeholder = "[REDACTED]"
-    
+
     def detect(self, text: str) -> List[Tuple[str, str, int, int]]:
         """
         Detect PII in text.
-        
+
         Returns:
             List of (pii_type, matched_text, start, end)
         """
         findings = []
-        
+
         for pii_type, pattern in self.patterns.items():
             for match in re.finditer(pattern, text, re.IGNORECASE):
                 findings.append((
@@ -168,28 +166,28 @@ class PIIDetector:
                     match.start(),
                     match.end()
                 ))
-        
+
         return findings
-    
+
     def redact(self, text: str) -> Tuple[str, List[str]]:
         """
         Redact PII from text.
-        
+
         Returns:
             (redacted_text, list of pii types found)
         """
         findings = self.detect(text)
-        
+
         # Sort by position (reverse) to maintain indices
         findings.sort(key=lambda x: x[2], reverse=True)
-        
+
         redacted = text
         types_found = set()
-        
+
         for pii_type, matched, start, end in findings:
             redacted = redacted[:start] + self.redaction_placeholder + redacted[end:]
             types_found.add(pii_type)
-        
+
         return redacted, list(types_found)
 
 
@@ -197,7 +195,7 @@ class ContentPolicyChecker:
     """
     Checks content against policy rules.
     """
-    
+
     def __init__(self):
         # Harmful content patterns
         self.harmful_patterns = [
@@ -205,17 +203,17 @@ class ContentPolicyChecker:
             (r'\b(how\s+to\s+make|instructions\s+for)\s+(bomb|weapon|drug)\b', "dangerous"),
             (r'\b(hate|discriminate)\s+against\s+\w+\b', "hate_speech"),
         ]
-        
+
         # Bias indicators
         self.bias_patterns = [
             (r'\b(always|never)\s+\w+\s+(people|group|race|gender)\b', "generalization"),
             (r'\b(all|every)\s+\w+\s+(are|is)\s+\w+\b', "stereotype"),
         ]
-    
+
     def check(self, content: str) -> List[PolicyViolation]:
         """Check content against policies."""
         violations = []
-        
+
         # Check harmful content
         for pattern, category in self.harmful_patterns:
             for match in re.finditer(pattern, content, re.IGNORECASE):
@@ -226,7 +224,7 @@ class ContentPolicyChecker:
                     location=match.group(),
                     auto_fixable=False
                 ))
-        
+
         # Check bias
         for pattern, bias_type in self.bias_patterns:
             for match in re.finditer(pattern, content, re.IGNORECASE):
@@ -237,7 +235,7 @@ class ContentPolicyChecker:
                     location=match.group(),
                     auto_fixable=False
                 ))
-        
+
         return violations
 
 
@@ -245,7 +243,7 @@ class InputSanitizer:
     """
     Sanitizes inputs before processing.
     """
-    
+
     def __init__(
         self,
         pii_detector: Optional[PIIDetector] = None,
@@ -257,14 +255,14 @@ class InputSanitizer:
         self.policy_checker = policy_checker or ContentPolicyChecker()
         self.redact_pii = redact_pii
         self.block_harmful = block_harmful
-    
+
     def sanitize(self, input_text: str) -> SanitizationResult:
         """Sanitize input text."""
         sanitized = input_text
         violations = []
         was_modified = False
         is_safe = True
-        
+
         # Check PII
         if self.redact_pii:
             redacted, pii_types = self.pii_detector.redact(input_text)
@@ -279,11 +277,11 @@ class InputSanitizer:
                         location=pii_type,
                         auto_fixable=True
                     ))
-        
+
         # Check content policy
         policy_violations = self.policy_checker.check(sanitized)
         violations.extend(policy_violations)
-        
+
         # Determine if safe
         if self.block_harmful:
             critical_violations = [
@@ -292,7 +290,7 @@ class InputSanitizer:
             ]
             if critical_violations:
                 is_safe = False
-        
+
         return SanitizationResult(
             original=input_text,
             sanitized=sanitized,
@@ -306,7 +304,7 @@ class OutputGuard:
     """
     Guards outputs before emission.
     """
-    
+
     def __init__(
         self,
         pii_detector: Optional[PIIDetector] = None,
@@ -318,18 +316,18 @@ class OutputGuard:
         self.policy_checker = policy_checker or ContentPolicyChecker()
         self.block_on_pii = block_on_pii
         self.block_on_harmful = block_on_harmful
-    
+
     def check(self, output: str) -> Tuple[bool, str, List[str]]:
         """
         Check if output is safe to emit.
-        
+
         Returns:
             (is_safe, sanitized_output, warnings)
         """
         warnings = []
         sanitized = output
         is_safe = True
-        
+
         # Check PII
         pii_findings = self.pii_detector.detect(output)
         if pii_findings:
@@ -338,7 +336,7 @@ class OutputGuard:
                 warnings.append(f"PII redacted from output: {len(pii_findings)} instances")
             else:
                 warnings.append(f"PII detected in output: {len(pii_findings)} instances")
-        
+
         # Check policy
         violations = self.policy_checker.check(sanitized)
         for v in violations:
@@ -347,7 +345,7 @@ class OutputGuard:
                 warnings.append(f"Blocked: {v.description}")
             else:
                 warnings.append(f"Policy warning: {v.description}")
-        
+
         return is_safe, sanitized, warnings
 
 
@@ -355,7 +353,7 @@ class ToolArgsSanitizer:
     """
     Sanitizes arguments before passing to tools.
     """
-    
+
     def __init__(self):
         # Dangerous patterns in tool args
         self.dangerous_patterns = [
@@ -367,7 +365,7 @@ class ToolArgsSanitizer:
             (r'eval\s*\(', "eval_injection"),
             (r'exec\s*\(', "exec_injection"),
         ]
-    
+
     def check_args(
         self,
         tool_name: str,
@@ -375,12 +373,12 @@ class ToolArgsSanitizer:
     ) -> Tuple[bool, List[str]]:
         """
         Check tool arguments for safety.
-        
+
         Returns:
             (is_safe, list of issues)
         """
         issues = []
-        
+
         for key, value in args.items():
             if isinstance(value, str):
                 for pattern, issue_type in self.dangerous_patterns:
@@ -388,23 +386,23 @@ class ToolArgsSanitizer:
                         issues.append(
                             f"Dangerous pattern in {tool_name}.{key}: {issue_type}"
                         )
-        
+
         return len(issues) == 0, issues
-    
+
     def sanitize_args(
         self,
         args: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Remove or escape dangerous patterns from args."""
         sanitized = {}
-        
+
         for key, value in args.items():
             if isinstance(value, str):
                 # Escape shell metacharacters
                 sanitized[key] = re.sub(r'[;&|`$(){}]', '', value)
             else:
                 sanitized[key] = value
-        
+
         return sanitized
 
 
@@ -412,7 +410,7 @@ class ErrorHandler:
     """
     Handles errors with structured taxonomy and recovery.
     """
-    
+
     def __init__(self):
         self.error_history: List[StructuredError] = []
         self.recovery_strategies: Dict[ErrorCategory, List[RecoveryAction]] = {
@@ -466,7 +464,7 @@ class ErrorHandler:
                 RecoveryAction.ESCALATE
             ],
         }
-    
+
     def create_error(
         self,
         category: ErrorCategory,
@@ -481,13 +479,13 @@ class ErrorHandler:
         error_id = hashlib.sha256(
             f"{category.value}{message}{datetime.now().isoformat()}".encode()
         ).hexdigest()[:12]
-        
+
         recovery_suggestions = self.recovery_strategies.get(
             category, [RecoveryAction.ESCALATE]
         )
-        
+
         is_recoverable = severity not in (ErrorSeverity.FATAL, ErrorSeverity.CRITICAL)
-        
+
         error = StructuredError(
             error_id=error_id,
             category=category,
@@ -499,10 +497,10 @@ class ErrorHandler:
             is_recoverable=is_recoverable,
             context=context or {}
         )
-        
+
         self.error_history.append(error)
         return error
-    
+
     def attempt_recovery(
         self,
         error: StructuredError,
@@ -515,14 +513,14 @@ class ErrorHandler:
                 action_taken=RecoveryAction.ABORT,
                 message="Error is not recoverable"
             )
-        
+
         if error.retry_count >= error.max_retries:
             return RecoveryResult(
                 success=False,
                 action_taken=RecoveryAction.ABORT,
                 message="Max retries exceeded"
             )
-        
+
         # Try recovery actions in order
         for action in error.recovery_suggestions:
             if recovery_fn:
@@ -551,25 +549,25 @@ class ErrorHandler:
                         message="Degraded to simpler operation",
                         warnings=["Operating in degraded mode"]
                     )
-        
+
         return RecoveryResult(
             success=False,
             action_taken=RecoveryAction.ESCALATE,
             message="All recovery actions failed, escalating"
         )
-    
+
     def get_error_stats(self) -> Dict[str, Any]:
         """Get statistics on errors."""
         by_category = {}
         by_severity = {}
-        
+
         for error in self.error_history:
             cat = error.category.value
             by_category[cat] = by_category.get(cat, 0) + 1
-            
+
             sev = error.severity.value
             by_severity[sev] = by_severity.get(sev, 0) + 1
-        
+
         return {
             "total_errors": len(self.error_history),
             "by_category": by_category,
@@ -582,7 +580,7 @@ class SafetyGate:
     """
     Gate that validates safety before critical operations.
     """
-    
+
     def __init__(
         self,
         input_sanitizer: Optional[InputSanitizer] = None,
@@ -592,17 +590,17 @@ class SafetyGate:
         self.input_sanitizer = input_sanitizer or InputSanitizer()
         self.output_guard = output_guard or OutputGuard()
         self.tool_sanitizer = tool_sanitizer or ToolArgsSanitizer()
-    
+
     def check_input(self, input_text: str) -> Tuple[bool, str, List[str]]:
         """Check if input is safe to process."""
         result = self.input_sanitizer.sanitize(input_text)
         warnings = [v.description for v in result.violations_found]
         return result.is_safe, result.sanitized, warnings
-    
+
     def check_output(self, output: str) -> Tuple[bool, str, List[str]]:
         """Check if output is safe to emit."""
         return self.output_guard.check(output)
-    
+
     def check_tool_call(
         self,
         tool_name: str,
@@ -610,14 +608,14 @@ class SafetyGate:
     ) -> Tuple[bool, Dict[str, Any], List[str]]:
         """Check if tool call is safe."""
         is_safe, issues = self.tool_sanitizer.check_args(tool_name, args)
-        
+
         if not is_safe:
             # Try sanitization
             sanitized_args = self.tool_sanitizer.sanitize_args(args)
             return False, sanitized_args, issues
-        
+
         return True, args, []
-    
+
     def full_check(
         self,
         input_text: Optional[str] = None,
@@ -629,7 +627,7 @@ class SafetyGate:
             "all_safe": True,
             "warnings": []
         }
-        
+
         if input_text:
             is_safe, sanitized, warnings = self.check_input(input_text)
             results["input"] = {
@@ -640,7 +638,7 @@ class SafetyGate:
             if not is_safe:
                 results["all_safe"] = False
             results["warnings"].extend(warnings)
-        
+
         if output:
             is_safe, sanitized, warnings = self.check_output(output)
             results["output"] = {
@@ -651,7 +649,7 @@ class SafetyGate:
             if not is_safe:
                 results["all_safe"] = False
             results["warnings"].extend(warnings)
-        
+
         if tool_call:
             tool_name, args = tool_call
             is_safe, sanitized_args, issues = self.check_tool_call(tool_name, args)
@@ -663,5 +661,5 @@ class SafetyGate:
             if not is_safe:
                 results["all_safe"] = False
             results["warnings"].extend(issues)
-        
+
         return results
