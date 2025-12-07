@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(python -m pylint:*)",
+      "Bash(python3:*)",
+      "Bash(ls:*)",
+      "Bash(ruff check:*)",
+      "Bash(mkdir:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(python -m pytest:*)",
+      "Bash(pip install:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
