@@ -394,13 +394,7 @@ class LogicEngine:
         props = list(argument.propositions)
         n = len(props)
 
-        if n > 5:
-            # Caller logic_engine.validate already checks for <= 5, so this path is technically unreachable
-            # if called via validate(), but kept as safe guard for direct calls if performance is critical.
-            # However, instructions said to remove it since it's unreachable in main flow.
-            # But wait, looking at my plan: "The caller at lines 222-223 already guards against >5 variables, making this check unreachable."
-            # So I should remove it.
-            return None  # Too expensive
+
 
         # Generate all 2^n truth assignments
         for i in range(2**n):
@@ -485,7 +479,8 @@ class LogicEngine:
         eval_expr = self._convert_implications(eval_expr)
 
         try:
-            return eval(eval_expr)
+            # Safe evaluation with restricted scope
+            return eval(eval_expr, {"__builtins__": {}}, {})
         except Exception:
             # Parse error - return False (safe default)
             return False
