@@ -243,7 +243,7 @@ class ExecutionProxy:
                         execution_context=result.execution_context or ctx,
                     )
 
-            # MOCK (unmatched): return placeholder - bypasses block checks
+            # MOCK (unmatched): return placeholder - bypasses block checks. Explicitly handle defaults.
             return ExecutionResult(
                 command=command,
                 mode=self.mode,
