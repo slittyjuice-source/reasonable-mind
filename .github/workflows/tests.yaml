@@ -12,6 +12,7 @@ on:
       - .github/**
       - agents/**
       # computer-use-demo/** - Uncomment when computer-use-demo is added
+  workflow_dispatch:
 
 jobs:
   # ============================================================================
@@ -59,7 +60,7 @@ jobs:
   # 1. Copy computer-use-demo/ from claude-quickstarts repo
   # 2. Uncomment the jobs below and the paths above
   # ============================================================================
-  
+
   # ruff-computer-use:
   #   runs-on: ubuntu-latest
   #   defaults:
