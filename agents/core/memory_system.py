@@ -271,8 +271,8 @@ class MemorySystem:
         if embedding:
             self.vector_store.add(entry_id, embedding, {"type": memory_type.value})
 
-        # Evict if over capacity
-        if len(self.memories) > self.max_memories:
+        # Proactive eviction at 90% capacity to avoid hitting hard limit
+        if self.max_memories and len(self.memories) >= int(self.max_memories * 0.9):
             self._evict_oldest()
 
         return entry_id

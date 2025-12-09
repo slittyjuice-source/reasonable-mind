@@ -159,6 +159,7 @@ class SelfConsistencyVoter:
         self._cache: Dict[str, Tuple[ConsistencyResult, float]] = {}
         self._cache_hits = 0
         self._cache_misses = 0
+        self._invocation_count = 0
 
     def aggregate(self, chains: List[ReasoningChain]) -> ConsistencyResult:
         """
@@ -166,6 +167,11 @@ class SelfConsistencyVoter:
 
         Token optimization: Uses caching and early termination.
         """
+        # Periodic cache cleanup every 100 invocations
+        self._invocation_count += 1
+        if self._invocation_count % 100 == 0:
+            self._cleanup_expired()
+
         if not chains:
             return ConsistencyResult(
                 winner="",
@@ -246,6 +252,13 @@ class SelfConsistencyVoter:
     def clear_cache(self) -> None:
         """Clear the result cache."""
         self._cache.clear()
+
+    def _cleanup_expired(self) -> None:
+        """Remove expired cache entries proactively."""
+        now = time.time()
+        expired = [k for k, (_, ts) in self._cache.items() if now - ts > self.cache_ttl]
+        for key in expired:
+            del self._cache[key]
 
     def cache_stats(self) -> Dict[str, Any]:
         """Return cache statistics for monitoring token usage."""

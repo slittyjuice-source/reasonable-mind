@@ -40,6 +40,17 @@ class MessageHistory:
 
         self.total_tokens = system_token
 
+    def _estimate_tokens(self, text: str) -> int:
+        """Estimate tokens using client API or fallback heuristic."""
+        try:
+            return self.client.messages.count_tokens(
+                model=self.model,
+                system=self.system,
+                messages=[{"role": "user", "content": text}],
+            ).input_tokens
+        except Exception:
+            return int(len(text) / 4)
+
     async def add_message(
         self,
         role: str,
@@ -90,13 +101,14 @@ class MessageHistory:
         if self.total_tokens <= self.context_window_tokens:
             return
 
-        TRUNCATION_NOTICE_TOKENS = 25
+        TRUNCATION_TEXT = "[Earlier history has been truncated.]"
+        TRUNCATION_NOTICE_TOKENS = self._estimate_tokens(TRUNCATION_TEXT)
         TRUNCATION_MESSAGE = {
             "role": "user",
             "content": [
                 {
                     "type": "text",
-                    "text": "[Earlier history has been truncated.]",
+                    "text": TRUNCATION_TEXT,
                 }
             ],
         }

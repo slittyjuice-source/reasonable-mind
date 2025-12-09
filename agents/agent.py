@@ -136,8 +136,10 @@ class Agent:
             else:
                 merged_headers = default_headers
 
-            response = self.client.messages.create(
-                **params, extra_headers=merged_headers
+            response = await asyncio.to_thread(
+                self.client.messages.create,
+                **params,
+                extra_headers=merged_headers,
             )
             tool_calls = [
                 block for block in response.content if block.type == "tool_use"

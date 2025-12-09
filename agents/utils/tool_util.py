@@ -14,9 +14,12 @@ async def _execute_single_tool(call: Any, tool_dict: dict[str, Any]) -> dict[str
         response["content"] = str(result)
     except KeyError:
         response["content"] = f"Tool '{call.name}' not found"
+        response["error_type"] = "KeyError"
         response["is_error"] = True
     except Exception as e:
         response["content"] = f"Error executing tool: {str(e)}"
+        response["error_type"] = type(e).__name__
+        response["is_transient"] = isinstance(e, (TimeoutError, ConnectionError, OSError))
         response["is_error"] = True
 
     return response
