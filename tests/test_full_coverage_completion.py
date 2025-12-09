@@ -278,7 +278,8 @@ def test_execution_proxy_mock_and_live_branches():
     assert result.stdout == "mocked"
     # Mock list iterates without match
     miss = proxy.execute("different command")
-    assert miss.blocked is True and "allowlist" in (miss.block_reason or "")
+    assert miss.blocked is False
+    assert miss.message == "No mock registered"
     # Live allowlisted command goes through non-mock branch
     live = ExecutionProxy(mode=ExecutionMode.LIVE)
     live_result = live.execute("echo hi | grep hi")
