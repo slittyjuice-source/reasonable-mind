@@ -243,8 +243,7 @@ class ExecutionProxy:
                         execution_context=result.execution_context or ctx,
                     )
 
-        # MOCK (unmatched): return placeholder - bypasses block checks for legacy test compatibility
-        if self.mode == ExecutionMode.MOCK:
+            # MOCK (unmatched): return placeholder - bypasses block checks
             return ExecutionResult(
                 command=command,
                 mode=self.mode,
