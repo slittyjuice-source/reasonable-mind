@@ -327,10 +327,10 @@ class TestExecutionProxyMockMode:
                 exit_code=0,
             ),
         )
-        result = proxy.execute("different_command")
+        result = proxy.execute("echo different")
 
         assert result.mode == ExecutionMode.MOCK
-        assert result.message == "No mock registered"
+        assert "[MOCK] Simulated execution" in result.stdout
 
 
 # =============================================================================
