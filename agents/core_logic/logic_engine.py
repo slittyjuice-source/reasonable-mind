@@ -168,7 +168,7 @@ class LogicEngine:
                 counterexample=None,
                 confidence=0.5,
                 method="heuristic",
-                explanation="No premises provided; cannot infer conclusion deterministically",
+                explanation="No premises provided; cannot infer conclusion deterministically (without premises)",
                 warnings=["Heuristic evaluation because premises list is empty"],
             )
 
@@ -393,6 +393,9 @@ class LogicEngine:
         """
         props = list(argument.propositions)
         n = len(props)
+
+        if n > 5:
+            return None
 
         # Generate all 2^n truth assignments
         for i in range(2**n):

@@ -39,10 +39,10 @@ class ConstraintRegistry:
     def load_from_dict(self, name: str, data: Dict) -> ConstraintProfile:
         profile = ConstraintProfile(name=name, data=data)
         self._profiles[name] = profile
-        self._recompute_hash()
+        self._recompute_active_hash()
         return profile
 
-    def _recompute_hash(self) -> None:
+    def _recompute_active_hash(self) -> None:
         if not self._profiles:
             self._active_hash = None
             return

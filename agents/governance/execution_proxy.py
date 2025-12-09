@@ -190,7 +190,7 @@ class ExecutionProxy:
         if "rm -rf /" in command:
             return "denylist: Attempt to remove root directory is blocked"
         if token in self._BLOCKED_COMMANDS:
-            return f"denylist: Command '{token}' is blocked"
+            return f"denylist command '{token}' is blocked"
         return None
 
     def execute(
@@ -199,7 +199,7 @@ class ExecutionProxy:
         execution_context: Optional[ExecutionContext] = None,
     ) -> ExecutionResult:
         ctx = execution_context or self.execution_context
-        # MOCK mode: return registered mock if one matches; otherwise return default mock result
+        # MOCK mode: return registered mock if one matches
         if self.mode == ExecutionMode.MOCK:
             for pattern, result in self._mocks:
                 if pattern.search(command):
@@ -242,19 +242,8 @@ class ExecutionProxy:
                         or getattr(ctx, "persona_id", None),
                         execution_context=result.execution_context or ctx,
                     )
-            # No mock matched
-            return ExecutionResult(
-                command=command,
-                mode=self.mode,
-                exit_code=0,
-                stdout="",
-                stderr="",
-                duration_ms=0,
-                message="No mock registered",
-                execution_context=ctx,
-            )
 
-        # Non-MOCK modes: perform block checks
+        # Perform block checks (for ALL modes, including unmatched MOCK)
         block_reason = (
             self._matches_denylist(command)
             or self._is_blocked_command(command)
@@ -275,12 +264,24 @@ class ExecutionProxy:
                 execution_context=ctx,
             )
 
+        # MOCK (unmatched): return placeholder
+        if self.mode == ExecutionMode.MOCK:
+            return ExecutionResult(
+                command=command,
+                mode=self.mode,
+                exit_code=0,
+                stdout=f"[MOCK] Simulated execution: {command}",
+                stderr="",
+                duration_ms=0,
+                execution_context=ctx,
+            )
+
         # LIVE (simulated here for tests): return simulated output
         return ExecutionResult(
             command=command,
             mode=self.mode,
             exit_code=0,
-            stdout="Simulated output",
+            stdout="[LIVE EXECUTION SKIPPED] simulated output",
             stderr="",
             duration_ms=10,
             execution_context=ctx,

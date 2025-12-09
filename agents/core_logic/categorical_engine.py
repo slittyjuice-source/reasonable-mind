@@ -344,6 +344,8 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
     # Type A: All S are P
     if text.startswith("all "):
         parts = text[4:].split(" are ")
+        if len(parts) > 2:
+            return None  # Ambiguous structure
         if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.UNIVERSAL_AFFIRMATIVE,
@@ -371,6 +373,8 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
     # Type E: No S are P
     if text.startswith("no "):
         parts = text[3:].split(" are ")
+        if len(parts) > 2:
+            return None
         if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.UNIVERSAL_NEGATIVE,
@@ -384,6 +388,8 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
     # Type I: Some S are P
     if text.startswith("some ") and " are not " not in text:
         parts = text[5:].split(" are ")
+        if len(parts) > 2:
+            return None
         if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.PARTICULAR_AFFIRMATIVE,
@@ -397,6 +403,8 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
     # Type O: Some S are not P
     if text.startswith("some ") and " are not " in text:
         parts = text[5:].split(" are not ")
+        if len(parts) > 2:
+            return None
         if len(parts) == 2:
             return CategoricalStatement(
                 type=StatementType.PARTICULAR_NEGATIVE,
@@ -408,6 +416,10 @@ def parse_categorical_statement(text: str) -> Optional[CategoricalStatement]:
             )
 
     # Fallback: allow simple verb phrases beyond "are"/"are not"
+    # STRICTNESS: Reject if " are " appears multiple times to avoid ambiguous "chain" parsing
+    if text.count(" are ") > 1:
+        return None
+
     for quantifier, stmt_type in [
         ("all", StatementType.UNIVERSAL_AFFIRMATIVE),
         ("no", StatementType.UNIVERSAL_NEGATIVE),
@@ -510,9 +522,10 @@ def parse_syllogism(
         middle_terms = all_premise_terms - conclusion_terms
 
         if len(middle_terms) != 1:
-            return None  # Should have exactly one middle term
-
-        middle_term = middle_terms.pop()
+            # Fallback to heuristic
+            pass
+        else:
+            middle_term = middle_terms.pop()
 
     # Determine mood (e.g., AAA, EAE, AII)
     mood = maj_stmt.type.value + min_stmt.type.value + con_stmt.type.value

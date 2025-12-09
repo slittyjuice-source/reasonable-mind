@@ -25,6 +25,7 @@ class ProcessStage(Enum):
     PLAN_VALIDATION = auto()
     ACTION_MAPPING = auto()
     SAFETY_REVIEW = auto()
+    EXECUTION = auto()
     OUTPUT_GENERATION = auto()
 
 
