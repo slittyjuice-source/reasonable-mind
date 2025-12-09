@@ -19,7 +19,9 @@ async def _execute_single_tool(call: Any, tool_dict: dict[str, Any]) -> dict[str
     except Exception as e:
         response["content"] = f"Error executing tool: {str(e)}"
         response["error_type"] = type(e).__name__
-        response["is_transient"] = isinstance(e, (TimeoutError, ConnectionError, OSError))
+        response["is_transient"] = isinstance(
+            e, (TimeoutError, ConnectionError, OSError)
+        )
         response["is_error"] = True
 
     return response
