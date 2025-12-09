@@ -200,7 +200,13 @@ class ExecutionProxy:
     ) -> ExecutionResult:
         ctx = execution_context or self.execution_context
         # MOCK mode: return registered mock if one matches
-        if self.mode == ExecutionMode.MOCK or self.mode.value == "mock":
+        # Check identity, Enum value, or string literal for maximum robustness
+        is_mock = (
+            self.mode == ExecutionMode.MOCK
+            or (isinstance(self.mode, Enum) and self.mode.value == "mock")
+            or self.mode == "mock"
+        )
+        if is_mock:
             for pattern, result in self._mocks:
                 if pattern.search(command):
                     # If mock provides message but not stdout, prefer message
